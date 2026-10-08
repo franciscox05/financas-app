@@ -174,19 +174,23 @@ export default function Balance() {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
+      <div className="grid grid-cols-3 gap-1.5 text-center sm:gap-2">
+        <div className="min-w-0 rounded-xl border border-neutral-200 p-2 dark:border-neutral-800 sm:p-3">
           <p className="text-xs text-neutral-500">Ganhos</p>
-          <p className="font-semibold text-green-600">{eur(income)}</p>
+          <p className="break-words text-sm font-semibold text-green-600 sm:text-base">
+            {eur(income)}
+          </p>
         </div>
-        <div className="rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
+        <div className="min-w-0 rounded-xl border border-neutral-200 p-2 dark:border-neutral-800 sm:p-3">
           <p className="text-xs text-neutral-500">Gastos</p>
-          <p className="font-semibold text-red-600">{eur(expense)}</p>
+          <p className="break-words text-sm font-semibold text-red-600 sm:text-base">
+            {eur(expense)}
+          </p>
         </div>
-        <div className="rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
+        <div className="min-w-0 rounded-xl border border-neutral-200 p-2 dark:border-neutral-800 sm:p-3">
           <p className="text-xs text-neutral-500">Saldo</p>
           <p
-            className={`font-semibold ${saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}
+            className={`break-words text-sm font-semibold sm:text-base ${saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}
           >
             {eur(saldo)}
           </p>
