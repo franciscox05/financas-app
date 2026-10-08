@@ -76,6 +76,7 @@ export default function Dashboard() {
       <QuickEntryForm
         accounts={accounts}
         categories={categories}
+        transactions={transactions}
         onCreated={(tx) => setTransactions((prev) => [tx, ...prev])}
       />
 

@@ -1,11 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { suggestCategoryId } from '../lib/categorySuggest'
 import { createTransaction } from '../lib/db'
 
 function today() {
   return new Date().toISOString().slice(0, 10)
 }
 
-export default function QuickEntryForm({ accounts, categories, onCreated }) {
+export default function QuickEntryForm({ accounts, categories, transactions, onCreated }) {
   const [type, setType] = useState('expense')
   const [amount, setAmount] = useState('')
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? '')
@@ -14,6 +15,8 @@ export default function QuickEntryForm({ accounts, categories, onCreated }) {
   const [note, setNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [suggested, setSuggested] = useState(false)
+  const categoryTouchedRef = useRef(false)
 
   const categoriesForType = useMemo(
     () => categories.filter((c) => c.type === type),
@@ -23,6 +26,20 @@ export default function QuickEntryForm({ accounts, categories, onCreated }) {
   const effectiveCategoryId = categoriesForType.some((c) => c.id === categoryId)
     ? categoryId
     : categoriesForType[0]?.id ?? ''
+
+  // Sugere categoria a partir do histórico quando o utilizador escreve uma nota,
+  // desde que não tenha escolhido a categoria manualmente para esta transação.
+  useEffect(() => {
+    if (categoryTouchedRef.current) return
+    const id = suggestCategoryId(note, type, transactions ?? [])
+    if (id && categoriesForType.some((c) => c.id === id)) {
+      setCategoryId(id)
+      setSuggested(true)
+    } else {
+      setSuggested(false)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [note, type])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -50,6 +67,9 @@ export default function QuickEntryForm({ accounts, categories, onCreated }) {
       setAmount('')
       setNote('')
       setOccurredOn(today())
+      setCategoryId('')
+      setSuggested(false)
+      categoryTouchedRef.current = false
       onCreated(created)
     } catch (err) {
       setError(err.message)
@@ -101,17 +121,26 @@ export default function QuickEntryForm({ accounts, categories, onCreated }) {
       />
 
       <div className="grid grid-cols-2 gap-2">
-        <select
-          value={effectiveCategoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-        >
-          {categoriesForType.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+        <div>
+          <select
+            value={effectiveCategoryId}
+            onChange={(e) => {
+              categoryTouchedRef.current = true
+              setSuggested(false)
+              setCategoryId(e.target.value)
+            }}
+            className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+          >
+            {categoriesForType.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          {suggested && (
+            <p className="mt-0.5 text-xs text-neutral-400">sugerido a partir do histórico</p>
+          )}
+        </div>
 
         <select
           value={accountId}
