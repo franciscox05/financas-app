@@ -12,9 +12,6 @@ dist
 dist-ssr
 dev-dist
 *.local
-.env
-.env.*
-!.env.example
 supabase/.temp
 
 # Editor directories and files
@@ -27,3 +24,7 @@ supabase/.temp
 *.njsproj
 *.sln
 *.sw?
+
+.vercel
+.env*
+!.env.example
