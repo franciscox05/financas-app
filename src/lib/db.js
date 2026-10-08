@@ -65,3 +65,43 @@ export async function updateTransaction(id, fields) {
   if (error) throw error
   return data
 }
+
+export async function listAllTransactionsForBalance() {
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('amount, type, occurred_on, account_id')
+  if (error) throw error
+  return data
+}
+
+export async function listNetWorthSnapshots() {
+  const { data, error } = await supabase
+    .from('net_worth_snapshots')
+    .select('*, accounts(name)')
+    .order('snapshot_date', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+export async function createSnapshot({ accountId, value, snapshotDate }) {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+
+  const { data, error } = await supabase
+    .from('net_worth_snapshots')
+    .insert({
+      user_id: userData.user.id,
+      account_id: accountId,
+      value,
+      snapshot_date: snapshotDate,
+    })
+    .select('*, accounts(name)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteSnapshot(id) {
+  const { error } = await supabase.from('net_worth_snapshots').delete().eq('id', id)
+  if (error) throw error
+}

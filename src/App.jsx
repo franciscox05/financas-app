@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext'
 import Balance from './pages/Balance'
 import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
+import NetWorth from './pages/NetWorth'
 import Signup from './pages/Signup'
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
             <Route element={<AppLayout />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/balanco" element={<Balance />} />
+              <Route path="/patrimonio" element={<NetWorth />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

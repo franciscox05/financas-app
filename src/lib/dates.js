@@ -19,6 +19,10 @@ export function monthKey(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
 }
 
+export function endOfMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0)
+}
+
 export function shortMonthLabel(date) {
   return date.toLocaleDateString('pt-PT', { month: 'short' }).replace('.', '')
 }
