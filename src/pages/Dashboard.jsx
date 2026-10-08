@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import QuickEntryForm from '../components/QuickEntryForm'
+import RecurringSection from '../components/RecurringSection'
 import TransactionList from '../components/TransactionList'
 import { downloadCsv, toCsv } from '../lib/csv'
 import { listAccounts, listAllTransactionsForExport, listCategories, listTransactions } from '../lib/db'
@@ -79,6 +80,8 @@ export default function Dashboard() {
         transactions={transactions}
         onCreated={(tx) => setTransactions((prev) => [tx, ...prev])}
       />
+
+      <RecurringSection accounts={accounts} categories={categories} onLaunched={loadAll} />
 
       <section>
         <div className="mb-2 flex items-center justify-between">

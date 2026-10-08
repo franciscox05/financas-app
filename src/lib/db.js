@@ -66,6 +66,50 @@ export async function updateTransaction(id, fields) {
   return data
 }
 
+export async function listRecurringTransactions() {
+  const { data, error } = await supabase
+    .from('recurring_transactions')
+    .select('*, accounts(name), categories(name)')
+    .eq('active', true)
+    .order('day_of_month')
+  if (error) throw error
+  return data
+}
+
+export async function createRecurringTransaction({ accountId, categoryId, amount, type, note, dayOfMonth }) {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+
+  const { data, error } = await supabase
+    .from('recurring_transactions')
+    .insert({
+      user_id: userData.user.id,
+      account_id: accountId,
+      category_id: categoryId,
+      amount,
+      type,
+      note: note || null,
+      day_of_month: dayOfMonth,
+    })
+    .select('*, accounts(name), categories(name)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteRecurringTransaction(id) {
+  const { error } = await supabase.from('recurring_transactions').delete().eq('id', id)
+  if (error) throw error
+}
+
+export async function markRecurringGenerated(id, monthIsoDate) {
+  const { error } = await supabase
+    .from('recurring_transactions')
+    .update({ last_generated_month: monthIsoDate })
+    .eq('id', id)
+  if (error) throw error
+}
+
 export async function listBudgets(monthIsoDate) {
   const { data, error } = await supabase.from('budgets').select('*').eq('month', monthIsoDate)
   if (error) throw error
