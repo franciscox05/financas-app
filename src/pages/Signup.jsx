@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function Signup() {
@@ -7,21 +7,24 @@ export default function Signup() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [status, setStatus] = useState('idle') // idle | loading | sent | error
+  const [status, setStatus] = useState('idle') // idle | loading | sent | loggedIn | error
   const [error, setError] = useState('')
 
   async function handleSubmit(e) {
     e.preventDefault()
     setStatus('loading')
     setError('')
-    const { error: signUpError } = await signUp(email, password, fullName)
+    const { data, error: signUpError } = await signUp(email, password, fullName)
     if (signUpError) {
       setError(signUpError.message)
       setStatus('error')
       return
     }
-    setStatus('sent')
+    // Com "Confirm email" desativado no Supabase, o signup já devolve sessão ativa.
+    setStatus(data.session ? 'loggedIn' : 'sent')
   }
+
+  if (status === 'loggedIn') return <Navigate to="/" replace />
 
   if (status === 'sent') {
     return (
