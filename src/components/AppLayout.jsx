@@ -1,0 +1,41 @@
+import { NavLink, Outlet } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+
+const navLinkClass = ({ isActive }) =>
+  `rounded-lg px-3 py-1.5 text-sm font-medium ${
+    isActive
+      ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
+      : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100'
+  }`
+
+export default function AppLayout() {
+  const { user, signOut } = useAuth()
+
+  return (
+    <div className="min-h-svh bg-neutral-50 pb-10 dark:bg-neutral-900">
+      <header className="flex items-center justify-between gap-4 p-4">
+        <div className="flex items-center gap-1">
+          <NavLink to="/" end className={navLinkClass}>
+            Registo
+          </NavLink>
+          <NavLink to="/balanco" className={navLinkClass}>
+            Balanço
+          </NavLink>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="hidden text-sm text-neutral-500 sm:inline">{user.email}</span>
+          <button
+            onClick={() => signOut()}
+            className="rounded-lg border border-neutral-300 px-3 py-1 text-sm dark:border-neutral-700"
+          >
+            Sair
+          </button>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-md space-y-6 px-4">
+        <Outlet />
+      </main>
+    </div>
+  )
+}

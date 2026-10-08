@@ -23,6 +23,17 @@ export async function listTransactions({ limit = 50 } = {}) {
   return data
 }
 
+export async function listTransactionsInRange({ from, to }) {
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('*, accounts(name), categories(name)')
+    .gte('occurred_on', from)
+    .lt('occurred_on', to)
+    .order('occurred_on', { ascending: true })
+  if (error) throw error
+  return data
+}
+
 export async function createTransaction({ amount, type, accountId, categoryId, occurredOn, note }) {
   const { data: userData, error: userError } = await supabase.auth.getUser()
   if (userError) throw userError
