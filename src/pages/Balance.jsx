@@ -9,7 +9,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { listTransactionsInRange } from '../lib/db'
+import BudgetSection from '../components/BudgetSection'
+import { listCategories, listTransactionsInRange } from '../lib/db'
 import { addMonths, monthKey, monthLabel, monthStart, shortMonthLabel, toIsoDate } from '../lib/dates'
 
 const INCOME_COLOR = '#16a34a' // tailwind green-600 — consistente com o resto da UI
@@ -23,6 +24,7 @@ function eur(value) {
 export default function Balance() {
   const [selectedMonth, setSelectedMonth] = useState(() => monthStart(new Date()))
   const [sixMonthData, setSixMonthData] = useState([])
+  const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -35,11 +37,12 @@ export default function Balance() {
       try {
         const rangeStart = addMonths(monthStart(new Date()), -5)
         const rangeEnd = addMonths(monthStart(new Date()), 1)
-        const txs = await listTransactionsInRange({
-          from: toIsoDate(rangeStart),
-          to: toIsoDate(rangeEnd),
-        })
+        const [txs, cats] = await Promise.all([
+          listTransactionsInRange({ from: toIsoDate(rangeStart), to: toIsoDate(rangeEnd) }),
+          listCategories(),
+        ])
         if (cancelled) return
+        setCategories(cats)
 
         // Agrupa por mês para o gráfico de evolução dos últimos 6 meses.
         const byMonth = new Map()
@@ -87,6 +90,49 @@ export default function Balance() {
   }, [selectedBucket])
 
   const maxCategoryAmount = categoryBreakdown[0]?.amount ?? 0
+
+  const spentByCategoryId = useMemo(() => {
+    const map = new Map()
+    if (!selectedBucket) return map
+    for (const tx of selectedBucket.txs) {
+      if (tx.type !== 'expense') continue
+      map.set(tx.category_id, (map.get(tx.category_id) ?? 0) + Number(tx.amount))
+    }
+    return map
+  }, [selectedBucket])
+
+  const expenseCategories = useMemo(
+    () => categories.filter((c) => c.type === 'expense'),
+    [categories],
+  )
+
+  // Insight: categorias com gasto este mês >=20% acima da média dos 3 meses anteriores.
+  const insights = useMemo(() => {
+    const idx = sixMonthData.findIndex((b) => monthKey(b.date) === monthKey(selectedMonth))
+    if (idx < 1) return []
+    const priorBuckets = sixMonthData.slice(Math.max(0, idx - 3), idx)
+    if (priorBuckets.length === 0) return []
+
+    const priorByCategory = new Map()
+    for (const bucket of priorBuckets) {
+      for (const tx of bucket.txs) {
+        if (tx.type !== 'expense') continue
+        const name = tx.categories?.name ?? 'Sem categoria'
+        priorByCategory.set(name, (priorByCategory.get(name) ?? 0) + Number(tx.amount))
+      }
+    }
+
+    const results = []
+    for (const c of categoryBreakdown) {
+      const priorAvg = (priorByCategory.get(c.name) ?? 0) / priorBuckets.length
+      if (priorAvg < 1) continue // evita percentagens absurdas sobre base ~0
+      const diffPct = ((c.amount - priorAvg) / priorAvg) * 100
+      if (diffPct >= 20) {
+        results.push({ name: c.name, diffPct: Math.round(diffPct) })
+      }
+    }
+    return results.sort((a, b) => b.diffPct - a.diffPct).slice(0, 3)
+  }, [sixMonthData, selectedMonth, categoryBreakdown])
 
   const chartData = sixMonthData.map((b) => ({
     month: shortMonthLabel(b.date),
@@ -146,6 +192,28 @@ export default function Balance() {
           </p>
         </div>
       </div>
+
+      {insights.length > 0 && (
+        <section className="space-y-1.5 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/40">
+          <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+            Insights
+          </h3>
+          <ul className="space-y-1 text-sm text-amber-900 dark:text-amber-200">
+            {insights.map((i) => (
+              <li key={i.name}>
+                Gastaste {i.diffPct}% mais em <strong>{i.name}</strong> este mês do que a média
+                dos 3 meses anteriores.
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <BudgetSection
+        month={selectedMonth}
+        categories={expenseCategories}
+        spentByCategoryId={spentByCategoryId}
+      />
 
       <section>
         <h3 className="mb-2 text-sm font-semibold text-neutral-500">
