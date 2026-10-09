@@ -344,13 +344,24 @@ export async function deleteSavingsGoal(id) {
 // snapshots: apagar um item em uso falha com o código 23503 (foreign_key_violation).
 const FK_VIOLATION = '23503'
 
-export async function createAccount({ name, type }) {
+export async function createAccount({ name, type, openingBalance }) {
   const { data: userData, error: userError } = await supabase.auth.getUser()
   if (userError) throw userError
 
   const { data, error } = await supabase
     .from('accounts')
-    .insert({ user_id: userData.user.id, name, type })
+    .insert({ user_id: userData.user.id, name, type, opening_balance: openingBalance || 0 })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function updateAccountOpeningBalance(id, openingBalance) {
+  const { data, error } = await supabase
+    .from('accounts')
+    .update({ opening_balance: openingBalance })
+    .eq('id', id)
     .select()
     .single()
   if (error) throw error

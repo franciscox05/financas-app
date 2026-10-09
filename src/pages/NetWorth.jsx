@@ -29,8 +29,12 @@ function eur(value) {
   return `${value.toFixed(2)} €`
 }
 
-function cashBalanceAt(transactions, cashAccountIds, asOfDate) {
-  let total = 0
+// `cashAccounts` são os objetos de conta (não só ids), para somar o saldo
+// inicial de cada uma — dinheiro que já existia antes de começar a registar
+// (ex. em casa), sem precisar de uma transação falsa.
+function cashBalanceAt(transactions, cashAccounts, asOfDate) {
+  let total = cashAccounts.reduce((sum, acc) => sum + Number(acc.opening_balance ?? 0), 0)
+  const cashAccountIds = new Set(cashAccounts.map((a) => a.id))
   for (const tx of transactions) {
     if (!cashAccountIds.has(tx.account_id)) continue
     if (tx.occurred_on > asOfDate) continue
@@ -101,10 +105,7 @@ export default function NetWorth() {
     loadAll()
   }, [loadAll])
 
-  const cashAccountIds = useMemo(
-    () => new Set(accounts.filter((a) => a.type === 'cash').map((a) => a.id)),
-    [accounts],
-  )
+  const cashAccounts = useMemo(() => accounts.filter((a) => a.type === 'cash'), [accounts])
   // O saldo de todas as contas à ordem soma-se numa só linha: com uma conta usa o
   // nome dela, com várias um rótulo genérico (já não é sempre "Conta à Ordem").
   const cashLabel = useMemo(() => {
@@ -121,8 +122,8 @@ export default function NetWorth() {
   )
 
   const cashBalance = useMemo(
-    () => cashBalanceAt(transactions, cashAccountIds, today()),
-    [transactions, cashAccountIds],
+    () => cashBalanceAt(transactions, cashAccounts, today()),
+    [transactions, cashAccounts],
   )
 
   const latestByAccount = useMemo(() => {
@@ -150,7 +151,7 @@ export default function NetWorth() {
         const latest = latestByAccount.get(acc.id)
         map.set(acc.id, latest ? Number(latest.value) : 0)
       } else {
-        let total = 0
+        let total = Number(acc.opening_balance ?? 0)
         for (const tx of transactions) {
           if (tx.account_id !== acc.id) continue
           total += tx.type === 'income' ? Number(tx.amount) : -Number(tx.amount)
@@ -168,12 +169,12 @@ export default function NetWorth() {
       const isCurrentMonth = i === 0
       const asOfDate = isCurrentMonth ? today() : toIsoDate(endOfMonth(monthDate))
       const total =
-        cashBalanceAt(transactions, cashAccountIds, asOfDate) +
+        cashBalanceAt(transactions, cashAccounts, asOfDate) +
         investmentValueAt(snapshots, investmentAccountIds, asOfDate)
       points.push({ month: shortMonthLabel(monthDate), Património: Number(total.toFixed(2)) })
     }
     return points
-  }, [transactions, snapshots, cashAccountIds, investmentAccountIds])
+  }, [transactions, snapshots, cashAccounts, investmentAccountIds])
 
   async function handleAddSnapshot(e) {
     e.preventDefault()

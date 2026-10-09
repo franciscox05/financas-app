@@ -13,6 +13,7 @@ import {
   listCategories,
   renameAccount,
   renameCategory,
+  updateAccountOpeningBalance,
   updateCategorySavingsFlag,
 } from '../lib/db'
 
@@ -79,6 +80,10 @@ export default function Manage() {
           await deleteAccount(item.id)
           setAccounts((prev) => prev.filter((a) => a.id !== item.id))
         }}
+        onUpdateOpeningBalance={async (item, openingBalance) => {
+          const updated = await updateAccountOpeningBalance(item.id, openingBalance)
+          setAccounts((prev) => prev.map((a) => (a.id === item.id ? updated : a)).sort(byName))
+        }}
       />
 
       <EntityManager
@@ -87,7 +92,6 @@ export default function Manage() {
         items={categories}
         groups={CATEGORY_GROUPS}
         scope="group"
-        deleteWarning="Os orçamentos definidos para esta categoria também serão apagados."
         onCreate={async (values) => {
           const created = await createCategory(values)
           setCategories((prev) => [...prev, created].sort(byName))
