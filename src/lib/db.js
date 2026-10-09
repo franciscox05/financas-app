@@ -389,3 +389,30 @@ export async function deleteCategory(id) {
   }
   if (error) throw error
 }
+
+export async function listCategoryRules() {
+  const { data, error } = await supabase
+    .from('category_rules')
+    .select('*, categories(name, type)')
+    .order('created_at')
+  if (error) throw error
+  return data
+}
+
+export async function createCategoryRule({ keyword, categoryId }) {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+
+  const { data, error } = await supabase
+    .from('category_rules')
+    .insert({ user_id: userData.user.id, keyword, category_id: categoryId })
+    .select('*, categories(name, type)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteCategoryRule(id) {
+  const { error } = await supabase.from('category_rules').delete().eq('id', id)
+  if (error) throw error
+}

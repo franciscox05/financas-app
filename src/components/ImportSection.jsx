@@ -1,8 +1,9 @@
 import { Plus, TriangleAlert, Upload } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useToast } from '../context/toastContext'
+import { applyCategoryRules } from '../lib/categoryRules'
 import { normalize, suggestCategoryId } from '../lib/categorySuggest'
-import { createTransactionsBulk, listTransactionsInRange } from '../lib/db'
+import { createTransactionsBulk, listCategoryRules, listTransactionsInRange } from '../lib/db'
 import { endOfMonth, toIsoDate } from '../lib/dates'
 import { buildImportRows, parseMonthText } from '../lib/importParser'
 
@@ -33,7 +34,9 @@ export default function ImportSection({ accounts, categories }) {
 
   const defaultAccountId = accounts.find((a) => a.type === 'cash')?.id ?? accounts[0]?.id ?? ''
 
-  function defaultCategoryFor(type, existingTransactions, note) {
+  function defaultCategoryFor(type, existingTransactions, rules, note) {
+    const byRule = applyCategoryRules(note, type, rules)
+    if (byRule) return byRule
     const suggested = suggestCategoryId(note, type, existingTransactions)
     if (suggested) return suggested
     const fallbackName = type === 'income' ? 'Outros Ganhos' : 'Outros Gastos'
@@ -54,9 +57,10 @@ export default function ImportSection({ accounts, categories }) {
       const rows = buildImportRows(parsed, year, month)
       const rangeStart = toIsoDate(new Date(year, month - 1, 1))
       const rangeEnd = toIsoDate(endOfMonth(new Date(year, month - 1, 1)))
-      const [existingThisMonth, existingAll] = await Promise.all([
+      const [existingThisMonth, existingAll, rules] = await Promise.all([
         listTransactionsInRange({ from: rangeStart, to: toIsoDate(new Date(year, month, 1)) }),
         listTransactionsInRange({ from: '2000-01-01', to: rangeEnd }),
+        listCategoryRules(),
       ])
 
       const existingKeys = new Set(
@@ -87,7 +91,7 @@ export default function ImportSection({ accounts, categories }) {
           total,
           duplicateCount,
           included: true,
-          categoryId: defaultCategoryFor(g.type, existingAll, g.note),
+          categoryId: defaultCategoryFor(g.type, existingAll, rules, g.note),
           accountId: defaultAccountId,
         }
       })

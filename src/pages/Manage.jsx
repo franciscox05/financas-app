@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import CategoryRulesSection from '../components/CategoryRulesSection'
 import EntityManager from '../components/EntityManager'
 import { ErrorNotice, ListSkeleton } from '../components/Feedback'
 import ImportSection from '../components/ImportSection'
@@ -104,6 +105,8 @@ export default function Manage() {
           setCategories((prev) => prev.map((c) => (c.id === item.id ? updated : c)).sort(byName))
         }}
       />
+
+      <CategoryRulesSection categories={categories} />
 
       <ImportSection accounts={accounts} categories={categories} />
 
