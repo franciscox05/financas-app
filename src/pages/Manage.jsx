@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import EntityManager from '../components/EntityManager'
 import { ErrorNotice, ListSkeleton } from '../components/Feedback'
 import ImportSection from '../components/ImportSection'
+import ReclassifySection from '../components/ReclassifySection'
 import {
   createAccount,
   createCategory,
@@ -105,6 +106,8 @@ export default function Manage() {
       />
 
       <ImportSection accounts={accounts} categories={categories} />
+
+      <ReclassifySection accounts={accounts} categories={categories} />
     </div>
   )
 }

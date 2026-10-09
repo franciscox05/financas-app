@@ -89,6 +89,11 @@ export async function updateTransaction(id, fields) {
   return data
 }
 
+export async function updateTransactionsBulk(ids, fields) {
+  const { error } = await supabase.from('transactions').update(fields).in('id', ids)
+  if (error) throw error
+}
+
 export async function upsertPushSubscription({ endpoint, p256dh, auth }) {
   const { data: userData, error: userError } = await supabase.auth.getUser()
   if (userError) throw userError
