@@ -18,16 +18,12 @@ import {
   listNetWorthSnapshots,
   listSavingsGoals,
 } from '../lib/db'
-import { addMonths, endOfMonth, monthStart, shortMonthLabel, toIsoDate } from '../lib/dates'
+import { addMonths, endOfMonth, monthStart, shortMonthLabel, toIsoDate, today } from '../lib/dates'
 
 const LINE_COLOR = '#2a78d6'
 
 function eur(value) {
   return `${value.toFixed(2)} €`
-}
-
-function today() {
-  return new Date().toISOString().slice(0, 10)
 }
 
 function cashBalanceAt(transactions, cashAccountIds, asOfDate) {

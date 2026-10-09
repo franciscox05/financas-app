@@ -1,3 +1,4 @@
+import { today } from './dates'
 import { supabase } from './supabase'
 
 export async function listAccounts() {
@@ -235,7 +236,7 @@ export async function settleDebt({ id, direction, amount, counterpartyName, acco
     type: direction === 'owed_to_me' ? 'income' : 'expense',
     accountId,
     categoryId,
-    occurredOn: new Date().toISOString().slice(0, 10),
+    occurredOn: today(),
     note: `Dívida: ${counterpartyName}`,
   })
 

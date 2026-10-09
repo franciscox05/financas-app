@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { suggestCategoryId } from '../lib/categorySuggest'
+import { today } from '../lib/dates'
 import { createDebt, createTransaction } from '../lib/db'
-
-function today() {
-  return new Date().toISOString().slice(0, 10)
-}
 
 export default function QuickEntryForm({ accounts, categories, transactions, onCreated }) {
   const [type, setType] = useState('expense')

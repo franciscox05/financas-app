@@ -6,14 +6,10 @@ import {
   listRecurringTransactions,
   markRecurringGenerated,
 } from '../lib/db'
-import { monthStart, toIsoDate } from '../lib/dates'
+import { monthStart, toIsoDate, today } from '../lib/dates'
 
 function eur(value) {
   return `${Number(value).toFixed(2)} €`
-}
-
-function today() {
-  return new Date().toISOString().slice(0, 10)
 }
 
 export default function RecurringSection({ accounts, categories, onLaunched }) {

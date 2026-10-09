@@ -3,6 +3,7 @@ import QuickEntryForm from '../components/QuickEntryForm'
 import RecurringSection from '../components/RecurringSection'
 import TransactionList from '../components/TransactionList'
 import { downloadCsv, toCsv } from '../lib/csv'
+import { today } from '../lib/dates'
 import { listAccounts, listAllTransactionsForExport, listCategories, listTransactions } from '../lib/db'
 
 export default function Dashboard() {
@@ -47,7 +48,7 @@ export default function Dashboard() {
         { label: 'Conta', value: (t) => t.accounts?.name ?? '' },
         { label: 'Nota', value: (t) => t.note ?? '' },
       ])
-      downloadCsv(`financasapp-transacoes-${new Date().toISOString().slice(0, 10)}.csv`, csv)
+      downloadCsv(`financasapp-transacoes-${today()}.csv`, csv)
     } catch (err) {
       setError(err.message)
     } finally {
