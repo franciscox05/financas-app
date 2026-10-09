@@ -10,6 +10,10 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Registamos manualmente via virtual:pwa-register em main.jsx (para
+      // conseguir forçar a atualização automática) — sem isto o plugin
+      // injeta um <script> extra que faz um registo duplicado e "burro".
+      injectRegister: false,
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.js',
