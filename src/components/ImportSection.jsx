@@ -5,7 +5,7 @@ import { applyCategoryRules } from '../lib/categoryRules'
 import { normalize, suggestCategoryId } from '../lib/categorySuggest'
 import { createTransactionsBulk, listCategoryRules, listTransactionsInRange } from '../lib/db'
 import { endOfMonth, toIsoDate } from '../lib/dates'
-import { buildImportRows, parseMonthText } from '../lib/importParser'
+import { buildImportRows, detectMonthHeader, parseMonthText } from '../lib/importParser'
 
 const MONTH_NAMES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -26,6 +26,7 @@ export default function ImportSection({ accounts, categories }) {
   const [analyzing, setAnalyzing] = useState(false)
   const [importing, setImporting] = useState(false)
   const [error, setError] = useState('')
+  const [monthNotice, setMonthNotice] = useState('')
 
   const yearOptions = useMemo(() => {
     const current = new Date().getFullYear()
@@ -46,19 +47,46 @@ export default function ImportSection({ accounts, categories }) {
 
   async function handleAnalyze() {
     setError('')
+    setMonthNotice('')
     const parsed = parseMonthText(text)
     if (parsed.length === 0) {
       setError('Não encontrei nenhuma linha no formato "Dia N -valor€ descrição". Confirma que colaste o texto certo.')
       return
     }
 
+    // O dropdown pode ter voltado ao mês atual sem dar por isso (ex. a app
+    // recarregou entretanto) — o cabeçalho do próprio texto colado ("Maio
+    // 25") é a fonte de verdade sempre que existir, para nunca mais
+    // importar para o mês errado silenciosamente.
+    let effectiveYear = year
+    let effectiveMonth = month
+    const detected = detectMonthHeader(text)
+    if (detected && (detected.year !== year || detected.month !== month)) {
+      effectiveYear = detected.year
+      effectiveMonth = detected.month
+      setYear(detected.year)
+      setMonth(detected.month)
+      setMonthNotice(
+        `Detetei "${MONTH_NAMES[detected.month - 1]} ${detected.year}" no texto — corrigi automaticamente o mês/ano selecionado (estava ${MONTH_NAMES[month - 1]} ${year}).`,
+      )
+    } else if (detected) {
+      setMonthNotice(`Confirmado: o texto é de ${MONTH_NAMES[detected.month - 1]} ${detected.year}.`)
+    } else {
+      setMonthNotice(
+        `Não encontrei o cabeçalho do mês no texto — a importar para ${MONTH_NAMES[month - 1]} ${year} (o que está selecionado). Confirma que é o mês certo antes de importar.`,
+      )
+    }
+
     setAnalyzing(true)
     try {
-      const rows = buildImportRows(parsed, year, month)
-      const rangeStart = toIsoDate(new Date(year, month - 1, 1))
-      const rangeEnd = toIsoDate(endOfMonth(new Date(year, month - 1, 1)))
+      const rows = buildImportRows(parsed, effectiveYear, effectiveMonth)
+      const rangeStart = toIsoDate(new Date(effectiveYear, effectiveMonth - 1, 1))
+      const rangeEnd = toIsoDate(endOfMonth(new Date(effectiveYear, effectiveMonth - 1, 1)))
       const [existingThisMonth, existingAll, rules] = await Promise.all([
-        listTransactionsInRange({ from: rangeStart, to: toIsoDate(new Date(year, month, 1)) }),
+        listTransactionsInRange({
+          from: rangeStart,
+          to: toIsoDate(new Date(effectiveYear, effectiveMonth, 1)),
+        }),
         listTransactionsInRange({ from: '2000-01-01', to: rangeEnd }),
         listCategoryRules(),
       ])
@@ -209,7 +237,13 @@ export default function ImportSection({ accounts, categories }) {
 
           {groups && (
             <div className="space-y-3">
+              {monthNotice && (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+                  {monthNotice}
+                </p>
+              )}
               <p className="text-xs text-neutral-500">
+                A importar para <strong>{MONTH_NAMES[month - 1]} {year}</strong> ·{' '}
                 {groups.reduce((s, g) => s + g.occurrences.length, 0)} transações encontradas, em{' '}
                 {groups.length} notas distintas. Escolhe a categoria/conta de cada nota (aplica-se a
                 todas as ocorrências dessa nota).
