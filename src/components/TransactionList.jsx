@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { deleteTransaction, updateTransaction } from '../lib/db'
+import { EmptyState } from './Feedback'
 
 function formatAmount(amount, type) {
   const sign = type === 'income' ? '+' : '-'
@@ -21,34 +22,61 @@ function TransactionRow({ tx, categories, accounts, onChanged }) {
   const [accountId, setAccountId] = useState(tx.account_id)
   const [note, setNote] = useState(tx.note ?? '')
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
 
   const categoriesForType = categories.filter((c) => c.type === tx.type)
 
   async function handleDelete() {
     setBusy(true)
+    setError('')
     try {
       await deleteTransaction(tx.id)
+      setConfirmingDelete(false)
       onChanged()
+    } catch (err) {
+      // Mantém a confirmação aberta para o utilizador poder tentar de novo.
+      setError(`Não foi possível apagar: ${err.message}`)
     } finally {
       setBusy(false)
-      setConfirmingDelete(false)
     }
   }
 
   async function handleSave() {
+    const numericAmount = Number(amount)
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      setError('Indica um valor superior a 0.')
+      return
+    }
+    if (!categoryId || !accountId) {
+      setError('Escolhe conta e categoria.')
+      return
+    }
+
     setBusy(true)
+    setError('')
     try {
       await updateTransaction(tx.id, {
-        amount: Number(amount),
+        amount: numericAmount,
         category_id: categoryId,
         account_id: accountId,
-        note: note || null,
+        note: note.trim() || null,
       })
       setEditing(false)
       onChanged()
+    } catch (err) {
+      setError(`Não foi possível guardar: ${err.message}`)
     } finally {
       setBusy(false)
     }
+  }
+
+  function handleCancelEdit() {
+    setAmount(tx.amount)
+    setCategoryId(tx.category_id)
+    setAccountId(tx.account_id)
+    setNote(tx.note ?? '')
+    setError('')
+    setEditing(false)
   }
 
   if (editing) {
@@ -93,16 +121,21 @@ function TransactionRow({ tx, categories, accounts, onChanged }) {
           onChange={(e) => setNote(e.target.value)}
           className="w-full rounded-lg border border-neutral-300 px-2 py-1 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
         />
+        {error && (
+          <p role="alert" className="text-sm text-red-600">
+            {error}
+          </p>
+        )}
         <div className="flex gap-2">
           <button
             onClick={handleSave}
             disabled={busy}
             className="flex-1 rounded-lg bg-neutral-900 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
           >
-            Guardar
+            {busy ? 'A guardar...' : 'Guardar'}
           </button>
           <button
-            onClick={() => setEditing(false)}
+            onClick={handleCancelEdit}
             disabled={busy}
             className="flex-1 rounded-lg border border-neutral-300 py-1.5 text-sm dark:border-neutral-700"
           >
@@ -114,7 +147,7 @@ function TransactionRow({ tx, categories, accounts, onChanged }) {
   }
 
   return (
-    <li className="flex items-center justify-between gap-3 py-2">
+    <li className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2">
       <div className="min-w-0">
         <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
           {tx.categories?.name ?? 'Sem categoria'}
@@ -166,13 +199,25 @@ function TransactionRow({ tx, categories, accounts, onChanged }) {
           </button>
         )}
       </div>
+      {error && (
+        <p role="alert" className="w-full text-xs text-red-600">
+          {error}
+        </p>
+      )}
     </li>
   )
 }
 
-export default function TransactionList({ transactions, categories, accounts, onChanged }) {
+export default function TransactionList({ transactions, categories, accounts, onChanged, onAddFirst }) {
   if (transactions.length === 0) {
-    return <p className="py-6 text-center text-sm text-neutral-500">Ainda sem transações.</p>
+    return (
+      <EmptyState
+        title="Ainda sem transações"
+        description="Regista o primeiro gasto ou ganho para começares a ver o teu balanço."
+        actionLabel="Registar primeira transação"
+        onAction={onAddFirst}
+      />
+    )
   }
 
   return (

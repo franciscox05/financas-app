@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { suggestCategoryId } from '../lib/categorySuggest'
 import { createTransaction } from '../lib/db'
-
-function today() {
-  return new Date().toISOString().slice(0, 10)
-}
+import { today } from '../lib/dates'
 
 export default function QuickEntryForm({ accounts, categories, transactions, onCreated }) {
   const [type, setType] = useState('expense')
@@ -109,6 +106,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       </div>
 
       <input
+        id="quick-entry-amount"
         type="number"
         inputMode="decimal"
         step="0.01"

@@ -15,16 +15,13 @@ import {
   listAllTransactionsForBalance,
   listNetWorthSnapshots,
 } from '../lib/db'
-import { addMonths, endOfMonth, monthStart, shortMonthLabel, toIsoDate } from '../lib/dates'
+import { ErrorNotice, Skeleton } from '../components/Feedback'
+import { addMonths, endOfMonth, monthStart, shortMonthLabel, toIsoDate, today } from '../lib/dates'
 
 const LINE_COLOR = '#2a78d6'
 
 function eur(value) {
   return `${value.toFixed(2)} €`
-}
-
-function today() {
-  return new Date().toISOString().slice(0, 10)
 }
 
 function cashBalanceAt(transactions, cashAccountIds, asOfDate) {
@@ -167,11 +164,18 @@ export default function NetWorth() {
   }
 
   if (loading) {
-    return <p className="py-10 text-center text-sm text-neutral-500">A carregar...</p>
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-20" />
+        <Skeleton className="h-12" />
+        <Skeleton className="h-12" />
+        <Skeleton className="h-56" />
+      </div>
+    )
   }
 
   if (error) {
-    return <p className="text-sm text-red-600">{error}</p>
+    return <ErrorNotice message={error} />
   }
 
   return (

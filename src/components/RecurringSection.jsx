@@ -6,14 +6,11 @@ import {
   listRecurringTransactions,
   markRecurringGenerated,
 } from '../lib/db'
-import { monthStart, toIsoDate } from '../lib/dates'
+import { monthStart, toIsoDate, today } from '../lib/dates'
+import { EmptyState, ErrorNotice, Skeleton } from './Feedback'
 
 function eur(value) {
   return `${Number(value).toFixed(2)} €`
-}
-
-function today() {
-  return new Date().toISOString().slice(0, 10)
 }
 
 export default function RecurringSection({ accounts, categories, onLaunched }) {
@@ -31,6 +28,7 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
   const [note, setNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
+  const [actionError, setActionError] = useState('')
 
   const currentMonthIso = toIsoDate(monthStart(new Date()))
 
@@ -43,6 +41,8 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
     setLoading(true)
     try {
       setItems(await listRecurringTransactions())
+    } catch (err) {
+      setActionError(`Não foi possível carregar as recorrências: ${err.message}`)
     } finally {
       setLoading(false)
     }
@@ -57,6 +57,7 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
 
   async function handleLaunch(item) {
     setLaunchingId(item.id)
+    setActionError('')
     try {
       await createTransaction({
         amount: Number(item.amount),
@@ -69,15 +70,22 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
       await markRecurringGenerated(item.id, currentMonthIso)
       await load()
       onLaunched?.()
+    } catch (err) {
+      setActionError(`Não foi possível lançar a recorrência: ${err.message}`)
     } finally {
       setLaunchingId(null)
     }
   }
 
   async function handleDelete(id) {
-    await deleteRecurringTransaction(id)
-    setConfirmingDeleteId(null)
-    await load()
+    setActionError('')
+    try {
+      await deleteRecurringTransaction(id)
+      setConfirmingDeleteId(null)
+      await load()
+    } catch (err) {
+      setActionError(`Não foi possível apagar a recorrência: ${err.message}`)
+    }
   }
 
   async function handleCreate(e) {
@@ -122,10 +130,20 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
     }
   }
 
-  if (loading) return null
+  // Só mostra skeleton no primeiro carregamento; nos refrescos mantém a lista.
+  if (loading && items.length === 0 && !actionError) {
+    return (
+      <div role="status" aria-label="A carregar recorrências" className="space-y-2">
+        <Skeleton className="h-4 w-1/3" />
+        <Skeleton className="h-10" />
+      </div>
+    )
+  }
 
   return (
     <section className="space-y-3">
+      <ErrorNotice message={actionError} onDismiss={() => setActionError('')} />
+
       {pending.length > 0 && (
         <div className="space-y-2 rounded-xl border border-blue-200 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950/40">
           <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-300">
@@ -160,6 +178,15 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
           {showForm ? 'Fechar' : '+ Nova'}
         </button>
       </div>
+
+      {items.length === 0 && !showForm && (
+        <EmptyState
+          title="Sem recorrências configuradas"
+          description="Renda, subscrições ou salário: configura uma vez e lança com um toque todos os meses."
+          actionLabel="Criar a primeira recorrência"
+          onAction={() => setShowForm(true)}
+        />
+      )}
 
       {items.length > 0 && (
         <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
