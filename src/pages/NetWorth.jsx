@@ -18,6 +18,7 @@ import {
   listNetWorthSnapshots,
   listSavingsGoals,
 } from '../lib/db'
+import { Plus, Trash2 } from 'lucide-react'
 import { EmptyState, ErrorNotice, Skeleton } from '../components/Feedback'
 import { useToast } from '../context/toastContext'
 import { addMonths, endOfMonth, monthStart, shortMonthLabel, toIsoDate, today } from '../lib/dates'
@@ -319,9 +320,13 @@ export default function NetWorth() {
           <h3 className="text-sm font-semibold text-neutral-500">Metas de poupança</h3>
           <button
             onClick={() => setShowGoalForm((v) => !v)}
-            className="text-xs text-neutral-500 underline-offset-2 hover:underline"
+            className="flex items-center gap-0.5 text-xs text-neutral-500 underline-offset-2 hover:underline"
           >
-            {showGoalForm ? 'Fechar' : '+ Nova meta'}
+            {showGoalForm ? 'Fechar' : (
+              <>
+                <Plus size={13} /> Nova meta
+              </>
+            )}
           </button>
         </div>
 
@@ -430,7 +435,7 @@ export default function NetWorth() {
                         aria-label="Apagar meta"
                         className="rounded p-1 text-neutral-400 hover:text-red-600"
                       >
-                        ✕
+                        <Trash2 size={16} />
                       </button>
                     )}
                   </div>
@@ -575,7 +580,7 @@ export default function NetWorth() {
                       aria-label="Apagar snapshot"
                       className="rounded p-1 text-neutral-400 hover:text-red-600"
                     >
-                      ✕
+                      <Trash2 size={16} />
                     </button>
                   )}
                 </div>

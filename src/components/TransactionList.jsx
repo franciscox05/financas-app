@@ -1,3 +1,4 @@
+import { Pencil, Search, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { deleteTransaction, updateTransaction } from '../lib/db'
@@ -175,7 +176,7 @@ function TransactionRow({ tx, categories, accounts, onChanged }) {
           aria-label="Editar"
           className="rounded p-1 text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
         >
-          ✎
+          <Pencil size={16} />
         </button>
         {confirmingDelete ? (
           <span className="flex items-center gap-1">
@@ -200,7 +201,7 @@ function TransactionRow({ tx, categories, accounts, onChanged }) {
             aria-label="Apagar"
             className="rounded p-1 text-neutral-400 hover:text-red-600"
           >
-            ✕
+            <Trash2 size={16} />
           </button>
         )}
       </div>
@@ -232,14 +233,20 @@ function TransactionFilters({ filters, onChange, categories, accounts }) {
 
   return (
     <div className="space-y-2">
-      <input
-        type="search"
-        value={filters.query}
-        onChange={(e) => onChange({ ...filters, query: e.target.value })}
-        placeholder="Pesquisar por nota ou categoria"
-        aria-label="Pesquisar transações"
-        className={fieldClass}
-      />
+      <div className="relative">
+        <Search
+          size={15}
+          className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400"
+        />
+        <input
+          type="search"
+          value={filters.query}
+          onChange={(e) => onChange({ ...filters, query: e.target.value })}
+          placeholder="Pesquisar por nota ou categoria"
+          aria-label="Pesquisar transações"
+          className={`${fieldClass} pl-8`}
+        />
+      </div>
 
       <div role="group" aria-label="Filtrar por tipo" className="grid grid-cols-3 gap-1.5">
         {TYPE_OPTIONS.map((opt) => (

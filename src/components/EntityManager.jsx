@@ -1,3 +1,4 @@
+import { Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { MAX_NAME_LENGTH, validateName } from '../lib/names'
@@ -101,7 +102,7 @@ function ManageRow({ item, canDelete, deleteHint, deleteWarning, siblings, onRen
             aria-label={`Renomear ${item.name}`}
             className="rounded p-1 text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
           >
-            ✎
+            <Pencil size={16} />
           </button>
           {confirmingDelete ? (
             <span className="flex items-center gap-1">
@@ -131,7 +132,7 @@ function ManageRow({ item, canDelete, deleteHint, deleteWarning, siblings, onRen
               aria-label={`Apagar ${item.name}`}
               className="rounded p-1 text-neutral-400 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-neutral-400"
             >
-              ✕
+              <Trash2 size={16} />
             </button>
           )}
         </div>

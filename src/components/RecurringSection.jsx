@@ -1,3 +1,4 @@
+import { Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
   createRecurringTransaction,
@@ -173,9 +174,13 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
         <h3 className="text-sm font-semibold text-neutral-500">Recorrências configuradas</h3>
         <button
           onClick={() => setShowForm((v) => !v)}
-          className="text-xs text-neutral-500 underline-offset-2 hover:underline"
+          className="flex items-center gap-0.5 text-xs text-neutral-500 underline-offset-2 hover:underline"
         >
-          {showForm ? 'Fechar' : '+ Nova'}
+          {showForm ? 'Fechar' : (
+            <>
+              <Plus size={13} /> Nova
+            </>
+          )}
         </button>
       </div>
 
@@ -216,7 +221,7 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
                   aria-label="Apagar recorrência"
                   className="rounded p-1 text-neutral-400 hover:text-red-600"
                 >
-                  ✕
+                  <Trash2 size={16} />
                 </button>
               )}
             </li>

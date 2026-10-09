@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
   Bar,
@@ -181,7 +182,7 @@ export default function Balance() {
           disabled={monthKey(selectedMonth) === monthKey(addMonths(monthStart(new Date()), -5))}
           className="rounded-lg border border-neutral-300 px-3 py-1 text-sm disabled:opacity-30 dark:border-neutral-700"
         >
-          ←
+          <ChevronLeft size={16} />
         </button>
         <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
           {monthLabel(selectedMonth)}
@@ -191,7 +192,7 @@ export default function Balance() {
           disabled={monthKey(selectedMonth) === monthKey(monthStart(new Date()))}
           className="rounded-lg border border-neutral-300 px-3 py-1 text-sm disabled:opacity-30 dark:border-neutral-700"
         >
-          →
+          <ChevronRight size={16} />
         </button>
       </div>
 

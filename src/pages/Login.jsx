@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
+import AuthBrand from '../components/AuthBrand'
 import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
@@ -24,7 +25,7 @@ export default function Login() {
   return (
     <div className="flex min-h-svh items-center justify-center bg-neutral-50 px-4 dark:bg-neutral-900">
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
-        <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Entrar</h1>
+        <AuthBrand title="Entrar" />
 
         <input
           type="email"

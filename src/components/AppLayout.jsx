@@ -1,38 +1,20 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { Wallet } from 'lucide-react'
+import { Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import BottomNav from './BottomNav'
 import NotificationToggle from './NotificationToggle'
-
-const navLinkClass = ({ isActive }) =>
-  `rounded-lg px-3 py-1.5 text-sm font-medium ${
-    isActive
-      ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
-      : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100'
-  }`
 
 export default function AppLayout() {
   const { user, signOut } = useAuth()
 
   return (
-    <div className="min-h-svh bg-neutral-50 pb-[max(2.5rem,env(safe-area-inset-bottom))] dark:bg-neutral-900">
-      <header className="flex flex-wrap items-center justify-between gap-3 p-4 pt-[max(1rem,env(safe-area-inset-top))]">
-        <div className="flex flex-wrap items-center gap-1">
-          <NavLink to="/" end className={navLinkClass}>
-            Registo
-          </NavLink>
-          <NavLink to="/balanco" className={navLinkClass}>
-            Balanço
-          </NavLink>
-          <NavLink to="/patrimonio" className={navLinkClass}>
-            Património
-          </NavLink>
-          <NavLink to="/dividas" className={navLinkClass}>
-            Dívidas
-          </NavLink>
-          <NavLink to="/gestao" className={navLinkClass}>
-            Gestão
-          </NavLink>
-        </div>
-        <div className="ml-auto flex items-center gap-3">
+    <div className="min-h-svh bg-neutral-50 dark:bg-neutral-900">
+      <header className="flex items-center justify-between gap-3 p-4 pt-[max(1rem,env(safe-area-inset-top))]">
+        <span className="flex items-center gap-1.5 text-sm font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+          <Wallet size={18} className="text-green-600" />
+          FinancasApp
+        </span>
+        <div className="flex items-center gap-3">
           <span className="hidden text-sm text-neutral-500 sm:inline">{user.email}</span>
           <NotificationToggle />
           <button
@@ -44,9 +26,11 @@ export default function AppLayout() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-md space-y-6 px-4">
+      <main className="mx-auto max-w-md space-y-6 px-4 pb-[calc(5rem+env(safe-area-inset-bottom))]">
         <Outlet />
       </main>
+
+      <BottomNav />
     </div>
   )
 }

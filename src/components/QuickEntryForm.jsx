@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { suggestCategoryId } from '../lib/categorySuggest'
 import { useToast } from '../context/toastContext'
@@ -211,9 +212,13 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
               if (!showDebt && !debtAmount && amount) setDebtAmount(amount)
               setShowDebt((v) => !v)
             }}
-            className="text-xs text-neutral-500 underline-offset-2 hover:underline"
+            className="flex items-center gap-0.5 text-xs text-neutral-500 underline-offset-2 hover:underline"
           >
-            {showDebt ? 'Fechar' : '+ Alguém te deve por isto?'}
+            {showDebt ? 'Fechar' : (
+              <>
+                <Plus size={13} /> Alguém te deve por isto?
+              </>
+            )}
           </button>
 
           {showDebt && (

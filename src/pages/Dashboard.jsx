@@ -1,17 +1,31 @@
+import { ChevronRight, Download } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { EmptyState, ErrorNotice, PageSkeleton } from '../components/Feedback'
 import QuickEntryForm from '../components/QuickEntryForm'
 import RecurringSection from '../components/RecurringSection'
 import TransactionList from '../components/TransactionList'
 import { useToast } from '../context/toastContext'
 import { downloadCsv, toCsv } from '../lib/csv'
-import { today } from '../lib/dates'
-import { listAccounts, listAllTransactionsForExport, listCategories, listTransactions } from '../lib/db'
+import { addMonths, monthStart, today, toIsoDate } from '../lib/dates'
+import {
+  listAccounts,
+  listAllTransactionsForExport,
+  listCategories,
+  listTransactions,
+  listTransactionsInRange,
+} from '../lib/db'
+
+function eur(value) {
+  return `${value.toFixed(2)} €`
+}
 
 export default function Dashboard() {
+  const navigate = useNavigate()
   const [accounts, setAccounts] = useState([])
   const [categories, setCategories] = useState([])
   const [transactions, setTransactions] = useState([])
+  const [monthSummary, setMonthSummary] = useState(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [exporting, setExporting] = useState(false)
@@ -20,14 +34,28 @@ export default function Dashboard() {
   const loadAll = useCallback(async () => {
     setLoadError('')
     try {
-      const [accs, cats, txs] = await Promise.all([
+      const [accs, cats, txs, monthTxs] = await Promise.all([
         listAccounts(),
         listCategories(),
         listTransactions({ limit: 50 }),
+        listTransactionsInRange({
+          from: toIsoDate(monthStart(new Date())),
+          to: toIsoDate(addMonths(monthStart(new Date()), 1)),
+        }),
       ])
       setAccounts(accs)
       setCategories(cats)
       setTransactions(txs)
+      setMonthSummary(
+        monthTxs.reduce(
+          (acc, tx) => {
+            if (tx.type === 'income') acc.income += Number(tx.amount)
+            else acc.expense += Number(tx.amount)
+            return acc
+          },
+          { income: 0, expense: 0 },
+        ),
+      )
     } catch (err) {
       setLoadError(err.message)
     } finally {
@@ -86,9 +114,29 @@ export default function Dashboard() {
     )
   }
 
+  const saldo = monthSummary ? monthSummary.income - monthSummary.expense : 0
+
   return (
     <>
       {loadError && <ErrorNotice message={loadError} onRetry={loadAll} />}
+
+      {monthSummary && (monthSummary.income > 0 || monthSummary.expense > 0) && (
+        <button
+          onClick={() => navigate('/balanco')}
+          className="flex w-full items-center justify-between rounded-xl border border-neutral-200 bg-white p-4 text-left dark:border-neutral-800 dark:bg-neutral-900"
+        >
+          <div>
+            <p className="text-xs text-neutral-500">Saldo este mês</p>
+            <p
+              className={`text-xl font-semibold ${saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}
+            >
+              {saldo >= 0 ? '+' : '-'}
+              {eur(Math.abs(saldo))}
+            </p>
+          </div>
+          <ChevronRight className="text-neutral-400" size={20} />
+        </button>
+      )}
 
       <QuickEntryForm
         accounts={accounts}
@@ -105,8 +153,9 @@ export default function Dashboard() {
           <button
             onClick={handleExport}
             disabled={exporting}
-            className="text-xs text-neutral-500 underline-offset-2 hover:underline disabled:opacity-50"
+            className="flex items-center gap-1 text-xs text-neutral-500 underline-offset-2 hover:underline disabled:opacity-50"
           >
+            <Download size={13} />
             {exporting ? 'A exportar...' : 'Exportar CSV'}
           </button>
         </div>

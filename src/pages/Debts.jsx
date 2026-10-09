@@ -1,3 +1,4 @@
+import { Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { EmptyState, ErrorNotice, PageSkeleton } from '../components/Feedback'
 import { useToast } from '../context/toastContext'
@@ -201,7 +202,7 @@ export default function Debts() {
                   aria-label="Apagar dívida"
                   className="rounded p-1 text-neutral-400 hover:text-red-600"
                 >
-                  ✕
+                  <Trash2 size={16} />
                 </button>
               </>
             )}
@@ -275,9 +276,13 @@ export default function Debts() {
           <h3 className="text-sm font-semibold text-neutral-500">Dívidas pendentes</h3>
           <button
             onClick={() => setShowForm((v) => !v)}
-            className="text-xs text-neutral-500 underline-offset-2 hover:underline"
+            className="flex items-center gap-0.5 text-xs text-neutral-500 underline-offset-2 hover:underline"
           >
-            {showForm ? 'Fechar' : '+ Nova dívida'}
+            {showForm ? 'Fechar' : (
+              <>
+                <Plus size={13} /> Nova dívida
+              </>
+            )}
           </button>
         </div>
 
