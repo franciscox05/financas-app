@@ -1,5 +1,8 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useToast } from '../context/toastContext'
 import { deleteTransaction, updateTransaction } from '../lib/db'
+import { EMPTY_FILTERS, filterTransactions, hasActiveFilters, netTotal } from '../lib/filters'
+import { EmptyState } from './Feedback'
 
 function formatAmount(amount, type) {
   const sign = type === 'income' ? '+' : '-'
@@ -14,6 +17,7 @@ function formatDate(isoDate) {
 }
 
 function TransactionRow({ tx, categories, accounts, onChanged }) {
+  const toast = useToast()
   const [editing, setEditing] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [amount, setAmount] = useState(tx.amount)
@@ -21,34 +25,63 @@ function TransactionRow({ tx, categories, accounts, onChanged }) {
   const [accountId, setAccountId] = useState(tx.account_id)
   const [note, setNote] = useState(tx.note ?? '')
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
 
   const categoriesForType = categories.filter((c) => c.type === tx.type)
 
   async function handleDelete() {
     setBusy(true)
+    setError('')
     try {
       await deleteTransaction(tx.id)
+      setConfirmingDelete(false)
       onChanged()
+      toast.success('Transação apagada.')
+    } catch (err) {
+      // Mantém a confirmação aberta para o utilizador poder tentar de novo.
+      toast.error(`Não foi possível apagar: ${err.message}`)
     } finally {
       setBusy(false)
-      setConfirmingDelete(false)
     }
   }
 
   async function handleSave() {
+    const numericAmount = Number(amount)
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      setError('Indica um valor superior a 0.')
+      return
+    }
+    if (!categoryId || !accountId) {
+      setError('Escolhe conta e categoria.')
+      return
+    }
+
     setBusy(true)
+    setError('')
     try {
       await updateTransaction(tx.id, {
-        amount: Number(amount),
+        amount: numericAmount,
         category_id: categoryId,
         account_id: accountId,
-        note: note || null,
+        note: note.trim() || null,
       })
       setEditing(false)
       onChanged()
+      toast.success('Transação atualizada.')
+    } catch (err) {
+      toast.error(`Não foi possível guardar: ${err.message}`)
     } finally {
       setBusy(false)
     }
+  }
+
+  function handleCancelEdit() {
+    setAmount(tx.amount)
+    setCategoryId(tx.category_id)
+    setAccountId(tx.account_id)
+    setNote(tx.note ?? '')
+    setError('')
+    setEditing(false)
   }
 
   if (editing) {
@@ -93,16 +126,21 @@ function TransactionRow({ tx, categories, accounts, onChanged }) {
           onChange={(e) => setNote(e.target.value)}
           className="w-full rounded-lg border border-neutral-300 px-2 py-1 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
         />
+        {error && (
+          <p role="alert" className="text-sm text-red-600">
+            {error}
+          </p>
+        )}
         <div className="flex gap-2">
           <button
             onClick={handleSave}
             disabled={busy}
             className="flex-1 rounded-lg bg-neutral-900 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
           >
-            Guardar
+            {busy ? 'A guardar...' : 'Guardar'}
           </button>
           <button
-            onClick={() => setEditing(false)}
+            onClick={handleCancelEdit}
             disabled={busy}
             className="flex-1 rounded-lg border border-neutral-300 py-1.5 text-sm dark:border-neutral-700"
           >
@@ -170,22 +208,161 @@ function TransactionRow({ tx, categories, accounts, onChanged }) {
   )
 }
 
-export default function TransactionList({ transactions, categories, accounts, onChanged }) {
-  if (transactions.length === 0) {
-    return <p className="py-6 text-center text-sm text-neutral-500">Ainda sem transações.</p>
+const TYPE_OPTIONS = [
+  { value: 'all', label: 'Todas' },
+  { value: 'expense', label: 'Gastos' },
+  { value: 'income', label: 'Ganhos' },
+]
+
+const fieldClass =
+  'w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100'
+
+function TransactionFilters({ filters, onChange, categories, accounts }) {
+  // Com um tipo escolhido, só faz sentido listar as categorias desse tipo.
+  const categoryOptions =
+    filters.type === 'all' ? categories : categories.filter((c) => c.type === filters.type)
+
+  function setType(type) {
+    const stillValid =
+      type === 'all' ||
+      !filters.categoryId ||
+      categories.find((c) => c.id === filters.categoryId)?.type === type
+    onChange({ ...filters, type, categoryId: stillValid ? filters.categoryId : '' })
   }
 
   return (
-    <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
-      {transactions.map((tx) => (
-        <TransactionRow
-          key={tx.id}
-          tx={tx}
-          categories={categories}
-          accounts={accounts}
-          onChanged={onChanged}
+    <div className="space-y-2">
+      <input
+        type="search"
+        value={filters.query}
+        onChange={(e) => onChange({ ...filters, query: e.target.value })}
+        placeholder="Pesquisar por nota ou categoria"
+        aria-label="Pesquisar transações"
+        className={fieldClass}
+      />
+
+      <div role="group" aria-label="Filtrar por tipo" className="grid grid-cols-3 gap-1.5">
+        {TYPE_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            aria-pressed={filters.type === opt.value}
+            onClick={() => setType(opt.value)}
+            className={`rounded-lg py-1.5 text-xs font-medium transition-colors ${
+              filters.type === opt.value
+                ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
+                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <select
+          value={filters.accountId}
+          onChange={(e) => onChange({ ...filters, accountId: e.target.value })}
+          aria-label="Filtrar por conta"
+          className={fieldClass}
+        >
+          <option value="">Todas as contas</option>
+          {accounts.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.name}
+            </option>
+          ))}
+        </select>
+        <select
+          value={filters.categoryId}
+          onChange={(e) => onChange({ ...filters, categoryId: e.target.value })}
+          aria-label="Filtrar por categoria"
+          className={fieldClass}
+        >
+          <option value="">Todas as categorias</option>
+          {categoryOptions.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  )
+}
+
+export default function TransactionList({ transactions, categories, accounts, onChanged, onAddFirst }) {
+  const [filters, setFilters] = useState(EMPTY_FILTERS)
+
+  const filtered = useMemo(() => filterTransactions(transactions, filters), [transactions, filters])
+  const filtering = hasActiveFilters(filters)
+
+  if (transactions.length === 0) {
+    return (
+      <EmptyState
+        title="Ainda sem transações"
+        description="Regista o primeiro gasto ou ganho para começares a ver o teu balanço."
+        actionLabel="Registar primeira transação"
+        onAction={onAddFirst}
+      />
+    )
+  }
+
+  const total = netTotal(filtered)
+
+  return (
+    <div className="space-y-3">
+      <TransactionFilters
+        filters={filters}
+        onChange={setFilters}
+        categories={categories}
+        accounts={accounts}
+      />
+
+      {filtering && (
+        <div className="flex items-center justify-between text-xs text-neutral-500" aria-live="polite">
+          <span>
+            {filtered.length} de {transactions.length}
+            {filtered.length > 0 && (
+              <>
+                {' · '}
+                <span className={total >= 0 ? 'text-green-600' : 'text-red-600'}>
+                  {total >= 0 ? '+' : '-'}
+                  {Math.abs(total).toFixed(2)} €
+                </span>
+              </>
+            )}
+          </span>
+          <button
+            type="button"
+            onClick={() => setFilters(EMPTY_FILTERS)}
+            className="underline-offset-2 hover:underline"
+          >
+            Limpar filtros
+          </button>
+        </div>
+      )}
+
+      {filtered.length === 0 ? (
+        <EmptyState
+          title="Nenhuma transação corresponde aos filtros"
+          description="A pesquisa só vê as últimas 50 transações carregadas."
+          actionLabel="Limpar filtros"
+          onAction={() => setFilters(EMPTY_FILTERS)}
         />
-      ))}
-    </ul>
+      ) : (
+        <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+          {filtered.map((tx) => (
+            <TransactionRow
+              key={tx.id}
+              tx={tx}
+              categories={categories}
+              accounts={accounts}
+              onChanged={onChanged}
+            />
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }

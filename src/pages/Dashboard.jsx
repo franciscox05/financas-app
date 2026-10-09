@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
+import { EmptyState, ErrorNotice, PageSkeleton } from '../components/Feedback'
 import QuickEntryForm from '../components/QuickEntryForm'
 import RecurringSection from '../components/RecurringSection'
 import TransactionList from '../components/TransactionList'
+import { useToast } from '../context/toastContext'
 import { downloadCsv, toCsv } from '../lib/csv'
 import { today } from '../lib/dates'
 import { listAccounts, listAllTransactionsForExport, listCategories, listTransactions } from '../lib/db'
@@ -11,11 +13,12 @@ export default function Dashboard() {
   const [categories, setCategories] = useState([])
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [loadError, setLoadError] = useState('')
   const [exporting, setExporting] = useState(false)
+  const toast = useToast()
 
   const loadAll = useCallback(async () => {
-    setError('')
+    setLoadError('')
     try {
       const [accs, cats, txs] = await Promise.all([
         listAccounts(),
@@ -26,7 +29,7 @@ export default function Dashboard() {
       setCategories(cats)
       setTransactions(txs)
     } catch (err) {
-      setError(err.message)
+      setLoadError(err.message)
     } finally {
       setLoading(false)
     }
@@ -49,32 +52,44 @@ export default function Dashboard() {
         { label: 'Nota', value: (t) => t.note ?? '' },
       ])
       downloadCsv(`financasapp-transacoes-${today()}.csv`, csv)
+      toast.success(`CSV exportado (${all.length} transações).`)
     } catch (err) {
-      setError(err.message)
+      toast.error(`Não foi possível exportar: ${err.message}`)
     } finally {
       setExporting(false)
     }
   }
 
-  if (loading) {
-    return <p className="py-10 text-center text-sm text-neutral-500">A carregar...</p>
+  // Leva o utilizador ao formulário de registo (call-to-action do estado vazio).
+  function focusQuickEntry() {
+    const input = document.getElementById('quick-entry-amount')
+    input?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    input?.focus({ preventScroll: true })
   }
 
-  if (error) {
-    return <p className="text-sm text-red-600">{error}</p>
+  if (loading) {
+    return <PageSkeleton />
+  }
+
+  // Só ocupa a página toda se nunca houve dados; num refresh falhado mantém-se o
+  // conteúdo já carregado e mostra-se um aviso por cima.
+  if (loadError && accounts.length === 0) {
+    return <ErrorNotice message={loadError} onRetry={loadAll} />
   }
 
   if (accounts.length === 0 || categories.length === 0) {
     return (
-      <p className="py-10 text-center text-sm text-neutral-500">
-        Conta sem contas/categorias por defeito. Tenta sair e entrar de novo, ou contacta o
-        suporte.
-      </p>
+      <EmptyState
+        title="A tua conta ainda não tem contas ou categorias por defeito."
+        description="Sai e volta a entrar para as criarmos. Se continuar, contacta o suporte."
+      />
     )
   }
 
   return (
     <>
+      {loadError && <ErrorNotice message={loadError} onRetry={loadAll} />}
+
       <QuickEntryForm
         accounts={accounts}
         categories={categories}
@@ -84,8 +99,8 @@ export default function Dashboard() {
 
       <RecurringSection accounts={accounts} categories={categories} onLaunched={loadAll} />
 
-      <section>
-        <div className="mb-2 flex items-center justify-between">
+      <section className="space-y-2">
+        <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-neutral-500">Transações recentes</h2>
           <button
             onClick={handleExport}
@@ -100,6 +115,7 @@ export default function Dashboard() {
           categories={categories}
           accounts={accounts}
           onChanged={loadAll}
+          onAddFirst={focusQuickEntry}
         />
       </section>
     </>

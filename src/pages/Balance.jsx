@@ -9,7 +9,9 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { useNavigate } from 'react-router-dom'
 import BudgetSection from '../components/BudgetSection'
+import { EmptyState, ErrorNotice, ListSkeleton, Skeleton } from '../components/Feedback'
 import { listCategories, listTransactionsInRange } from '../lib/db'
 import { addMonths, monthKey, monthLabel, monthStart, shortMonthLabel, toIsoDate } from '../lib/dates'
 
@@ -22,6 +24,7 @@ function eur(value) {
 }
 
 export default function Balance() {
+  const navigate = useNavigate()
   const [selectedMonth, setSelectedMonth] = useState(() => monthStart(new Date()))
   const [sixMonthData, setSixMonthData] = useState([])
   const [categories, setCategories] = useState([])
@@ -153,11 +156,17 @@ export default function Balance() {
   }))
 
   if (loading) {
-    return <p className="py-10 text-center text-sm text-neutral-500">A carregar...</p>
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-24" />
+        <Skeleton className="h-56" />
+        <ListSkeleton rows={4} />
+      </div>
+    )
   }
 
   if (error) {
-    return <p className="text-sm text-red-600">{error}</p>
+    return <ErrorNotice message={error} />
   }
 
   const income = selectedBucket?.income ?? 0
@@ -240,7 +249,12 @@ export default function Balance() {
           Gastos por categoria
         </h3>
         {categoryBreakdown.length === 0 ? (
-          <p className="py-4 text-center text-sm text-neutral-500">Sem gastos neste mês.</p>
+          <EmptyState
+            title="Sem gastos neste mês"
+            description="Quando registares gastos, vês aqui para onde vai o dinheiro."
+            actionLabel="Registar um gasto"
+            onAction={() => navigate('/')}
+          />
         ) : (
           <ul className="space-y-2">
             {categoryBreakdown.map((c) => (

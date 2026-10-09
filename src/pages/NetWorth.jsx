@@ -18,6 +18,7 @@ import {
   listNetWorthSnapshots,
   listSavingsGoals,
 } from '../lib/db'
+import { ErrorNotice, Skeleton } from '../components/Feedback'
 import { addMonths, endOfMonth, monthStart, shortMonthLabel, toIsoDate, today } from '../lib/dates'
 
 const LINE_COLOR = '#2a78d6'
@@ -101,6 +102,12 @@ export default function NetWorth() {
     () => new Set(accounts.filter((a) => a.type === 'cash').map((a) => a.id)),
     [accounts],
   )
+  // O saldo de todas as contas à ordem soma-se numa só linha: com uma conta usa o
+  // nome dela, com várias um rótulo genérico (já não é sempre "Conta à Ordem").
+  const cashLabel = useMemo(() => {
+    const cash = accounts.filter((a) => a.type === 'cash')
+    return cash.length === 1 ? cash[0].name : `Contas à ordem (${cash.length})`
+  }, [accounts])
   const investmentAccounts = useMemo(
     () => accounts.filter((a) => a.type === 'investment'),
     [accounts],
@@ -240,11 +247,18 @@ export default function NetWorth() {
   }
 
   if (loading) {
-    return <p className="py-10 text-center text-sm text-neutral-500">A carregar...</p>
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-20" />
+        <Skeleton className="h-12" />
+        <Skeleton className="h-12" />
+        <Skeleton className="h-56" />
+      </div>
+    )
   }
 
   if (error) {
-    return <p className="text-sm text-red-600">{error}</p>
+    return <ErrorNotice message={error} />
   }
 
   return (
@@ -258,7 +272,7 @@ export default function NetWorth() {
 
       <section className="grid grid-cols-1 gap-2">
         <div className="flex items-center justify-between rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
-          <span className="text-sm text-neutral-700 dark:text-neutral-300">Conta à Ordem</span>
+          <span className="text-sm text-neutral-700 dark:text-neutral-300">{cashLabel}</span>
           <span className="font-semibold text-neutral-900 dark:text-neutral-100">
             {eur(cashBalance)}
           </span>

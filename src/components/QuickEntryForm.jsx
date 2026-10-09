@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { suggestCategoryId } from '../lib/categorySuggest'
+import { useToast } from '../context/toastContext'
 import { today } from '../lib/dates'
 import { createDebt, createTransaction } from '../lib/db'
 
 export default function QuickEntryForm({ accounts, categories, transactions, onCreated }) {
+  const toast = useToast()
   const [type, setType] = useState('expense')
   const [amount, setAmount] = useState('')
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? '')
@@ -97,8 +99,11 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       setDebtCounterparty('')
       setDebtAmount('')
       onCreated(created)
+      toast.success(
+        `${type === 'income' ? 'Ganho' : 'Gasto'} de ${numericAmount.toFixed(2)} € registado.`,
+      )
     } catch (err) {
-      setError(err.message)
+      toast.error(`Não foi possível registar: ${err.message}`)
     } finally {
       setSubmitting(false)
     }
@@ -135,6 +140,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       </div>
 
       <input
+        id="quick-entry-amount"
         type="number"
         inputMode="decimal"
         step="0.01"

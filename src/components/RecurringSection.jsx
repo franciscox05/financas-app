@@ -7,12 +7,15 @@ import {
   markRecurringGenerated,
 } from '../lib/db'
 import { monthStart, toIsoDate, today } from '../lib/dates'
+import { useToast } from '../context/toastContext'
+import { EmptyState, Skeleton } from './Feedback'
 
 function eur(value) {
   return `${Number(value).toFixed(2)} €`
 }
 
 export default function RecurringSection({ accounts, categories, onLaunched }) {
+  const toast = useToast()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [launchingId, setLaunchingId] = useState(null)
@@ -39,6 +42,8 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
     setLoading(true)
     try {
       setItems(await listRecurringTransactions())
+    } catch (err) {
+      toast.error(`Não foi possível carregar as recorrências: ${err.message}`)
     } finally {
       setLoading(false)
     }
@@ -65,15 +70,23 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
       await markRecurringGenerated(item.id, currentMonthIso)
       await load()
       onLaunched?.()
+      toast.success(`Recorrência lançada: ${eur(item.amount)}.`)
+    } catch (err) {
+      toast.error(`Não foi possível lançar a recorrência: ${err.message}`)
     } finally {
       setLaunchingId(null)
     }
   }
 
   async function handleDelete(id) {
-    await deleteRecurringTransaction(id)
-    setConfirmingDeleteId(null)
-    await load()
+    try {
+      await deleteRecurringTransaction(id)
+      setConfirmingDeleteId(null)
+      await load()
+      toast.success('Recorrência apagada.')
+    } catch (err) {
+      toast.error(`Não foi possível apagar a recorrência: ${err.message}`)
+    }
   }
 
   async function handleCreate(e) {
@@ -111,14 +124,23 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
       setNote('')
       setShowForm(false)
       await load()
+      toast.success('Recorrência criada.')
     } catch (err) {
-      setFormError(err.message)
+      toast.error(`Não foi possível criar a recorrência: ${err.message}`)
     } finally {
       setSubmitting(false)
     }
   }
 
-  if (loading) return null
+  // Só mostra skeleton no primeiro carregamento; nos refrescos mantém a lista.
+  if (loading && items.length === 0) {
+    return (
+      <div role="status" aria-label="A carregar recorrências" className="space-y-2">
+        <Skeleton className="h-4 w-1/3" />
+        <Skeleton className="h-10" />
+      </div>
+    )
+  }
 
   return (
     <section className="space-y-3">
@@ -156,6 +178,15 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
           {showForm ? 'Fechar' : '+ Nova'}
         </button>
       </div>
+
+      {items.length === 0 && !showForm && (
+        <EmptyState
+          title="Sem recorrências configuradas"
+          description="Renda, subscrições ou salário: configura uma vez e lança com um toque todos os meses."
+          actionLabel="Criar a primeira recorrência"
+          onAction={() => setShowForm(true)}
+        />
+      )}
 
       {items.length > 0 && (
         <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
