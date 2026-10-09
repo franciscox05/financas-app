@@ -15,7 +15,7 @@ export default function AppLayout() {
   return (
     <div className="min-h-svh bg-neutral-50 pb-[max(2.5rem,env(safe-area-inset-bottom))] dark:bg-neutral-900">
       <header className="flex flex-wrap items-center justify-between gap-3 p-4 pt-[max(1rem,env(safe-area-inset-top))]">
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           <NavLink to="/" end className={navLinkClass}>
             Registo
           </NavLink>
@@ -32,7 +32,7 @@ export default function AppLayout() {
             Gestão
           </NavLink>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-3">
           <span className="hidden text-sm text-neutral-500 sm:inline">{user.email}</span>
           <NotificationToggle />
           <button
