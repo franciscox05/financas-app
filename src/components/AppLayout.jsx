@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import NotificationToggle from './NotificationToggle'
 
 const navLinkClass = ({ isActive }) =>
   `rounded-lg px-3 py-1.5 text-sm font-medium ${
@@ -27,6 +28,7 @@ export default function AppLayout() {
         </div>
         <div className="flex items-center gap-3">
           <span className="hidden text-sm text-neutral-500 sm:inline">{user.email}</span>
+          <NotificationToggle />
           <button
             onClick={() => signOut()}
             className="rounded-lg border border-neutral-300 px-3 py-1 text-sm dark:border-neutral-700"

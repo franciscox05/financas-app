@@ -66,6 +66,24 @@ export async function updateTransaction(id, fields) {
   return data
 }
 
+export async function upsertPushSubscription({ endpoint, p256dh, auth }) {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+
+  const { error } = await supabase
+    .from('push_subscriptions')
+    .upsert(
+      { user_id: userData.user.id, endpoint, p256dh, auth },
+      { onConflict: 'user_id,endpoint' },
+    )
+  if (error) throw error
+}
+
+export async function deletePushSubscription(endpoint) {
+  const { error } = await supabase.from('push_subscriptions').delete().eq('endpoint', endpoint)
+  if (error) throw error
+}
+
 export async function listRecurringTransactions() {
   const { data, error } = await supabase
     .from('recurring_transactions')
