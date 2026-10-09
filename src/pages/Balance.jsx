@@ -21,6 +21,11 @@ const INCOME_COLOR = '#16a34a' // tailwind green-600 — consistente com o resto
 const EXPENSE_COLOR = '#dc2626' // tailwind red-600
 const BAR_COLOR = '#2a78d6' // categorical slot 1 (azul) — magnitude, não identidade
 
+const MONTH_NAMES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+]
+
 function eur(value) {
   return `${value.toFixed(2)} €`
 }
@@ -32,6 +37,26 @@ export default function Balance() {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showJump, setShowJump] = useState(false)
+  const [jumpMonth, setJumpMonth] = useState(selectedMonth.getMonth() + 1)
+  const [jumpYear, setJumpYear] = useState(selectedMonth.getFullYear())
+
+  const yearOptions = useMemo(() => {
+    const current = new Date().getFullYear()
+    return [current, current - 1, current - 2, current - 3, current - 4]
+  }, [])
+
+  function openJump() {
+    setJumpMonth(selectedMonth.getMonth() + 1)
+    setJumpYear(selectedMonth.getFullYear())
+    setShowJump((v) => !v)
+  }
+
+  function handleJump(e) {
+    e.preventDefault()
+    setSelectedMonth(new Date(jumpYear, jumpMonth - 1, 1))
+    setShowJump(false)
+  }
 
   // A janela de 6 meses acompanha o mês selecionado (termina nele), em vez de
   // ficar fixa nos últimos 6 meses a partir de hoje — assim é possível navegar
@@ -200,9 +225,12 @@ export default function Balance() {
         >
           <ChevronLeft size={16} />
         </button>
-        <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+        <button
+          onClick={openJump}
+          className="rounded-lg px-2 py-1 text-sm font-semibold text-neutral-700 underline-offset-2 hover:underline dark:text-neutral-300"
+        >
           {monthLabel(selectedMonth)}
-        </h2>
+        </button>
         <button
           onClick={() => setSelectedMonth((m) => addMonths(m, 1))}
           disabled={monthKey(selectedMonth) === monthKey(monthStart(new Date()))}
@@ -211,6 +239,42 @@ export default function Balance() {
           <ChevronRight size={16} />
         </button>
       </div>
+
+      {showJump && (
+        <form
+          onSubmit={handleJump}
+          className="flex items-center gap-2 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800"
+        >
+          <select
+            value={jumpMonth}
+            onChange={(e) => setJumpMonth(Number(e.target.value))}
+            className="flex-1 rounded-lg border border-neutral-300 px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+          >
+            {MONTH_NAMES.map((name, idx) => (
+              <option key={name} value={idx + 1}>
+                {name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={jumpYear}
+            onChange={(e) => setJumpYear(Number(e.target.value))}
+            className="rounded-lg border border-neutral-300 px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+          >
+            {yearOptions.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            className="rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
+          >
+            Ir
+          </button>
+        </form>
+      )}
 
       {monthSummary && (
         <p className="text-center text-sm text-neutral-500">{monthSummary}</p>
