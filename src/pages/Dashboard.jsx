@@ -28,6 +28,7 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState([])
   const [monthSummary, setMonthSummary] = useState(null)
   const [overBudgetCount, setOverBudgetCount] = useState(0)
+  const [refreshToken, setRefreshToken] = useState(0)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [exporting, setExporting] = useState(false)
@@ -161,10 +162,20 @@ export default function Dashboard() {
         accounts={accounts}
         categories={categories}
         transactions={transactions}
-        onCreated={(tx) => setTransactions((prev) => [tx, ...prev])}
+        onCreated={(tx) => {
+          setTransactions((prev) => [tx, ...prev])
+          setRefreshToken((prev) => prev + 1)
+        }}
       />
 
-      <RecurringSection accounts={accounts} categories={categories} onLaunched={loadAll} />
+      <RecurringSection
+        accounts={accounts}
+        categories={categories}
+        onLaunched={() => {
+          loadAll()
+          setRefreshToken((prev) => prev + 1)
+        }}
+      />
 
       <section className="space-y-2">
         <div className="flex items-center justify-between">
@@ -179,11 +190,11 @@ export default function Dashboard() {
           </button>
         </div>
         <TransactionList
-          transactions={transactions}
           categories={categories}
           accounts={accounts}
-          onChanged={loadAll}
+          refreshToken={refreshToken}
           onAddFirst={focusQuickEntry}
+          onRowChanged={loadAll}
         />
       </section>
     </>

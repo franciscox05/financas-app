@@ -1,9 +1,11 @@
 import { Pencil, Search, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useToast } from '../context/toastContext'
-import { deleteTransaction, updateTransaction } from '../lib/db'
-import { EMPTY_FILTERS, filterTransactions, hasActiveFilters, netTotal } from '../lib/filters'
-import { EmptyState } from './Feedback'
+import { deleteTransaction, listTransactionsPage, updateTransaction } from '../lib/db'
+import { parseSmartQuery } from '../lib/smartSearch'
+import { EmptyState, ErrorNotice, ListSkeleton } from './Feedback'
+
+const PAGE_SIZE = 20
 
 function formatAmount(amount, type) {
   const sign = type === 'income' ? '+' : '-'
@@ -14,10 +16,11 @@ function formatDate(isoDate) {
   return new Date(`${isoDate}T00:00:00`).toLocaleDateString('pt-PT', {
     day: '2-digit',
     month: '2-digit',
+    year: 'numeric',
   })
 }
 
-function TransactionRow({ tx, categories, accounts, onChanged }) {
+function TransactionRow({ tx, categories, accounts, onUpdated, onDeleted }) {
   const toast = useToast()
   const [editing, setEditing] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
@@ -35,11 +38,10 @@ function TransactionRow({ tx, categories, accounts, onChanged }) {
     setError('')
     try {
       await deleteTransaction(tx.id)
-      setConfirmingDelete(false)
-      onChanged()
+      onDeleted(tx.id)
       toast.success('Transação apagada.')
     } catch (err) {
-      // Mantém a confirmação aberta para o utilizador poder tentar de novo.
+      setConfirmingDelete(false)
       toast.error(`Não foi possível apagar: ${err.message}`)
     } finally {
       setBusy(false)
@@ -60,14 +62,19 @@ function TransactionRow({ tx, categories, accounts, onChanged }) {
     setBusy(true)
     setError('')
     try {
-      await updateTransaction(tx.id, {
+      const updated = await updateTransaction(tx.id, {
         amount: numericAmount,
         category_id: categoryId,
         account_id: accountId,
         note: note.trim() || null,
       })
+      onUpdated({
+        ...tx,
+        ...updated,
+        categories: categories.find((c) => c.id === updated.category_id),
+        accounts: accounts.find((a) => a.id === updated.account_id),
+      })
       setEditing(false)
-      onChanged()
       toast.success('Transação atualizada.')
     } catch (err) {
       toast.error(`Não foi possível guardar: ${err.message}`)
@@ -219,7 +226,6 @@ const fieldClass =
   'w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100'
 
 function TransactionFilters({ filters, onChange, categories, accounts }) {
-  // Com um tipo escolhido, só faz sentido listar as categorias desse tipo.
   const categoryOptions =
     filters.type === 'all' ? categories : categories.filter((c) => c.type === filters.type)
 
@@ -242,7 +248,7 @@ function TransactionFilters({ filters, onChange, categories, accounts }) {
           type="search"
           value={filters.query}
           onChange={(e) => onChange({ ...filters, query: e.target.value })}
-          placeholder="Pesquisar por nota ou categoria"
+          placeholder='Pesquisar: nota, ">20", "maio 2025"...'
           aria-label="Pesquisar transações"
           className={`${fieldClass} pl-8`}
         />
@@ -298,24 +304,94 @@ function TransactionFilters({ filters, onChange, categories, accounts }) {
   )
 }
 
-export default function TransactionList({ transactions, categories, accounts, onChanged, onAddFirst }) {
+const EMPTY_FILTERS = { query: '', type: 'all', accountId: '', categoryId: '' }
+
+export default function TransactionList({ categories, accounts, refreshToken, onAddFirst, onRowChanged }) {
   const [filters, setFilters] = useState(EMPTY_FILTERS)
+  const [debouncedQuery, setDebouncedQuery] = useState('')
+  const [rows, setRows] = useState([])
+  const [totalCount, setTotalCount] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [error, setError] = useState('')
 
-  const filtered = useMemo(() => filterTransactions(transactions, filters), [transactions, filters])
-  const filtering = hasActiveFilters(filters)
+  // Debounce do texto de pesquisa, para não disparar um pedido a cada tecla.
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedQuery(filters.query), 300)
+    return () => clearTimeout(id)
+  }, [filters.query])
 
-  if (transactions.length === 0) {
-    return (
-      <EmptyState
-        title="Ainda sem transações"
-        description="Regista o primeiro gasto ou ganho para começares a ver o teu balanço."
-        actionLabel="Registar primeira transação"
-        onAction={onAddFirst}
-      />
-    )
+  const smart = useMemo(() => parseSmartQuery(debouncedQuery), [debouncedQuery])
+
+  async function loadPage(offset) {
+    const { rows: pageRows, totalCount: count } = await listTransactionsPage({
+      limit: PAGE_SIZE,
+      offset,
+      type: filters.type,
+      accountId: filters.accountId,
+      categoryId: filters.categoryId,
+      smart,
+    })
+    return { pageRows, count }
   }
 
-  const total = netTotal(filtered)
+  useEffect(() => {
+    let cancelled = false
+    async function run() {
+      setLoading(true)
+      setError('')
+      try {
+        const { pageRows, count } = await loadPage(0)
+        if (cancelled) return
+        setRows(pageRows)
+        setTotalCount(count)
+      } catch (err) {
+        if (!cancelled) setError(err.message)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    run()
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.type, filters.accountId, filters.categoryId, debouncedQuery, refreshToken])
+
+  async function handleLoadMore() {
+    setLoadingMore(true)
+    try {
+      const { pageRows, count } = await loadPage(rows.length)
+      setRows((prev) => [...prev, ...pageRows])
+      setTotalCount(count)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
+  function handleUpdated(updatedTx) {
+    setRows((prev) => prev.map((r) => (r.id === updatedTx.id ? updatedTx : r)))
+    onRowChanged?.()
+  }
+
+  function handleDeleted(id) {
+    setRows((prev) => prev.filter((r) => r.id !== id))
+    setTotalCount((prev) => Math.max(0, prev - 1))
+    onRowChanged?.()
+  }
+
+  const hasActiveFilters =
+    filters.query.trim() !== '' || filters.type !== 'all' || filters.accountId !== '' || filters.categoryId !== ''
+
+  if (loading) {
+    return <ListSkeleton rows={5} />
+  }
+
+  if (error) {
+    return <ErrorNotice message={error} />
+  }
 
   return (
     <div className="space-y-3">
@@ -326,20 +402,9 @@ export default function TransactionList({ transactions, categories, accounts, on
         accounts={accounts}
       />
 
-      {filtering && (
-        <div className="flex items-center justify-between text-xs text-neutral-500" aria-live="polite">
-          <span>
-            {filtered.length} de {transactions.length}
-            {filtered.length > 0 && (
-              <>
-                {' · '}
-                <span className={total >= 0 ? 'text-green-600' : 'text-red-600'}>
-                  {total >= 0 ? '+' : '-'}
-                  {Math.abs(total).toFixed(2)} €
-                </span>
-              </>
-            )}
-          </span>
+      <div className="flex items-center justify-between text-xs text-neutral-500" aria-live="polite">
+        <span>{totalCount} transações</span>
+        {hasActiveFilters && (
           <button
             type="button"
             onClick={() => setFilters(EMPTY_FILTERS)}
@@ -347,28 +412,44 @@ export default function TransactionList({ transactions, categories, accounts, on
           >
             Limpar filtros
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
-      {filtered.length === 0 ? (
+      {rows.length === 0 ? (
         <EmptyState
-          title="Nenhuma transação corresponde aos filtros"
-          description="A pesquisa só vê as últimas 50 transações carregadas."
-          actionLabel="Limpar filtros"
-          onAction={() => setFilters(EMPTY_FILTERS)}
+          title={hasActiveFilters ? 'Nenhuma transação corresponde à pesquisa' : 'Ainda sem transações'}
+          description={
+            hasActiveFilters
+              ? 'Pesquisa por texto, valor (">20") ou mês ("maio 2025").'
+              : 'Regista o primeiro gasto ou ganho para começares a ver o teu balanço.'
+          }
+          actionLabel={hasActiveFilters ? 'Limpar filtros' : 'Registar primeira transação'}
+          onAction={hasActiveFilters ? () => setFilters(EMPTY_FILTERS) : onAddFirst}
         />
       ) : (
-        <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
-          {filtered.map((tx) => (
-            <TransactionRow
-              key={tx.id}
-              tx={tx}
-              categories={categories}
-              accounts={accounts}
-              onChanged={onChanged}
-            />
-          ))}
-        </ul>
+        <>
+          <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+            {rows.map((tx) => (
+              <TransactionRow
+                key={tx.id}
+                tx={tx}
+                categories={categories}
+                accounts={accounts}
+                onUpdated={handleUpdated}
+                onDeleted={handleDeleted}
+              />
+            ))}
+          </ul>
+          {rows.length < totalCount && (
+            <button
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="w-full rounded-lg border border-neutral-300 py-2 text-sm disabled:opacity-50 dark:border-neutral-700"
+            >
+              {loadingMore ? 'A carregar...' : `Carregar mais (${rows.length} de ${totalCount})`}
+            </button>
+          )}
+        </>
       )}
     </div>
   )

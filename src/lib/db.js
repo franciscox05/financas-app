@@ -24,6 +24,48 @@ export async function listTransactions({ limit = 50 } = {}) {
   return data
 }
 
+// Paginação + filtros aplicados no servidor (não em memória), para a
+// pesquisa/paginação funcionar sobre todo o histórico, não só sobre um
+// bocado já carregado. `smart` vem de lib/smartSearch.js.
+export async function listTransactionsPage({
+  limit,
+  offset,
+  type,
+  accountId,
+  categoryId,
+  smart,
+}) {
+  let q = supabase
+    .from('transactions')
+    .select('*, accounts(name), categories(name)', { count: 'exact' })
+
+  if (type && type !== 'all') q = q.eq('type', type)
+  if (accountId) q = q.eq('account_id', accountId)
+  if (categoryId) q = q.eq('category_id', categoryId)
+
+  if (smart?.dateFrom) q = q.gte('occurred_on', smart.dateFrom)
+  if (smart?.dateTo) q = q.lt('occurred_on', smart.dateTo)
+
+  if (smart?.amountOp === '>') q = q.gt('amount', smart.amountValue)
+  else if (smart?.amountOp === '>=') q = q.gte('amount', smart.amountValue)
+  else if (smart?.amountOp === '<') q = q.lt('amount', smart.amountValue)
+  else if (smart?.amountOp === '<=') q = q.lte('amount', smart.amountValue)
+  else if (smart?.amountOp === '=') q = q.eq('amount', smart.amountValue)
+
+  for (const term of smart?.textTerms ?? []) {
+    q = q.ilike('note', `%${term}%`)
+  }
+
+  q = q
+    .order('occurred_on', { ascending: false })
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
+
+  const { data, error, count } = await q
+  if (error) throw error
+  return { rows: data, totalCount: count }
+}
+
 export async function listTransactionsInRange({ from, to }) {
   const { data, error } = await supabase
     .from('transactions')
