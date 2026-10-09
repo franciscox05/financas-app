@@ -199,3 +199,63 @@ export async function deleteSnapshot(id) {
   const { error } = await supabase.from('net_worth_snapshots').delete().eq('id', id)
   if (error) throw error
 }
+
+// --- Gestão de contas e categorias ---------------------------------------
+// accounts/categories usam `on delete restrict` nas transações, recorrências e
+// snapshots: apagar um item em uso falha com o código 23503 (foreign_key_violation).
+const FK_VIOLATION = '23503'
+
+export async function createAccount({ name, type }) {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+
+  const { data, error } = await supabase
+    .from('accounts')
+    .insert({ user_id: userData.user.id, name, type })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function renameAccount(id, name) {
+  const { data, error } = await supabase.from('accounts').update({ name }).eq('id', id).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteAccount(id) {
+  const { error } = await supabase.from('accounts').delete().eq('id', id)
+  if (error?.code === FK_VIOLATION) {
+    throw new Error('Esta conta ainda tem transações, recorrências ou registos de património associados.')
+  }
+  if (error) throw error
+}
+
+export async function createCategory({ name, type }) {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+
+  const { data, error } = await supabase
+    .from('categories')
+    .insert({ user_id: userData.user.id, name, type })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function renameCategory(id, name) {
+  const { data, error } = await supabase.from('categories').update({ name }).eq('id', id).select().single()
+  if (error) throw error
+  return data
+}
+
+// Atenção: os orçamentos (budgets) da categoria são apagados em cascata.
+export async function deleteCategory(id) {
+  const { error } = await supabase.from('categories').delete().eq('id', id)
+  if (error?.code === FK_VIOLATION) {
+    throw new Error('Esta categoria ainda tem transações ou recorrências associadas.')
+  }
+  if (error) throw error
+}

@@ -86,6 +86,12 @@ export default function NetWorth() {
     () => new Set(accounts.filter((a) => a.type === 'cash').map((a) => a.id)),
     [accounts],
   )
+  // O saldo de todas as contas à ordem soma-se numa só linha: com uma conta usa o
+  // nome dela, com várias um rótulo genérico (já não é sempre "Conta à Ordem").
+  const cashLabel = useMemo(() => {
+    const cash = accounts.filter((a) => a.type === 'cash')
+    return cash.length === 1 ? cash[0].name : `Contas à ordem (${cash.length})`
+  }, [accounts])
   const investmentAccounts = useMemo(
     () => accounts.filter((a) => a.type === 'investment'),
     [accounts],
@@ -189,7 +195,7 @@ export default function NetWorth() {
 
       <section className="grid grid-cols-1 gap-2">
         <div className="flex items-center justify-between rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
-          <span className="text-sm text-neutral-700 dark:text-neutral-300">Conta à Ordem</span>
+          <span className="text-sm text-neutral-700 dark:text-neutral-300">{cashLabel}</span>
           <span className="font-semibold text-neutral-900 dark:text-neutral-100">
             {eur(cashBalance)}
           </span>
