@@ -110,6 +110,18 @@ export default function Balance() {
     [categories],
   )
 
+  const savingsCategoryIds = useMemo(
+    () => new Set(categories.filter((c) => c.is_savings).map((c) => c.id)),
+    [categories],
+  )
+
+  const savingsAmount = useMemo(() => {
+    if (!selectedBucket) return 0
+    return selectedBucket.txs
+      .filter((tx) => tx.type === 'expense' && savingsCategoryIds.has(tx.category_id))
+      .reduce((sum, tx) => sum + Number(tx.amount), 0)
+  }, [selectedBucket, savingsCategoryIds])
+
   // Insight: categorias com gasto este mês >=20% acima da média dos 3 meses anteriores.
   const insights = useMemo(() => {
     const idx = sixMonthData.findIndex((b) => monthKey(b.date) === monthKey(selectedMonth))
@@ -198,6 +210,13 @@ export default function Balance() {
 
       {monthSummary && (
         <p className="text-center text-sm text-neutral-500">{monthSummary}</p>
+      )}
+
+      {savingsAmount > 0 && (
+        <p className="text-center text-xs text-neutral-400">
+          Dessas, {eur(savingsAmount)} foram para poupança/investimento — não contam como gasto do
+          dia a dia.
+        </p>
       )}
 
       <div className="grid grid-cols-3 gap-1.5 text-center sm:gap-2">

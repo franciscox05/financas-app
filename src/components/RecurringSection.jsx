@@ -1,18 +1,38 @@
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Repeat, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
   createRecurringTransaction,
   createTransaction,
   deleteRecurringTransaction,
   listRecurringTransactions,
+  listTransactionsInRange,
   markRecurringGenerated,
 } from '../lib/db'
-import { monthStart, toIsoDate, today } from '../lib/dates'
+import { addMonths, monthStart, toIsoDate, today } from '../lib/dates'
+import { detectRecurringCandidates } from '../lib/recurringSuggest'
 import { useToast } from '../context/toastContext'
 import { EmptyState, Skeleton } from './Feedback'
 
 function eur(value) {
   return `${Number(value).toFixed(2)} €`
+}
+
+const DISMISSED_KEY = 'financasapp:dismissed-recurring-suggestions'
+
+function loadDismissed() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(DISMISSED_KEY) ?? '[]'))
+  } catch {
+    return new Set()
+  }
+}
+
+function saveDismissed(set) {
+  try {
+    localStorage.setItem(DISMISSED_KEY, JSON.stringify([...set]))
+  } catch {
+    // conveniência local; se falhar (ex. modo privado) não é crítico
+  }
 }
 
 export default function RecurringSection({ accounts, categories, onLaunched }) {
@@ -22,6 +42,10 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
   const [launchingId, setLaunchingId] = useState(null)
   const [confirmingDeleteId, setConfirmingDeleteId] = useState(null)
   const [showForm, setShowForm] = useState(false)
+
+  const [suggestions, setSuggestions] = useState([])
+  const [dismissed, setDismissed] = useState(loadDismissed)
+  const [creatingSuggestionKey, setCreatingSuggestionKey] = useState(null)
 
   const [type, setType] = useState('expense')
   const [amount, setAmount] = useState('')
@@ -42,7 +66,16 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
   async function load() {
     setLoading(true)
     try {
-      setItems(await listRecurringTransactions())
+      const recurring = await listRecurringTransactions()
+      setItems(recurring)
+      // Histórico de 3 meses só para detetar padrões — não é exibido nem bloqueia o ecrã.
+      const rangeStart = addMonths(monthStart(new Date()), -2)
+      const rangeEnd = addMonths(monthStart(new Date()), 1)
+      const history = await listTransactionsInRange({
+        from: toIsoDate(rangeStart),
+        to: toIsoDate(rangeEnd),
+      })
+      setSuggestions(detectRecurringCandidates(history, recurring))
     } catch (err) {
       toast.error(`Não foi possível carregar as recorrências: ${err.message}`)
     } finally {
@@ -54,6 +87,37 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
     load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const visibleSuggestions = suggestions.filter((s) => !dismissed.has(s.key))
+
+  function dismissSuggestion(key) {
+    setDismissed((prev) => {
+      const next = new Set(prev).add(key)
+      saveDismissed(next)
+      return next
+    })
+  }
+
+  async function createFromSuggestion(suggestion) {
+    setCreatingSuggestionKey(suggestion.key)
+    try {
+      await createRecurringTransaction({
+        accountId: suggestion.accountId,
+        categoryId: suggestion.categoryId,
+        amount: suggestion.amount,
+        type: suggestion.type,
+        note: suggestion.note,
+        dayOfMonth: suggestion.dayOfMonth,
+      })
+      dismissSuggestion(suggestion.key)
+      await load()
+      toast.success('Recorrência criada a partir do histórico.')
+    } catch (err) {
+      toast.error(`Não foi possível criar a recorrência: ${err.message}`)
+    } finally {
+      setCreatingSuggestionKey(null)
+    }
+  }
 
   const pending = items.filter((r) => r.last_generated_month !== currentMonthIso)
 
@@ -164,6 +228,39 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
                 >
                   {launchingId === item.id ? 'A lançar...' : 'Lançar agora'}
                 </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {visibleSuggestions.length > 0 && (
+        <div className="space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/40">
+          <h3 className="flex items-center gap-1.5 text-sm font-semibold text-amber-800 dark:text-amber-300">
+            <Repeat size={15} /> Isto parece acontecer todos os meses
+          </h3>
+          <ul className="space-y-2">
+            {visibleSuggestions.map((s) => (
+              <li key={s.key} className="space-y-1.5 text-sm">
+                <p className="text-amber-900 dark:text-amber-200">
+                  "{s.note}" · ~{eur(s.amount)}
+                  {s.categoryName ? ` · ${s.categoryName}` : ''}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => createFromSuggestion(s)}
+                    disabled={creatingSuggestionKey === s.key}
+                    className="rounded bg-amber-600 px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
+                  >
+                    {creatingSuggestionKey === s.key ? 'A criar...' : 'Criar recorrência'}
+                  </button>
+                  <button
+                    onClick={() => dismissSuggestion(s.key)}
+                    className="rounded border border-amber-300 px-2 py-1 text-xs text-amber-800 dark:border-amber-800 dark:text-amber-300"
+                  >
+                    Não, obrigado
+                  </button>
+                </div>
               </li>
             ))}
           </ul>

@@ -1,6 +1,6 @@
 import { Plus } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { suggestCategoryId } from '../lib/categorySuggest'
+import { suggestAmount, suggestCategoryId } from '../lib/categorySuggest'
 import { useToast } from '../context/toastContext'
 import { today } from '../lib/dates'
 import { createDebt, createTransaction } from '../lib/db'
@@ -16,7 +16,9 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [suggested, setSuggested] = useState(false)
+  const [amountSuggested, setAmountSuggested] = useState(false)
   const categoryTouchedRef = useRef(false)
+  const amountTouchedRef = useRef(false)
 
   const [showDebt, setShowDebt] = useState(false)
   const [debtCounterparty, setDebtCounterparty] = useState('')
@@ -41,6 +43,21 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       setSuggested(true)
     } else {
       setSuggested(false)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [note, type])
+
+  // Além da categoria, sugere também o valor da transação mais recente com
+  // nota semelhante (ex. "gasóleo" é quase sempre o mesmo valor) — só
+  // enquanto o utilizador não tiver escrito nada no campo valor.
+  useEffect(() => {
+    if (amountTouchedRef.current) return
+    const value = suggestAmount(note, type, transactions ?? [])
+    if (value) {
+      setAmount(String(value))
+      setAmountSuggested(true)
+    } else {
+      setAmountSuggested(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note, type])
@@ -95,7 +112,9 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       setOccurredOn(today())
       setCategoryId('')
       setSuggested(false)
+      setAmountSuggested(false)
       categoryTouchedRef.current = false
+      amountTouchedRef.current = false
       setShowDebt(false)
       setDebtCounterparty('')
       setDebtAmount('')
@@ -140,18 +159,27 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
         </button>
       </div>
 
-      <input
-        id="quick-entry-amount"
-        type="number"
-        inputMode="decimal"
-        step="0.01"
-        min="0"
-        required
-        placeholder="0.00 €"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-        className="w-full rounded-lg border border-neutral-300 px-3 py-3 text-2xl font-semibold dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-      />
+      <div>
+        <input
+          id="quick-entry-amount"
+          type="number"
+          inputMode="decimal"
+          step="0.01"
+          min="0"
+          required
+          placeholder="0.00 €"
+          value={amount}
+          onChange={(e) => {
+            amountTouchedRef.current = true
+            setAmountSuggested(false)
+            setAmount(e.target.value)
+          }}
+          className="w-full rounded-lg border border-neutral-300 px-3 py-3 text-2xl font-semibold dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+        />
+        {amountSuggested && (
+          <p className="mt-0.5 text-xs text-neutral-400">valor sugerido a partir do histórico</p>
+        )}
+      </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div>

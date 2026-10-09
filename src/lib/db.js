@@ -343,6 +343,17 @@ export async function renameCategory(id, name) {
   return data
 }
 
+export async function updateCategorySavingsFlag(id, isSavings) {
+  const { data, error } = await supabase
+    .from('categories')
+    .update({ is_savings: isSavings })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
 // Atenção: os orçamentos (budgets) da categoria são apagados em cascata.
 export async function deleteCategory(id) {
   const { error } = await supabase.from('categories').delete().eq('id', id)

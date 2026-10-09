@@ -11,6 +11,7 @@ import { addMonths, monthStart, today, toIsoDate } from '../lib/dates'
 import {
   listAccounts,
   listAllTransactionsForExport,
+  listBudgets,
   listCategories,
   listTransactions,
   listTransactionsInRange,
@@ -26,6 +27,7 @@ export default function Dashboard() {
   const [categories, setCategories] = useState([])
   const [transactions, setTransactions] = useState([])
   const [monthSummary, setMonthSummary] = useState(null)
+  const [overBudgetCount, setOverBudgetCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [exporting, setExporting] = useState(false)
@@ -34,14 +36,16 @@ export default function Dashboard() {
   const loadAll = useCallback(async () => {
     setLoadError('')
     try {
-      const [accs, cats, txs, monthTxs] = await Promise.all([
+      const currentMonthIso = toIsoDate(monthStart(new Date()))
+      const [accs, cats, txs, monthTxs, budgets] = await Promise.all([
         listAccounts(),
         listCategories(),
         listTransactions({ limit: 50 }),
         listTransactionsInRange({
-          from: toIsoDate(monthStart(new Date())),
+          from: currentMonthIso,
           to: toIsoDate(addMonths(monthStart(new Date()), 1)),
         }),
+        listBudgets(currentMonthIso),
       ])
       setAccounts(accs)
       setCategories(cats)
@@ -55,6 +59,15 @@ export default function Dashboard() {
           },
           { income: 0, expense: 0 },
         ),
+      )
+
+      const spentByCategoryId = new Map()
+      for (const tx of monthTxs) {
+        if (tx.type !== 'expense') continue
+        spentByCategoryId.set(tx.category_id, (spentByCategoryId.get(tx.category_id) ?? 0) + Number(tx.amount))
+      }
+      setOverBudgetCount(
+        budgets.filter((b) => (spentByCategoryId.get(b.category_id) ?? 0) > Number(b.amount)).length,
       )
     } catch (err) {
       setLoadError(err.message)
@@ -133,6 +146,12 @@ export default function Dashboard() {
               {saldo >= 0 ? '+' : '-'}
               {eur(Math.abs(saldo))}
             </p>
+            {overBudgetCount > 0 && (
+              <p className="mt-0.5 text-xs text-amber-600 dark:text-amber-400">
+                {overBudgetCount}{' '}
+                {overBudgetCount === 1 ? 'categoria acima do orçamento' : 'categorias acima do orçamento'}
+              </p>
+            )}
           </div>
           <ChevronRight className="text-neutral-400" size={20} />
         </button>

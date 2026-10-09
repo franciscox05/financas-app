@@ -1,4 +1,4 @@
-import { Pencil, Trash2 } from 'lucide-react'
+import { PiggyBank, Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { MAX_NAME_LENGTH, validateName } from '../lib/names'
@@ -6,7 +6,7 @@ import { MAX_NAME_LENGTH, validateName } from '../lib/names'
 const inputClass =
   'w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100'
 
-function ManageRow({ item, canDelete, deleteHint, deleteWarning, siblings, onRename, onDelete }) {
+function ManageRow({ item, canDelete, deleteHint, deleteWarning, siblings, onRename, onDelete, onToggleSavings }) {
   const [editing, setEditing] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [name, setName] = useState(item.name)
@@ -96,6 +96,24 @@ function ManageRow({ item, canDelete, deleteHint, deleteWarning, siblings, onRen
       <div className="flex items-center justify-between gap-3">
         <span className="min-w-0 truncate text-sm text-neutral-900 dark:text-neutral-100">{item.name}</span>
         <div className="flex shrink-0 items-center gap-2">
+          {onToggleSavings && item.type === 'expense' && (
+            <button
+              type="button"
+              onClick={() => onToggleSavings(item, !item.is_savings)}
+              title={
+                item.is_savings
+                  ? 'Marcada como poupança/investimento — não conta como gasto do dia a dia no resumo'
+                  : 'Marcar como poupança/investimento'
+              }
+              className={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${
+                item.is_savings
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
+                  : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'
+              }`}
+            >
+              <PiggyBank size={14} />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setEditing(true)}
@@ -157,6 +175,7 @@ export default function EntityManager({
   onCreate,
   onRename,
   onDelete,
+  onToggleSavings,
 }) {
   const toast = useToast()
   const [newName, setNewName] = useState('')
@@ -205,6 +224,19 @@ export default function EntityManager({
     }
   }
 
+  async function handleToggleSavings(item, value) {
+    try {
+      await onToggleSavings(item, value)
+      toast.success(
+        value
+          ? `"${item.name}" marcada como poupança/investimento.`
+          : `"${item.name}" volta a contar como gasto normal.`,
+      )
+    } catch (err) {
+      toast.error(`Não foi possível atualizar: ${err.message}`)
+    }
+  }
+
   return (
     <section className="space-y-4">
       <h2 className="text-sm font-semibold text-neutral-500">{title}</h2>
@@ -229,6 +261,7 @@ export default function EntityManager({
                     deleteWarning={deleteWarning}
                     onRename={handleRename}
                     onDelete={handleDelete}
+                    onToggleSavings={onToggleSavings ? handleToggleSavings : undefined}
                   />
                 ))}
               </ul>
