@@ -18,7 +18,8 @@ import {
   listNetWorthSnapshots,
   listSavingsGoals,
 } from '../lib/db'
-import { ErrorNotice, Skeleton } from '../components/Feedback'
+import { EmptyState, ErrorNotice, Skeleton } from '../components/Feedback'
+import { useToast } from '../context/toastContext'
 import { addMonths, endOfMonth, monthStart, shortMonthLabel, toIsoDate, today } from '../lib/dates'
 
 const LINE_COLOR = '#2a78d6'
@@ -49,6 +50,7 @@ function investmentValueAt(snapshots, investmentAccountIds, asOfDate) {
 }
 
 export default function NetWorth() {
+  const toast = useToast()
   const [accounts, setAccounts] = useState([])
   const [transactions, setTransactions] = useState([])
   const [snapshots, setSnapshots] = useState([])
@@ -190,6 +192,7 @@ export default function NetWorth() {
       setSnapValue('')
       setSnapDate(today())
       await loadAll()
+      toast.success('Snapshot guardado.')
     } catch (err) {
       setFormError(err.message)
     } finally {
@@ -198,9 +201,14 @@ export default function NetWorth() {
   }
 
   async function handleDeleteSnapshot(id) {
-    await deleteSnapshot(id)
-    setConfirmingSnapshotId(null)
-    await loadAll()
+    try {
+      await deleteSnapshot(id)
+      setConfirmingSnapshotId(null)
+      await loadAll()
+      toast.success('Snapshot apagado.')
+    } catch (err) {
+      toast.error(`Não foi possível apagar: ${err.message}`)
+    }
   }
 
   async function handleCreateGoal(e) {
@@ -233,6 +241,7 @@ export default function NetWorth() {
       setGoalTargetDate('')
       setShowGoalForm(false)
       await loadAll()
+      toast.success('Meta criada.')
     } catch (err) {
       setGoalFormError(err.message)
     } finally {
@@ -241,9 +250,14 @@ export default function NetWorth() {
   }
 
   async function handleDeleteGoal(id) {
-    await deleteSavingsGoal(id)
-    setConfirmingGoalId(null)
-    await loadAll()
+    try {
+      await deleteSavingsGoal(id)
+      setConfirmingGoalId(null)
+      await loadAll()
+      toast.success('Meta apagada.')
+    } catch (err) {
+      toast.error(`Não foi possível apagar: ${err.message}`)
+    }
   }
 
   if (loading) {
@@ -369,7 +383,12 @@ export default function NetWorth() {
         )}
 
         {goals.length === 0 ? (
-          <p className="py-2 text-center text-sm text-neutral-500">Ainda sem metas definidas.</p>
+          <EmptyState
+            title="Ainda sem metas definidas"
+            description="Define um valor-alvo sobre uma das tuas contas e acompanha o progresso automaticamente."
+            actionLabel={showGoalForm ? undefined : '+ Nova meta'}
+            onAction={showGoalForm ? undefined : () => setShowGoalForm(true)}
+          />
         ) : (
           <ul className="space-y-3">
             {goals.map((goal) => {

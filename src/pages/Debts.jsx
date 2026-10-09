@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { EmptyState, ErrorNotice, PageSkeleton } from '../components/Feedback'
+import { useToast } from '../context/toastContext'
 import { createDebt, deleteDebt, listAccounts, listCategories, listDebts, settleDebt } from '../lib/db'
 
 function eur(value) {
@@ -6,6 +8,7 @@ function eur(value) {
 }
 
 export default function Debts() {
+  const toast = useToast()
   const [debts, setDebts] = useState([])
   const [accounts, setAccounts] = useState([])
   const [categories, setCategories] = useState([])
@@ -91,15 +94,24 @@ export default function Debts() {
       })
       setSettlingId(null)
       await load()
+      toast.success(
+        debt.direction === 'owed_to_me' ? 'Dívida marcada como recebida.' : 'Dívida marcada como paga.',
+      )
     } catch (err) {
       setSettleError(err.message)
+      toast.error(`Não foi possível acertar a dívida: ${err.message}`)
     }
   }
 
   async function handleDelete(id) {
-    await deleteDebt(id)
-    setConfirmingDeleteId(null)
-    await load()
+    try {
+      await deleteDebt(id)
+      setConfirmingDeleteId(null)
+      await load()
+      toast.success('Dívida apagada.')
+    } catch (err) {
+      toast.error(`Não foi possível apagar: ${err.message}`)
+    }
   }
 
   async function handleCreate(e) {
@@ -128,6 +140,7 @@ export default function Debts() {
       setNote('')
       setShowForm(false)
       await load()
+      toast.success('Dívida criada.')
     } catch (err) {
       setFormError(err.message)
     } finally {
@@ -136,11 +149,11 @@ export default function Debts() {
   }
 
   if (loading) {
-    return <p className="py-10 text-center text-sm text-neutral-500">A carregar...</p>
+    return <PageSkeleton />
   }
 
-  if (error) {
-    return <p className="text-sm text-red-600">{error}</p>
+  if (error && debts.length === 0 && accounts.length === 0) {
+    return <ErrorNotice message={error} onRetry={load} />
   }
 
   function renderDebtRow(debt) {
@@ -244,6 +257,8 @@ export default function Debts() {
 
   return (
     <div className="space-y-6">
+      {error && <ErrorNotice message={error} onRetry={load} />}
+
       <div className="grid grid-cols-2 gap-2">
         <div className="min-w-0 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
           <p className="text-xs text-neutral-500">A receber</p>
@@ -334,7 +349,12 @@ export default function Debts() {
         )}
 
         {pending.length === 0 ? (
-          <p className="py-4 text-center text-sm text-neutral-500">Sem dívidas pendentes.</p>
+          <EmptyState
+            title="Sem dívidas pendentes"
+            description="Quando pagares algo que alguém te deva, ou alguém te pagar algo, regista aqui para não perderes a conta."
+            actionLabel={showForm ? undefined : '+ Nova dívida'}
+            onAction={showForm ? undefined : () => setShowForm(true)}
+          />
         ) : (
           <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
             {pending.map(renderDebtRow)}
