@@ -33,6 +33,10 @@ export default function Balance() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  // A janela de 6 meses acompanha o mês selecionado (termina nele), em vez de
+  // ficar fixa nos últimos 6 meses a partir de hoje — assim é possível navegar
+  // para qualquer mês com histórico (ex. meses importados de anos anteriores),
+  // sem o limite antigo de só recuar 5 meses a partir de "agora".
   useEffect(() => {
     let cancelled = false
 
@@ -40,8 +44,8 @@ export default function Balance() {
       setLoading(true)
       setError('')
       try {
-        const rangeStart = addMonths(monthStart(new Date()), -5)
-        const rangeEnd = addMonths(monthStart(new Date()), 1)
+        const rangeStart = addMonths(selectedMonth, -5)
+        const rangeEnd = addMonths(selectedMonth, 1)
         const [txs, cats] = await Promise.all([
           listTransactionsInRange({ from: toIsoDate(rangeStart), to: toIsoDate(rangeEnd) }),
           listCategories(),
@@ -49,7 +53,7 @@ export default function Balance() {
         if (cancelled) return
         setCategories(cats)
 
-        // Agrupa por mês para o gráfico de evolução dos últimos 6 meses.
+        // Agrupa por mês para o gráfico de evolução (6 meses terminados no selecionado).
         const byMonth = new Map()
         for (let i = 0; i < 6; i++) {
           const d = addMonths(rangeStart, i)
@@ -75,7 +79,7 @@ export default function Balance() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [selectedMonth])
 
   const selectedBucket = sixMonthData.find(
     (b) => monthKey(b.date) === monthKey(selectedMonth),
@@ -192,8 +196,7 @@ export default function Balance() {
       <div className="flex items-center justify-between">
         <button
           onClick={() => setSelectedMonth((m) => addMonths(m, -1))}
-          disabled={monthKey(selectedMonth) === monthKey(addMonths(monthStart(new Date()), -5))}
-          className="rounded-lg border border-neutral-300 px-3 py-1 text-sm disabled:opacity-30 dark:border-neutral-700"
+          className="rounded-lg border border-neutral-300 px-3 py-1 text-sm dark:border-neutral-700"
         >
           <ChevronLeft size={16} />
         </button>
