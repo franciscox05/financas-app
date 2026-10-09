@@ -134,6 +134,18 @@ export default function Balance() {
     return results.sort((a, b) => b.diffPct - a.diffPct).slice(0, 3)
   }, [sixMonthData, selectedMonth, categoryBreakdown])
 
+  const monthSummary = useMemo(() => {
+    const idx = sixMonthData.findIndex((b) => monthKey(b.date) === monthKey(selectedMonth))
+    if (idx < 1) return null
+    const prev = sixMonthData[idx - 1]
+    if (!prev || prev.expense < 1) return null
+    const current = sixMonthData[idx]
+    const diffPct = Math.round(((current.expense - prev.expense) / prev.expense) * 100)
+    if (diffPct === 0) return 'Gastaste o mesmo que no mês anterior.'
+    const direction = diffPct > 0 ? 'mais' : 'menos'
+    return `Gastaste ${Math.abs(diffPct)}% ${direction} que no mês anterior.`
+  }, [sixMonthData, selectedMonth])
+
   const chartData = sixMonthData.map((b) => ({
     month: shortMonthLabel(b.date),
     Ganhos: Number(b.income.toFixed(2)),
@@ -173,6 +185,10 @@ export default function Balance() {
           →
         </button>
       </div>
+
+      {monthSummary && (
+        <p className="text-center text-sm text-neutral-500">{monthSummary}</p>
+      )}
 
       <div className="grid grid-cols-3 gap-1.5 text-center sm:gap-2">
         <div className="min-w-0 rounded-xl border border-neutral-200 p-2 dark:border-neutral-800 sm:p-3">

@@ -257,3 +257,36 @@ export async function deleteDebt(id) {
   const { error } = await supabase.from('debts').delete().eq('id', id)
   if (error) throw error
 }
+
+export async function listSavingsGoals() {
+  const { data, error } = await supabase
+    .from('savings_goals')
+    .select('*, accounts(name, type)')
+    .order('created_at')
+  if (error) throw error
+  return data
+}
+
+export async function createSavingsGoal({ name, accountId, targetAmount, targetDate }) {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+
+  const { data, error } = await supabase
+    .from('savings_goals')
+    .insert({
+      user_id: userData.user.id,
+      name,
+      account_id: accountId,
+      target_amount: targetAmount,
+      target_date: targetDate || null,
+    })
+    .select('*, accounts(name, type)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteSavingsGoal(id) {
+  const { error } = await supabase.from('savings_goals').delete().eq('id', id)
+  if (error) throw error
+}
