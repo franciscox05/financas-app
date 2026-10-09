@@ -56,6 +56,28 @@ export async function createTransaction({ amount, type, accountId, categoryId, o
   return data
 }
 
+export async function createTransactionsBulk(rows) {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+
+  const { data, error } = await supabase
+    .from('transactions')
+    .insert(
+      rows.map((r) => ({
+        user_id: userData.user.id,
+        amount: r.amount,
+        type: r.type,
+        account_id: r.accountId,
+        category_id: r.categoryId,
+        occurred_on: r.occurredOn,
+        note: r.note || null,
+      })),
+    )
+    .select()
+  if (error) throw error
+  return data
+}
+
 export async function deleteTransaction(id) {
   const { error } = await supabase.from('transactions').delete().eq('id', id)
   if (error) throw error

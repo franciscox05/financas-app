@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import EntityManager from '../components/EntityManager'
 import { ErrorNotice, ListSkeleton } from '../components/Feedback'
+import ImportSection from '../components/ImportSection'
 import {
   createAccount,
   createCategory,
@@ -102,6 +103,8 @@ export default function Manage() {
           setCategories((prev) => prev.map((c) => (c.id === item.id ? updated : c)).sort(byName))
         }}
       />
+
+      <ImportSection accounts={accounts} categories={categories} />
     </div>
   )
 }
