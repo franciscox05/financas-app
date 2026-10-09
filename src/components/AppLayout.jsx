@@ -25,6 +25,9 @@ export default function AppLayout() {
           <NavLink to="/patrimonio" className={navLinkClass}>
             Património
           </NavLink>
+          <NavLink to="/dividas" className={navLinkClass}>
+            Dívidas
+          </NavLink>
         </div>
         <div className="flex items-center gap-3">
           <span className="hidden text-sm text-neutral-500 sm:inline">{user.email}</span>

@@ -199,3 +199,61 @@ export async function deleteSnapshot(id) {
   const { error } = await supabase.from('net_worth_snapshots').delete().eq('id', id)
   if (error) throw error
 }
+
+export async function listDebts() {
+  const { data, error } = await supabase
+    .from('debts')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+export async function createDebt({ direction, counterpartyName, amount, note, transactionId }) {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+
+  const { data, error } = await supabase
+    .from('debts')
+    .insert({
+      user_id: userData.user.id,
+      direction,
+      counterparty_name: counterpartyName,
+      amount,
+      note: note || null,
+      transaction_id: transactionId || null,
+    })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function settleDebt({ id, direction, amount, counterpartyName, accountId, categoryId }) {
+  const settledTransaction = await createTransaction({
+    amount,
+    type: direction === 'owed_to_me' ? 'income' : 'expense',
+    accountId,
+    categoryId,
+    occurredOn: new Date().toISOString().slice(0, 10),
+    note: `Dívida: ${counterpartyName}`,
+  })
+
+  const { data, error } = await supabase
+    .from('debts')
+    .update({
+      status: 'settled',
+      settled_at: new Date().toISOString(),
+      settled_transaction_id: settledTransaction.id,
+    })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteDebt(id) {
+  const { error } = await supabase.from('debts').delete().eq('id', id)
+  if (error) throw error
+}

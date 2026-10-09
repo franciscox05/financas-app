@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { suggestCategoryId } from '../lib/categorySuggest'
-import { createTransaction } from '../lib/db'
+import { createDebt, createTransaction } from '../lib/db'
 
 function today() {
   return new Date().toISOString().slice(0, 10)
@@ -17,6 +17,10 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
   const [error, setError] = useState('')
   const [suggested, setSuggested] = useState(false)
   const categoryTouchedRef = useRef(false)
+
+  const [showDebt, setShowDebt] = useState(false)
+  const [debtCounterparty, setDebtCounterparty] = useState('')
+  const [debtAmount, setDebtAmount] = useState('')
 
   const categoriesForType = useMemo(
     () => categories.filter((c) => c.type === type),
@@ -41,6 +45,14 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note, type])
 
+  useEffect(() => {
+    if (type !== 'expense') {
+      setShowDebt(false)
+      setDebtCounterparty('')
+      setDebtAmount('')
+    }
+  }, [type])
+
   async function handleSubmit(e) {
     e.preventDefault()
     const numericAmount = Number(amount)
@@ -50,6 +62,12 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
     }
     if (!accountId || !effectiveCategoryId) {
       setError('Escolhe conta e categoria.')
+      return
+    }
+
+    const numericDebtAmount = Number(debtAmount)
+    if (showDebt && (!debtCounterparty.trim() || !numericDebtAmount || numericDebtAmount <= 0)) {
+      setError('Indica quem te deve e um valor válido, ou fecha essa secção.')
       return
     }
 
@@ -64,12 +82,23 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
         occurredOn,
         note,
       })
+      if (showDebt) {
+        await createDebt({
+          direction: 'owed_to_me',
+          counterpartyName: debtCounterparty.trim(),
+          amount: numericDebtAmount,
+          transactionId: created.id,
+        })
+      }
       setAmount('')
       setNote('')
       setOccurredOn(today())
       setCategoryId('')
       setSuggested(false)
       categoryTouchedRef.current = false
+      setShowDebt(false)
+      setDebtCounterparty('')
+      setDebtAmount('')
       onCreated(created)
     } catch (err) {
       setError(err.message)
@@ -170,6 +199,43 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
           className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
         />
       </div>
+
+      {type === 'expense' && (
+        <div>
+          <button
+            type="button"
+            onClick={() => {
+              if (!showDebt && !debtAmount && amount) setDebtAmount(amount)
+              setShowDebt((v) => !v)
+            }}
+            className="text-xs text-neutral-500 underline-offset-2 hover:underline"
+          >
+            {showDebt ? 'Fechar' : '+ Alguém te deve por isto?'}
+          </button>
+
+          {showDebt && (
+            <div className="mt-2 grid grid-cols-2 gap-2 rounded-lg border border-neutral-200 p-2 dark:border-neutral-800">
+              <input
+                type="text"
+                placeholder="Nome de quem te deve"
+                value={debtCounterparty}
+                onChange={(e) => setDebtCounterparty(e.target.value)}
+                className="col-span-2 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              />
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0"
+                placeholder="Quanto te deve (€)"
+                value={debtAmount}
+                onChange={(e) => setDebtAmount(e.target.value)}
+                className="col-span-2 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
