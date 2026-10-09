@@ -13,8 +13,8 @@ export default function AppLayout() {
   const { user, signOut } = useAuth()
 
   return (
-    <div className="min-h-svh bg-neutral-50 pb-10 dark:bg-neutral-900">
-      <header className="flex items-center justify-between gap-4 p-4">
+    <div className="min-h-svh bg-neutral-50 pb-[max(2.5rem,env(safe-area-inset-bottom))] dark:bg-neutral-900">
+      <header className="flex flex-wrap items-center justify-between gap-3 p-4 pt-[max(1rem,env(safe-area-inset-top))]">
         <div className="flex items-center gap-1">
           <NavLink to="/" end className={navLinkClass}>
             Registo
