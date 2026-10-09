@@ -198,28 +198,6 @@ export async function markRecurringGenerated(id, monthIsoDate) {
   if (error) throw error
 }
 
-export async function listBudgets(monthIsoDate) {
-  const { data, error } = await supabase.from('budgets').select('*').eq('month', monthIsoDate)
-  if (error) throw error
-  return data
-}
-
-export async function upsertBudget({ categoryId, month, amount }) {
-  const { data: userData, error: userError } = await supabase.auth.getUser()
-  if (userError) throw userError
-
-  const { data, error } = await supabase
-    .from('budgets')
-    .upsert(
-      { user_id: userData.user.id, category_id: categoryId, month, amount },
-      { onConflict: 'user_id,category_id,month' },
-    )
-    .select()
-    .single()
-  if (error) throw error
-  return data
-}
-
 export async function listAllTransactionsForExport() {
   const { data, error } = await supabase
     .from('transactions')

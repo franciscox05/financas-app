@@ -11,7 +11,6 @@ import {
   YAxis,
 } from 'recharts'
 import { useNavigate } from 'react-router-dom'
-import BudgetSection from '../components/BudgetSection'
 import MonthCalendar from '../components/MonthCalendar'
 import { EmptyState, ErrorNotice, ListSkeleton, Skeleton } from '../components/Feedback'
 import { listCategories, listTransactionsInRange } from '../lib/db'
@@ -124,21 +123,6 @@ export default function Balance() {
   }, [selectedBucket])
 
   const maxCategoryAmount = categoryBreakdown[0]?.amount ?? 0
-
-  const spentByCategoryId = useMemo(() => {
-    const map = new Map()
-    if (!selectedBucket) return map
-    for (const tx of selectedBucket.txs) {
-      if (tx.type !== 'expense') continue
-      map.set(tx.category_id, (map.get(tx.category_id) ?? 0) + Number(tx.amount))
-    }
-    return map
-  }, [selectedBucket])
-
-  const expenseCategories = useMemo(
-    () => categories.filter((c) => c.type === 'expense'),
-    [categories],
-  )
 
   const savingsCategoryIds = useMemo(
     () => new Set(categories.filter((c) => c.is_savings).map((c) => c.id)),
@@ -327,12 +311,6 @@ export default function Balance() {
           </ul>
         </section>
       )}
-
-      <BudgetSection
-        month={selectedMonth}
-        categories={expenseCategories}
-        spentByCategoryId={spentByCategoryId}
-      />
 
       <section>
         <h3 className="mb-2 text-sm font-semibold text-neutral-500">
