@@ -7,13 +7,15 @@ import {
   markRecurringGenerated,
 } from '../lib/db'
 import { monthStart, toIsoDate, today } from '../lib/dates'
-import { EmptyState, ErrorNotice, Skeleton } from './Feedback'
+import { useToast } from '../context/toastContext'
+import { EmptyState, Skeleton } from './Feedback'
 
 function eur(value) {
   return `${Number(value).toFixed(2)} €`
 }
 
 export default function RecurringSection({ accounts, categories, onLaunched }) {
+  const toast = useToast()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [launchingId, setLaunchingId] = useState(null)
@@ -28,7 +30,6 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
   const [note, setNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
-  const [actionError, setActionError] = useState('')
 
   const currentMonthIso = toIsoDate(monthStart(new Date()))
 
@@ -42,7 +43,7 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
     try {
       setItems(await listRecurringTransactions())
     } catch (err) {
-      setActionError(`Não foi possível carregar as recorrências: ${err.message}`)
+      toast.error(`Não foi possível carregar as recorrências: ${err.message}`)
     } finally {
       setLoading(false)
     }
@@ -57,7 +58,6 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
 
   async function handleLaunch(item) {
     setLaunchingId(item.id)
-    setActionError('')
     try {
       await createTransaction({
         amount: Number(item.amount),
@@ -70,21 +70,22 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
       await markRecurringGenerated(item.id, currentMonthIso)
       await load()
       onLaunched?.()
+      toast.success(`Recorrência lançada: ${eur(item.amount)}.`)
     } catch (err) {
-      setActionError(`Não foi possível lançar a recorrência: ${err.message}`)
+      toast.error(`Não foi possível lançar a recorrência: ${err.message}`)
     } finally {
       setLaunchingId(null)
     }
   }
 
   async function handleDelete(id) {
-    setActionError('')
     try {
       await deleteRecurringTransaction(id)
       setConfirmingDeleteId(null)
       await load()
+      toast.success('Recorrência apagada.')
     } catch (err) {
-      setActionError(`Não foi possível apagar a recorrência: ${err.message}`)
+      toast.error(`Não foi possível apagar a recorrência: ${err.message}`)
     }
   }
 
@@ -123,15 +124,16 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
       setNote('')
       setShowForm(false)
       await load()
+      toast.success('Recorrência criada.')
     } catch (err) {
-      setFormError(err.message)
+      toast.error(`Não foi possível criar a recorrência: ${err.message}`)
     } finally {
       setSubmitting(false)
     }
   }
 
   // Só mostra skeleton no primeiro carregamento; nos refrescos mantém a lista.
-  if (loading && items.length === 0 && !actionError) {
+  if (loading && items.length === 0) {
     return (
       <div role="status" aria-label="A carregar recorrências" className="space-y-2">
         <Skeleton className="h-4 w-1/3" />
@@ -142,8 +144,6 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
 
   return (
     <section className="space-y-3">
-      <ErrorNotice message={actionError} onDismiss={() => setActionError('')} />
-
       {pending.length > 0 && (
         <div className="space-y-2 rounded-xl border border-blue-200 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950/40">
           <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-300">

@@ -3,6 +3,7 @@ import { EmptyState, ErrorNotice, PageSkeleton } from '../components/Feedback'
 import QuickEntryForm from '../components/QuickEntryForm'
 import RecurringSection from '../components/RecurringSection'
 import TransactionList from '../components/TransactionList'
+import { useToast } from '../context/toastContext'
 import { downloadCsv, toCsv } from '../lib/csv'
 import { today } from '../lib/dates'
 import { listAccounts, listAllTransactionsForExport, listCategories, listTransactions } from '../lib/db'
@@ -13,8 +14,8 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
-  const [exportError, setExportError] = useState('')
   const [exporting, setExporting] = useState(false)
+  const toast = useToast()
 
   const loadAll = useCallback(async () => {
     setLoadError('')
@@ -40,7 +41,6 @@ export default function Dashboard() {
 
   async function handleExport() {
     setExporting(true)
-    setExportError('')
     try {
       const all = await listAllTransactionsForExport()
       const csv = toCsv(all, [
@@ -52,8 +52,9 @@ export default function Dashboard() {
         { label: 'Nota', value: (t) => t.note ?? '' },
       ])
       downloadCsv(`financasapp-transacoes-${today()}.csv`, csv)
+      toast.success(`CSV exportado (${all.length} transações).`)
     } catch (err) {
-      setExportError(`Não foi possível exportar: ${err.message}`)
+      toast.error(`Não foi possível exportar: ${err.message}`)
     } finally {
       setExporting(false)
     }
@@ -109,7 +110,6 @@ export default function Dashboard() {
             {exporting ? 'A exportar...' : 'Exportar CSV'}
           </button>
         </div>
-        <ErrorNotice message={exportError} onDismiss={() => setExportError('')} />
         <TransactionList
           transactions={transactions}
           categories={categories}

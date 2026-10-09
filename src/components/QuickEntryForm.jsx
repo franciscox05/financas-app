@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { suggestCategoryId } from '../lib/categorySuggest'
 import { createTransaction } from '../lib/db'
+import { useToast } from '../context/toastContext'
 import { today } from '../lib/dates'
 
 export default function QuickEntryForm({ accounts, categories, transactions, onCreated }) {
+  const toast = useToast()
   const [type, setType] = useState('expense')
   const [amount, setAmount] = useState('')
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? '')
@@ -68,8 +70,11 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       setSuggested(false)
       categoryTouchedRef.current = false
       onCreated(created)
+      toast.success(
+        `${type === 'income' ? 'Ganho' : 'Gasto'} de ${numericAmount.toFixed(2)} € registado.`,
+      )
     } catch (err) {
-      setError(err.message)
+      toast.error(`Não foi possível registar: ${err.message}`)
     } finally {
       setSubmitting(false)
     }
