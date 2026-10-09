@@ -12,6 +12,7 @@ import {
 } from 'recharts'
 import { useNavigate } from 'react-router-dom'
 import BudgetSection from '../components/BudgetSection'
+import MonthCalendar from '../components/MonthCalendar'
 import { EmptyState, ErrorNotice, ListSkeleton, Skeleton } from '../components/Feedback'
 import { listCategories, listTransactionsInRange } from '../lib/db'
 import { addMonths, monthKey, monthLabel, monthStart, shortMonthLabel, toIsoDate } from '../lib/dates'
@@ -241,6 +242,8 @@ export default function Balance() {
           </p>
         </div>
       </div>
+
+      <MonthCalendar monthDate={selectedMonth} transactions={selectedBucket?.txs ?? []} />
 
       {insights.length > 0 && (
         <section className="space-y-1.5 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/40">
