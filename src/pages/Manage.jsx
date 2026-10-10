@@ -1,19 +1,23 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import CategoryRulesSection from '../components/CategoryRulesSection'
 import EntityManager from '../components/EntityManager'
 import { ErrorNotice, ListSkeleton } from '../components/Feedback'
 import ImportSection from '../components/ImportSection'
 import ReclassifySection from '../components/ReclassifySection'
+import { balanceAt } from '../lib/accountBalance'
+import { today } from '../lib/dates'
 import {
   createAccount,
   createCategory,
+  createSnapshot,
   deleteAccount,
   deleteCategory,
   listAccounts,
+  listAllTransactionsForBalance,
   listCategories,
+  listNetWorthSnapshots,
   renameAccount,
   renameCategory,
-  updateAccountOpeningBalance,
   updateCategorySavingsFlag,
 } from '../lib/db'
 
@@ -32,15 +36,24 @@ const byName = (a, b) => a.name.localeCompare(b.name, 'pt')
 export default function Manage() {
   const [accounts, setAccounts] = useState([])
   const [categories, setCategories] = useState([])
+  const [transactions, setTransactions] = useState([])
+  const [snapshots, setSnapshots] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   const load = useCallback(async () => {
     setError('')
     try {
-      const [accs, cats] = await Promise.all([listAccounts(), listCategories()])
+      const [accs, cats, txs, snaps] = await Promise.all([
+        listAccounts(),
+        listCategories(),
+        listAllTransactionsForBalance(),
+        listNetWorthSnapshots(),
+      ])
       setAccounts(accs)
       setCategories(cats)
+      setTransactions(txs)
+      setSnapshots(snaps)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -51,6 +64,15 @@ export default function Manage() {
   useEffect(() => {
     load()
   }, [load])
+
+  const accountBalances = useMemo(() => {
+    const now = today()
+    const map = new Map()
+    for (const account of accounts) {
+      map.set(account.id, balanceAt(account.id, transactions, snapshots, now))
+    }
+    return map
+  }, [accounts, transactions, snapshots])
 
   if (loading) {
     return <ListSkeleton rows={6} />
@@ -80,9 +102,14 @@ export default function Manage() {
           await deleteAccount(item.id)
           setAccounts((prev) => prev.filter((a) => a.id !== item.id))
         }}
-        onUpdateOpeningBalance={async (item, openingBalance) => {
-          const updated = await updateAccountOpeningBalance(item.id, openingBalance)
-          setAccounts((prev) => prev.map((a) => (a.id === item.id ? updated : a)).sort(byName))
+        balances={accountBalances}
+        onQuickSnapshot={async (item, value) => {
+          const created = await createSnapshot({
+            accountId: item.id,
+            value,
+            snapshotDate: today(),
+          })
+          setSnapshots((prev) => [created, ...prev])
         }}
       />
 

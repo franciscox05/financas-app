@@ -21,6 +21,7 @@ import {
 import { Plus, Trash2 } from 'lucide-react'
 import { EmptyState, ErrorNotice, Skeleton } from '../components/Feedback'
 import { useToast } from '../context/toastContext'
+import { balanceAt } from '../lib/accountBalance'
 import { addMonths, endOfMonth, monthStart, shortMonthLabel, toIsoDate, today } from '../lib/dates'
 
 const LINE_COLOR = '#2a78d6'
@@ -29,29 +30,14 @@ function eur(value) {
   return `${value.toFixed(2)} €`
 }
 
-// `cashAccounts` são os objetos de conta (não só ids), para somar o saldo
-// inicial de cada uma — dinheiro que já existia antes de começar a registar
-// (ex. em casa), sem precisar de uma transação falsa.
-function cashBalanceAt(transactions, cashAccounts, asOfDate) {
-  let total = cashAccounts.reduce((sum, acc) => sum + Number(acc.opening_balance ?? 0), 0)
-  const cashAccountIds = new Set(cashAccounts.map((a) => a.id))
-  for (const tx of transactions) {
-    if (!cashAccountIds.has(tx.account_id)) continue
-    if (tx.occurred_on > asOfDate) continue
-    total += tx.type === 'income' ? Number(tx.amount) : -Number(tx.amount)
-  }
-  return total
-}
-
-function investmentValueAt(snapshots, investmentAccountIds, asOfDate) {
-  let total = 0
-  for (const accountId of investmentAccountIds) {
-    const latest = snapshots
-      .filter((s) => s.account_id === accountId && s.snapshot_date <= asOfDate)
-      .sort((a, b) => (a.snapshot_date < b.snapshot_date ? 1 : -1))[0]
-    if (latest) total += Number(latest.value)
-  }
-  return total
+// Soma o saldo (snapshot mais recente + transações desde esse snapshot) de
+// cada conta do grupo, na mesma data — serve tanto para contas à ordem como
+// de investimento.
+function groupBalanceAt(transactions, snapshots, accountIds, asOfDate) {
+  return accountIds.reduce(
+    (sum, accountId) => sum + balanceAt(accountId, transactions, snapshots, asOfDate),
+    0,
+  )
 }
 
 export default function NetWorth() {
@@ -92,7 +78,7 @@ export default function NetWorth() {
       setTransactions(txs)
       setSnapshots(snaps)
       setGoals(gls)
-      setSnapAccountId((prev) => prev || accs.find((a) => a.type === 'investment')?.id || '')
+      setSnapAccountId((prev) => prev || accs[0]?.id || '')
       setGoalAccountId((prev) => prev || accs[0]?.id || '')
     } catch (err) {
       setError(err.message)
@@ -120,11 +106,21 @@ export default function NetWorth() {
     () => investmentAccounts.map((a) => a.id),
     [investmentAccounts],
   )
+  const cashAccountIds = useMemo(() => cashAccounts.map((a) => a.id), [cashAccounts])
 
   const cashBalance = useMemo(
-    () => cashBalanceAt(transactions, cashAccounts, today()),
-    [transactions, cashAccounts],
+    () => groupBalanceAt(transactions, snapshots, cashAccountIds, today()),
+    [transactions, snapshots, cashAccountIds],
   )
+
+  const balanceByAccountId = useMemo(() => {
+    const now = today()
+    const map = new Map()
+    for (const acc of accounts) {
+      map.set(acc.id, balanceAt(acc.id, transactions, snapshots, now))
+    }
+    return map
+  }, [accounts, transactions, snapshots])
 
   const latestByAccount = useMemo(() => {
     const map = new Map()
@@ -138,49 +134,30 @@ export default function NetWorth() {
   }, [snapshots, investmentAccountIds])
 
   const investmentTotal = useMemo(
-    () => [...latestByAccount.values()].reduce((sum, s) => sum + Number(s.value), 0),
-    [latestByAccount],
+    () => groupBalanceAt(transactions, snapshots, investmentAccountIds, today()),
+    [transactions, snapshots, investmentAccountIds],
   )
 
   const totalNetWorth = cashBalance + investmentTotal
 
-  const balanceByAccountId = useMemo(() => {
-    const map = new Map()
-    for (const acc of accounts) {
-      if (acc.type === 'investment') {
-        const latest = latestByAccount.get(acc.id)
-        map.set(acc.id, latest ? Number(latest.value) : 0)
-      } else {
-        let total = Number(acc.opening_balance ?? 0)
-        for (const tx of transactions) {
-          if (tx.account_id !== acc.id) continue
-          total += tx.type === 'income' ? Number(tx.amount) : -Number(tx.amount)
-        }
-        map.set(acc.id, total)
-      }
-    }
-    return map
-  }, [accounts, transactions, latestByAccount])
-
   const chartData = useMemo(() => {
+    const allAccountIds = accounts.map((a) => a.id)
     const points = []
     for (let i = 5; i >= 0; i--) {
       const monthDate = addMonths(monthStart(new Date()), -i)
       const isCurrentMonth = i === 0
       const asOfDate = isCurrentMonth ? today() : toIsoDate(endOfMonth(monthDate))
-      const total =
-        cashBalanceAt(transactions, cashAccounts, asOfDate) +
-        investmentValueAt(snapshots, investmentAccountIds, asOfDate)
+      const total = groupBalanceAt(transactions, snapshots, allAccountIds, asOfDate)
       points.push({ month: shortMonthLabel(monthDate), Património: Number(total.toFixed(2)) })
     }
     return points
-  }, [transactions, snapshots, cashAccounts, investmentAccountIds])
+  }, [transactions, snapshots, accounts])
 
   async function handleAddSnapshot(e) {
     e.preventDefault()
     const numericValue = Number(snapValue)
     if (!snapAccountId) {
-      setFormError('Escolhe uma conta de investimento.')
+      setFormError('Escolhe uma conta.')
       return
     }
     if (Number.isNaN(numericValue) || numericValue < 0) {
@@ -309,7 +286,7 @@ export default function NetWorth() {
                 )}
               </div>
               <span className="font-semibold text-neutral-900 dark:text-neutral-100">
-                {latest ? eur(Number(latest.value)) : 'Sem dados'}
+                {eur(balanceByAccountId.get(acc.id) ?? 0)}
               </span>
             </div>
           )
@@ -499,39 +476,39 @@ export default function NetWorth() {
       </section>
 
       <section>
-        <h3 className="mb-2 text-sm font-semibold text-neutral-500">
-          Adicionar snapshot de investimento
-        </h3>
+        <h3 className="mb-2 text-sm font-semibold text-neutral-500">Atualizar saldo de uma conta</h3>
+        <p className="mb-2 text-xs text-neutral-400">
+          Regista quanto tens numa conta numa data — só afeta o património a partir desse dia,
+          nunca os meses anteriores.
+        </p>
         <form
           onSubmit={handleAddSnapshot}
           className="space-y-3 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
         >
-          <div className="grid grid-cols-2 gap-2">
-            <select
-              value={snapAccountId}
-              onChange={(e) => setSnapAccountId(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-            >
-              {investmentAccounts.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
-            <input
-              type="date"
-              value={snapDate}
-              onChange={(e) => setSnapDate(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-            />
-          </div>
+          <select
+            value={snapAccountId}
+            onChange={(e) => setSnapAccountId(e.target.value)}
+            className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+          >
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+          <input
+            type="date"
+            value={snapDate}
+            onChange={(e) => setSnapDate(e.target.value)}
+            className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+          />
           <input
             type="number"
             inputMode="decimal"
             step="0.01"
             min="0"
             required
-            placeholder="Valor total na plataforma (€)"
+            placeholder="Valor total nessa data (€)"
             value={snapValue}
             onChange={(e) => setSnapValue(e.target.value)}
             className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"

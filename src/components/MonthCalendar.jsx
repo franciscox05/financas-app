@@ -7,11 +7,12 @@ function eur(value) {
   return `${Number(value).toFixed(2)} €`
 }
 
-// Calendário do mês selecionado: cada dia mostra o saldo desse dia (gasto em
-// vermelho, ganho em verde quando não há gastos), e clicar num dia revela as
-// transações desse dia ao detalhe. occurred_on já vem em "YYYY-MM-DD", por
-// isso o dia é lido diretamente da string — sem criar Date e sem risco do
-// bug de fuso horário que já apanhámos noutro sítio (ver lib/dates.js).
+// Calendário do mês selecionado: cada dia mostra o saldo líquido desse dia
+// (ganhos - gastos; verde se ≥0, vermelho se negativo), e clicar num dia
+// revela as transações desse dia ao detalhe. occurred_on já vem em
+// "YYYY-MM-DD", por isso o dia é lido diretamente da string — sem criar Date
+// e sem risco do bug de fuso horário que já apanhámos noutro sítio (ver
+// lib/dates.js).
 export default function MonthCalendar({ monthDate, transactions }) {
   const [showSection, setShowSection] = useState(false)
   const [selectedDay, setSelectedDay] = useState(null)
@@ -83,14 +84,14 @@ export default function MonthCalendar({ monthDate, transactions }) {
                   }`}
                 >
                   <span>{day}</span>
-                  {entry && entry.expense > 0 && (
-                    <span className={`text-[9px] ${isSelected ? '' : 'text-red-600'}`}>
-                      -{entry.expense.toFixed(0)}€
-                    </span>
-                  )}
-                  {entry && entry.expense === 0 && entry.income > 0 && (
-                    <span className={`text-[9px] ${isSelected ? '' : 'text-green-600'}`}>
-                      +{entry.income.toFixed(0)}€
+                  {entry && (
+                    <span
+                      className={`text-[9px] ${
+                        isSelected ? '' : entry.income - entry.expense >= 0 ? 'text-green-600' : 'text-red-600'
+                      }`}
+                    >
+                      {entry.income - entry.expense >= 0 ? '+' : ''}
+                      {(entry.income - entry.expense).toFixed(0)}€
                     </span>
                   )}
                 </button>

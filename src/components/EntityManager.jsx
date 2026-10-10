@@ -1,4 +1,4 @@
-import { PiggyBank, Pencil, Trash2 } from 'lucide-react'
+import { Pencil, PiggyBank, TrendingUp, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { MAX_NAME_LENGTH, validateName } from '../lib/names'
@@ -6,25 +6,29 @@ import { MAX_NAME_LENGTH, validateName } from '../lib/names'
 const inputClass =
   'w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100'
 
+function eur(value) {
+  return `${Number(value).toFixed(2)} €`
+}
+
 function ManageRow({
   item,
   canDelete,
   deleteHint,
   deleteWarning,
   siblings,
+  balance,
   onRename,
   onDelete,
   onToggleSavings,
-  onUpdateOpeningBalance,
+  onQuickSnapshot,
 }) {
   const [editing, setEditing] = useState(false)
+  const [updatingBalance, setUpdatingBalance] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [name, setName] = useState(item.name)
-  const [openingBalance, setOpeningBalance] = useState(item.opening_balance ?? 0)
+  const [newBalance, setNewBalance] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-
-  const showOpeningBalance = Boolean(onUpdateOpeningBalance) && item.type === 'cash'
 
   async function handleSave(e) {
     e.preventDefault()
@@ -33,22 +37,14 @@ function ManageRow({
       setError(result.error)
       return
     }
-    const numericOpening = Number(openingBalance)
-    if (showOpeningBalance && (Number.isNaN(numericOpening) || numericOpening < 0)) {
-      setError('Indica um saldo inicial válido.')
-      return
-    }
-    const nameChanged = result.name !== item.name
-    const openingChanged = showOpeningBalance && numericOpening !== Number(item.opening_balance ?? 0)
-    if (!nameChanged && !openingChanged) {
+    if (result.name === item.name) {
       setEditing(false)
       return
     }
     setBusy(true)
     setError('')
     try {
-      if (nameChanged) await onRename(item, result.name)
-      if (openingChanged) await onUpdateOpeningBalance(item, numericOpening)
+      await onRename(item, result.name)
       setEditing(false)
     } catch {
       // O toast já avisou do erro; fica em modo de edição para tentar de novo.
@@ -59,9 +55,28 @@ function ManageRow({
 
   function handleCancel() {
     setName(item.name)
-    setOpeningBalance(item.opening_balance ?? 0)
     setError('')
     setEditing(false)
+  }
+
+  async function handleSaveBalance(e) {
+    e.preventDefault()
+    const numeric = Number(newBalance)
+    if (Number.isNaN(numeric) || numeric < 0) {
+      setError('Indica um valor válido.')
+      return
+    }
+    setBusy(true)
+    setError('')
+    try {
+      await onQuickSnapshot(item, numeric)
+      setNewBalance('')
+      setUpdatingBalance(false)
+    } catch {
+      // O toast já avisou do erro.
+    } finally {
+      setBusy(false)
+    }
   }
 
   async function handleDelete() {
@@ -86,22 +101,6 @@ function ManageRow({
             aria-label={`Novo nome para ${item.name}`}
             className={inputClass}
           />
-          {showOpeningBalance && (
-            <div>
-              <label className="mb-0.5 block text-xs text-neutral-500">
-                Saldo inicial (dinheiro que já tinhas antes de começar a registar)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={openingBalance}
-                onChange={(e) => setOpeningBalance(e.target.value)}
-                aria-label={`Saldo inicial de ${item.name}`}
-                className={inputClass}
-              />
-            </div>
-          )}
           {error && (
             <p role="alert" className="text-xs text-red-600">
               {error}
@@ -134,10 +133,8 @@ function ManageRow({
       <div className="flex items-center justify-between gap-3">
         <span className="min-w-0 truncate text-sm text-neutral-900 dark:text-neutral-100">
           {item.name}
-          {showOpeningBalance && Number(item.opening_balance) > 0 && (
-            <span className="ml-1.5 text-xs text-neutral-400">
-              · saldo inicial {Number(item.opening_balance).toFixed(2)} €
-            </span>
+          {balance !== undefined && (
+            <span className="ml-1.5 text-xs text-neutral-400">· {eur(balance)}</span>
           )}
         </span>
         <div className="flex shrink-0 items-center gap-2">
@@ -157,6 +154,17 @@ function ManageRow({
               }`}
             >
               <PiggyBank size={14} />
+            </button>
+          )}
+          {onQuickSnapshot && (
+            <button
+              type="button"
+              onClick={() => setUpdatingBalance((v) => !v)}
+              aria-label={`Atualizar saldo de ${item.name}`}
+              title="Atualizar saldo (regista o valor de hoje)"
+              className="rounded p-1 text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
+            >
+              <TrendingUp size={16} />
             </button>
           )}
           <button
@@ -200,6 +208,33 @@ function ManageRow({
           )}
         </div>
       </div>
+      {updatingBalance && (
+        <form onSubmit={handleSaveBalance} className="mt-2 flex items-center gap-2">
+          <input
+            autoFocus
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="Valor atual (€)"
+            value={newBalance}
+            onChange={(e) => setNewBalance(e.target.value)}
+            aria-label={`Novo saldo de ${item.name}`}
+            className={`${inputClass} flex-1`}
+          />
+          <button
+            type="submit"
+            disabled={busy}
+            className="rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+          >
+            OK
+          </button>
+        </form>
+      )}
+      {updatingBalance && error && (
+        <p role="alert" className="mt-1 text-xs text-red-600">
+          {error}
+        </p>
+      )}
       {confirmingDelete && deleteWarning && (
         <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{deleteWarning}</p>
       )}
@@ -217,16 +252,16 @@ export default function EntityManager({
   groups, // [{ type, label }]
   scope,
   deleteWarning,
+  balances, // Map opcional item.id -> saldo atual (só para contas)
   onCreate,
   onRename,
   onDelete,
   onToggleSavings,
-  onUpdateOpeningBalance,
+  onQuickSnapshot,
 }) {
   const toast = useToast()
   const [newName, setNewName] = useState('')
   const [newType, setNewType] = useState(groups[0].type)
-  const [newOpeningBalance, setNewOpeningBalance] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -242,13 +277,8 @@ export default function EntityManager({
     setSubmitting(true)
     setError('')
     try {
-      await onCreate({
-        name: result.name,
-        type: newType,
-        openingBalance: newType === 'cash' ? Number(newOpeningBalance) || 0 : 0,
-      })
+      await onCreate({ name: result.name, type: newType })
       setNewName('')
-      setNewOpeningBalance('')
       toast.success(`${noun[0].toUpperCase()}${noun.slice(1)} "${result.name}" criada.`)
     } catch (err) {
       toast.error(`Não foi possível criar: ${err.message}`)
@@ -276,10 +306,10 @@ export default function EntityManager({
     }
   }
 
-  async function handleUpdateOpeningBalance(item, value) {
+  async function handleQuickSnapshot(item, value) {
     try {
-      await onUpdateOpeningBalance(item, value)
-      toast.success(`Saldo inicial de "${item.name}" atualizado.`)
+      await onQuickSnapshot(item, value)
+      toast.success(`Saldo de "${item.name}" atualizado.`)
     } catch (err) {
       toast.error(`Não foi possível atualizar: ${err.message}`)
       throw err
@@ -321,10 +351,11 @@ export default function EntityManager({
                     canDelete={pool.length > 1}
                     deleteHint={`Tem de existir pelo menos uma ${noun}${scope === 'group' ? ' deste tipo' : ''}.`}
                     deleteWarning={deleteWarning}
+                    balance={balances?.get(item.id)}
                     onRename={handleRename}
                     onDelete={handleDelete}
                     onToggleSavings={onToggleSavings ? handleToggleSavings : undefined}
-                    onUpdateOpeningBalance={onUpdateOpeningBalance ? handleUpdateOpeningBalance : undefined}
+                    onQuickSnapshot={onQuickSnapshot ? handleQuickSnapshot : undefined}
                   />
                 ))}
               </ul>
@@ -366,18 +397,6 @@ export default function EntityManager({
           aria-label={`Nome da nova ${noun}`}
           className={inputClass}
         />
-        {onUpdateOpeningBalance && newType === 'cash' && (
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            value={newOpeningBalance}
-            onChange={(e) => setNewOpeningBalance(e.target.value)}
-            placeholder="Saldo inicial (€, opcional)"
-            aria-label="Saldo inicial da nova conta"
-            className={inputClass}
-          />
-        )}
         {error && (
           <p role="alert" className="text-xs text-red-600">
             {error}
