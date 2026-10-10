@@ -211,7 +211,7 @@ export async function listAllTransactionsForExport() {
 export async function listAllTransactionsForBalance() {
   const { data, error } = await supabase
     .from('transactions')
-    .select('amount, type, occurred_on, account_id')
+    .select('amount, type, occurred_on, account_id, created_at')
   if (error) throw error
   return data
 }
