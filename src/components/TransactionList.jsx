@@ -1,7 +1,7 @@
 import { Pencil, Search, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useToast } from '../context/toastContext'
-import { deleteTransaction, listTransactionsPage, updateTransaction } from '../lib/db'
+import { createTransaction, deleteTransaction, listTransactionsPage, updateTransaction } from '../lib/db'
 import { parseSmartQuery } from '../lib/smartSearch'
 import { EmptyState, ErrorNotice, ListSkeleton } from './Feedback'
 
@@ -20,7 +20,7 @@ function formatDate(isoDate) {
   })
 }
 
-function TransactionRow({ tx, categories, accounts, onUpdated, onDeleted }) {
+function TransactionRow({ tx, categories, accounts, onUpdated, onDeleted, onRestored }) {
   const toast = useToast()
   const [editing, setEditing] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
@@ -39,7 +39,27 @@ function TransactionRow({ tx, categories, accounts, onUpdated, onDeleted }) {
     try {
       await deleteTransaction(tx.id)
       onDeleted(tx.id)
-      toast.success('Transação apagada.')
+      toast.success('Transação apagada.', {
+        action: {
+          label: 'Desfazer',
+          onClick: async () => {
+            try {
+              await createTransaction({
+                amount: Number(tx.amount),
+                type: tx.type,
+                accountId: tx.account_id,
+                categoryId: tx.category_id,
+                occurredOn: tx.occurred_on,
+                note: tx.note,
+              })
+              onRestored()
+              toast.success('Transação restaurada.')
+            } catch (err) {
+              toast.error(`Não foi possível desfazer: ${err.message}`)
+            }
+          },
+        },
+      })
     } catch (err) {
       setConfirmingDelete(false)
       toast.error(`Não foi possível apagar: ${err.message}`)
@@ -382,6 +402,20 @@ export default function TransactionList({ categories, accounts, refreshToken, on
     onRowChanged?.()
   }
 
+  // Após "Desfazer" recriar a transação (com novo id), a forma mais simples e
+  // correta de a voltar a mostrar é recarregar a primeira página — evita ter
+  // de adivinhar a posição de ordenação certa entre as linhas já carregadas.
+  async function handleRestored() {
+    try {
+      const { pageRows, count } = await loadPage(0)
+      setRows(pageRows)
+      setTotalCount(count)
+    } catch (err) {
+      setError(err.message)
+    }
+    onRowChanged?.()
+  }
+
   const hasActiveFilters =
     filters.query.trim() !== '' || filters.type !== 'all' || filters.accountId !== '' || filters.categoryId !== ''
 
@@ -437,6 +471,7 @@ export default function TransactionList({ categories, accounts, refreshToken, on
                 accounts={accounts}
                 onUpdated={handleUpdated}
                 onDeleted={handleDeleted}
+                onRestored={handleRestored}
               />
             ))}
           </ul>

@@ -104,12 +104,30 @@ export default function Debts() {
     }
   }
 
-  async function handleDelete(id) {
+  async function handleDelete(debt) {
     try {
-      await deleteDebt(id)
+      await deleteDebt(debt.id)
       setConfirmingDeleteId(null)
       await load()
-      toast.success('Dívida apagada.')
+      toast.success('Dívida apagada.', {
+        action: {
+          label: 'Desfazer',
+          onClick: async () => {
+            try {
+              await createDebt({
+                direction: debt.direction,
+                counterpartyName: debt.counterparty_name,
+                amount: Number(debt.amount),
+                note: debt.note,
+              })
+              await load()
+              toast.success('Dívida restaurada.')
+            } catch (err) {
+              toast.error(`Não foi possível desfazer: ${err.message}`)
+            }
+          },
+        },
+      })
     } catch (err) {
       toast.error(`Não foi possível apagar: ${err.message}`)
     }
@@ -177,7 +195,7 @@ export default function Debts() {
             {confirmingDeleteId === debt.id ? (
               <>
                 <button
-                  onClick={() => handleDelete(debt.id)}
+                  onClick={() => handleDelete(debt)}
                   className="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white"
                 >
                   Confirmar

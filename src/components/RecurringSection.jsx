@@ -143,12 +143,32 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
     }
   }
 
-  async function handleDelete(id) {
+  async function handleDelete(item) {
     try {
-      await deleteRecurringTransaction(id)
+      await deleteRecurringTransaction(item.id)
       setConfirmingDeleteId(null)
       await load()
-      toast.success('Recorrência apagada.')
+      toast.success('Recorrência apagada.', {
+        action: {
+          label: 'Desfazer',
+          onClick: async () => {
+            try {
+              await createRecurringTransaction({
+                accountId: item.account_id,
+                categoryId: item.category_id,
+                amount: Number(item.amount),
+                type: item.type,
+                note: item.note,
+                dayOfMonth: item.day_of_month,
+              })
+              await load()
+              toast.success('Recorrência restaurada.')
+            } catch (err) {
+              toast.error(`Não foi possível desfazer: ${err.message}`)
+            }
+          },
+        },
+      })
     } catch (err) {
       toast.error(`Não foi possível apagar a recorrência: ${err.message}`)
     }
@@ -300,7 +320,7 @@ export default function RecurringSection({ accounts, categories, onLaunched }) {
               {confirmingDeleteId === item.id ? (
                 <span className="flex items-center gap-1">
                   <button
-                    onClick={() => handleDelete(item.id)}
+                    onClick={() => handleDelete(item)}
                     className="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white"
                   >
                     Confirmar

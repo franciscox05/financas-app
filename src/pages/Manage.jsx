@@ -93,6 +93,7 @@ export default function Manage() {
         onCreate={async (values) => {
           const created = await createAccount(values)
           setAccounts((prev) => [...prev, created].sort(byName))
+          return created
         }}
         onRename={async (item, name) => {
           const updated = await renameAccount(item.id, name)
@@ -122,6 +123,7 @@ export default function Manage() {
         onCreate={async (values) => {
           const created = await createCategory(values)
           setCategories((prev) => [...prev, created].sort(byName))
+          return created
         }}
         onRename={async (item, name) => {
           const updated = await renameCategory(item.id, name)

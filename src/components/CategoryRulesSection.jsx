@@ -60,12 +60,25 @@ export default function CategoryRulesSection({ categories }) {
     }
   }
 
-  async function handleDelete(id) {
+  async function handleDelete(rule) {
     try {
-      await deleteCategoryRule(id)
+      await deleteCategoryRule(rule.id)
       setConfirmingDeleteId(null)
       await load()
-      toast.success('Regra apagada.')
+      toast.success('Regra apagada.', {
+        action: {
+          label: 'Desfazer',
+          onClick: async () => {
+            try {
+              await createCategoryRule({ keyword: rule.keyword, categoryId: rule.category_id })
+              await load()
+              toast.success('Regra restaurada.')
+            } catch (err) {
+              toast.error(`Não foi possível desfazer: ${err.message}`)
+            }
+          },
+        },
+      })
     } catch (err) {
       toast.error(`Não foi possível apagar: ${err.message}`)
     }
@@ -111,7 +124,7 @@ export default function CategoryRulesSection({ categories }) {
                   {confirmingDeleteId === r.id ? (
                     <span className="flex items-center gap-1">
                       <button
-                        onClick={() => handleDelete(r.id)}
+                        onClick={() => handleDelete(r)}
                         className="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white"
                       >
                         Confirmar

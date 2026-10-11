@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ToastContext } from '../context/toastContext'
 
 const DURATION_MS = { success: 3500, info: 3500, error: 6000 }
+// Toasts com uma ação (ex. "Desfazer") ficam mais tempo visíveis — a pessoa
+// precisa de tempo para ler e decidir, não só para ler a confirmação.
+const ACTION_DURATION_MS = 8000
 const MAX_VISIBLE = 3
 
 const DOT_CLASS = {
@@ -11,15 +14,29 @@ const DOT_CLASS = {
 }
 
 function ToastItem({ toast, onDismiss }) {
+  const duration = toast.action ? ACTION_DURATION_MS : DURATION_MS[toast.kind]
+
   useEffect(() => {
-    const timer = setTimeout(() => onDismiss(toast.id), DURATION_MS[toast.kind])
+    const timer = setTimeout(() => onDismiss(toast.id), duration)
     return () => clearTimeout(timer)
-  }, [toast.id, toast.kind, onDismiss])
+  }, [toast.id, duration, onDismiss])
 
   return (
     <li className="toast-in pointer-events-auto flex items-start gap-3 rounded-xl bg-neutral-900 px-4 py-3 text-sm text-neutral-50 shadow-lg ring-1 ring-black/10 dark:bg-neutral-100 dark:text-neutral-900">
       <span aria-hidden="true" className={`mt-1.5 size-2 shrink-0 rounded-full ${DOT_CLASS[toast.kind]}`} />
       <span className="min-w-0 flex-1">{toast.message}</span>
+      {toast.action && (
+        <button
+          type="button"
+          onClick={() => {
+            toast.action.onClick()
+            onDismiss(toast.id)
+          }}
+          className="shrink-0 font-semibold underline-offset-2 hover:underline"
+        >
+          {toast.action.label}
+        </button>
+      )}
       <button
         type="button"
         onClick={() => onDismiss(toast.id)}
@@ -40,17 +57,17 @@ export default function ToastProvider({ children }) {
     setToasts((prev) => prev.filter((t) => t.id !== id))
   }, [])
 
-  const push = useCallback((kind, message) => {
+  const push = useCallback((kind, message, { action } = {}) => {
     const id = nextId.current++
     // Mantém no máximo MAX_VISIBLE; os mais antigos saem primeiro.
-    setToasts((prev) => [...prev, { id, kind, message }].slice(-MAX_VISIBLE))
+    setToasts((prev) => [...prev, { id, kind, message, action }].slice(-MAX_VISIBLE))
   }, [])
 
   const api = useMemo(
     () => ({
-      success: (message) => push('success', message),
-      error: (message) => push('error', message),
-      info: (message) => push('info', message),
+      success: (message, opts) => push('success', message, opts),
+      error: (message, opts) => push('error', message, opts),
+      info: (message, opts) => push('info', message, opts),
     }),
     [push],
   )

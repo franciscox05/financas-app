@@ -179,12 +179,29 @@ export default function NetWorth() {
     }
   }
 
-  async function handleDeleteSnapshot(id) {
+  async function handleDeleteSnapshot(snapshot) {
     try {
-      await deleteSnapshot(id)
+      await deleteSnapshot(snapshot.id)
       setConfirmingSnapshotId(null)
       await loadAll()
-      toast.success('Snapshot apagado.')
+      toast.success('Snapshot apagado.', {
+        action: {
+          label: 'Desfazer',
+          onClick: async () => {
+            try {
+              await createSnapshot({
+                accountId: snapshot.account_id,
+                value: Number(snapshot.value),
+                snapshotDate: snapshot.snapshot_date,
+              })
+              await loadAll()
+              toast.success('Snapshot restaurado.')
+            } catch (err) {
+              toast.error(`Não foi possível desfazer: ${err.message}`)
+            }
+          },
+        },
+      })
     } catch (err) {
       toast.error(`Não foi possível apagar: ${err.message}`)
     }
@@ -228,12 +245,30 @@ export default function NetWorth() {
     }
   }
 
-  async function handleDeleteGoal(id) {
+  async function handleDeleteGoal(goal) {
     try {
-      await deleteSavingsGoal(id)
+      await deleteSavingsGoal(goal.id)
       setConfirmingGoalId(null)
       await loadAll()
-      toast.success('Meta apagada.')
+      toast.success('Meta apagada.', {
+        action: {
+          label: 'Desfazer',
+          onClick: async () => {
+            try {
+              await createSavingsGoal({
+                name: goal.name,
+                accountId: goal.account_id,
+                targetAmount: Number(goal.target_amount),
+                targetDate: goal.target_date,
+              })
+              await loadAll()
+              toast.success('Meta restaurada.')
+            } catch (err) {
+              toast.error(`Não foi possível desfazer: ${err.message}`)
+            }
+          },
+        },
+      })
     } catch (err) {
       toast.error(`Não foi possível apagar: ${err.message}`)
     }
@@ -395,7 +430,7 @@ export default function NetWorth() {
                     {confirmingGoalId === goal.id ? (
                       <span className="flex items-center gap-1">
                         <button
-                          onClick={() => handleDeleteGoal(goal.id)}
+                          onClick={() => handleDeleteGoal(goal)}
                           className="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white"
                         >
                           Confirmar
@@ -540,7 +575,7 @@ export default function NetWorth() {
                   {confirmingSnapshotId === s.id ? (
                     <span className="flex items-center gap-1">
                       <button
-                        onClick={() => handleDeleteSnapshot(s.id)}
+                        onClick={() => handleDeleteSnapshot(s)}
                         className="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white"
                       >
                         Confirmar

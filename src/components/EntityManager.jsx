@@ -300,7 +300,25 @@ export default function EntityManager({
   async function handleDelete(item) {
     try {
       await onDelete(item)
-      toast.success(`"${item.name}" apagada.`)
+      // Só é possível apagar quando nada referencia o item (apagar bloqueia
+      // com transações/categorias associadas), por isso recriar com o mesmo
+      // nome e tipo é sempre uma restauração completa e fiel.
+      toast.success(`"${item.name}" apagada.`, {
+        action: {
+          label: 'Desfazer',
+          onClick: async () => {
+            try {
+              const restored = await onCreate({ name: item.name, type: item.type })
+              if (item.is_savings && onToggleSavings) {
+                await onToggleSavings(restored, true)
+              }
+              toast.success(`"${item.name}" restaurada.`)
+            } catch (err) {
+              toast.error(`Não foi possível desfazer: ${err.message}`)
+            }
+          },
+        },
+      })
     } catch (err) {
       toast.error(err.message)
     }
