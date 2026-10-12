@@ -3,9 +3,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { createTransaction, deleteTransaction, listTransactionsPage, updateTransaction } from '../lib/db'
 import { parseSmartQuery } from '../lib/smartSearch'
-import { EmptyState, ErrorNotice, ListSkeleton } from './Feedback'
+import { EmptyState, ErrorNotice, ListSkeleton, Pager } from './Feedback'
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 25
 
 function formatAmount(amount, type) {
   const sign = type === 'income' ? '+' : '-'
@@ -331,8 +331,8 @@ export default function TransactionList({ categories, accounts, refreshToken, on
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [rows, setRows] = useState([])
   const [totalCount, setTotalCount] = useState(0)
+  const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState('')
 
   // Debounce do texto de pesquisa, para não disparar um pedido a cada tecla.
@@ -355,13 +355,18 @@ export default function TransactionList({ categories, accounts, refreshToken, on
     return { pageRows, count }
   }
 
+  // Mudar filtros ou pesquisa volta sempre à primeira página.
+  useEffect(() => {
+    setPage(1)
+  }, [filters.type, filters.accountId, filters.categoryId, debouncedQuery, refreshToken])
+
   useEffect(() => {
     let cancelled = false
     async function run() {
       setLoading(true)
       setError('')
       try {
-        const { pageRows, count } = await loadPage(0)
+        const { pageRows, count } = await loadPage((page - 1) * PAGE_SIZE)
         if (cancelled) return
         setRows(pageRows)
         setTotalCount(count)
@@ -376,20 +381,7 @@ export default function TransactionList({ categories, accounts, refreshToken, on
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.type, filters.accountId, filters.categoryId, debouncedQuery, refreshToken])
-
-  async function handleLoadMore() {
-    setLoadingMore(true)
-    try {
-      const { pageRows, count } = await loadPage(rows.length)
-      setRows((prev) => [...prev, ...pageRows])
-      setTotalCount(count)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoadingMore(false)
-    }
-  }
+  }, [filters.type, filters.accountId, filters.categoryId, debouncedQuery, refreshToken, page])
 
   function handleUpdated(updatedTx) {
     setRows((prev) => prev.map((r) => (r.id === updatedTx.id ? updatedTx : r)))
@@ -408,6 +400,7 @@ export default function TransactionList({ categories, accounts, refreshToken, on
   async function handleRestored() {
     try {
       const { pageRows, count } = await loadPage(0)
+      setPage(1)
       setRows(pageRows)
       setTotalCount(count)
     } catch (err) {
@@ -475,15 +468,7 @@ export default function TransactionList({ categories, accounts, refreshToken, on
               />
             ))}
           </ul>
-          {rows.length < totalCount && (
-            <button
-              onClick={handleLoadMore}
-              disabled={loadingMore}
-              className="w-full rounded-lg border border-neutral-300 py-2 text-sm disabled:opacity-50 dark:border-neutral-700"
-            >
-              {loadingMore ? 'A carregar...' : `Carregar mais (${rows.length} de ${totalCount})`}
-            </button>
-          )}
+          <Pager page={page} totalPages={Math.ceil(totalCount / PAGE_SIZE)} onChange={setPage} />
         </>
       )}
     </div>

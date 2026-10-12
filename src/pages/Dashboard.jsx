@@ -3,7 +3,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { EmptyState, ErrorNotice, PageSkeleton } from '../components/Feedback'
 import QuickEntryForm from '../components/QuickEntryForm'
-import RecurringSection from '../components/RecurringSection'
 import TransactionList from '../components/TransactionList'
 import { useToast } from '../context/toastContext'
 import { downloadCsv, toCsv } from '../lib/csv'
@@ -146,15 +145,6 @@ export default function Dashboard() {
         transactions={transactions}
         onCreated={(tx) => {
           setTransactions((prev) => [tx, ...prev])
-          setRefreshToken((prev) => prev + 1)
-        }}
-      />
-
-      <RecurringSection
-        accounts={accounts}
-        categories={categories}
-        onLaunched={() => {
-          loadAll()
           setRefreshToken((prev) => prev + 1)
         }}
       />

@@ -74,6 +74,35 @@ export function EmptyState({ title, description, actionLabel, onAction }) {
   )
 }
 
+// Paginação simples com "Anterior"/"Seguinte", usada em qualquer listagem
+// paginada (transações, histórico de saldo, dívidas acertadas, etc.).
+export function Pager({ page, totalPages, onChange }) {
+  if (totalPages <= 1) return null
+  return (
+    <div className="flex items-center justify-between pt-1 text-sm">
+      <button
+        type="button"
+        onClick={() => onChange(page - 1)}
+        disabled={page <= 1}
+        className="rounded-lg border border-neutral-300 px-3 py-1.5 disabled:opacity-40 dark:border-neutral-700"
+      >
+        Anterior
+      </button>
+      <span className="text-xs text-neutral-500">
+        Página {page} de {totalPages}
+      </span>
+      <button
+        type="button"
+        onClick={() => onChange(page + 1)}
+        disabled={page >= totalPages}
+        className="rounded-lg border border-neutral-300 px-3 py-1.5 disabled:opacity-40 dark:border-neutral-700"
+      >
+        Seguinte
+      </button>
+    </div>
+  )
+}
+
 export function ErrorNotice({ message, onRetry, onDismiss }) {
   if (!message) return null
   return (

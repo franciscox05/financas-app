@@ -4,8 +4,48 @@
   color-scheme: light dark;
 }
 
-body {
+html,
+body,
+#root {
   margin: 0;
+  background-color: #fafafa;
+}
+
+body {
+  overscroll-behavior-y: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  html,
+  body,
+  #root {
+    background-color: #171717;
+  }
+}
+
+/* iOS Safari desalinha o texto de <input type="date"> (fica à direita e
+   verticalmente deslocado) — força alinhamento consistente com os outros
+   campos do formulário. */
+input[type='date']::-webkit-date-and-time-value {
+  text-align: left;
+}
+
+/* Foco consistente em todos os campos e botões, para os formulários (a parte
+   da app onde se realizam tarefas) darem feedback visual claro ao navegar
+   por teclado ou ao tocar num campo. */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: 2px solid #2a78d6;
+  outline-offset: 1px;
+}
+
+input,
+select,
+textarea,
+button {
+  transition: border-color 150ms ease, background-color 150ms ease, opacity 150ms ease;
 }
 
 /* Entrada dos toasts: sobe e desvanece, curta (180ms) para não atrasar a leitura. */

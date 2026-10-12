@@ -1,8 +1,10 @@
 import { Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { EmptyState, ErrorNotice, PageSkeleton } from '../components/Feedback'
+import { EmptyState, ErrorNotice, PageSkeleton, Pager } from '../components/Feedback'
 import { useToast } from '../context/toastContext'
 import { createDebt, deleteDebt, listAccounts, listCategories, listDebts, settleDebt } from '../lib/db'
+
+const HISTORY_PAGE_SIZE = 10
 
 function eur(value) {
   return `${Number(value).toFixed(2)} €`
@@ -17,6 +19,7 @@ export default function Debts() {
   const [error, setError] = useState('')
 
   const [showHistory, setShowHistory] = useState(false)
+  const [historyPage, setHistoryPage] = useState(1)
   const [showForm, setShowForm] = useState(false)
   const [settlingId, setSettlingId] = useState(null)
   const [confirmingDeleteId, setConfirmingDeleteId] = useState(null)
@@ -334,37 +337,46 @@ export default function Debts() {
               </button>
             </div>
 
-            <input
-              type="text"
-              placeholder="Nome da pessoa"
-              value={counterpartyName}
-              onChange={(e) => setCounterpartyName(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-            />
-            <input
-              type="number"
-              inputMode="decimal"
-              step="0.01"
-              min="0"
-              placeholder="Valor (€)"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-            />
-            <input
-              type="text"
-              placeholder="Nota (opcional)"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-            />
+            <div>
+              <label className="mb-1 block text-xs font-medium text-neutral-500">Nome da pessoa</label>
+              <input
+                type="text"
+                placeholder="Ex: João"
+                value={counterpartyName}
+                onChange={(e) => setCounterpartyName(e.target.value)}
+                className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-neutral-500">Valor</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0"
+                placeholder="0.00 €"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-neutral-500">Nota (opcional)</label>
+              <input
+                type="text"
+                placeholder="Ex: jantar de sábado"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              />
+            </div>
 
             {formError && <p className="text-sm text-red-600">{formError}</p>}
 
             <button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-lg bg-neutral-900 py-2.5 font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+              className="w-full rounded-lg bg-neutral-900 py-2.5 font-medium text-white transition-colors disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
             >
               {submitting ? 'A guardar...' : 'Guardar dívida'}
             </button>
@@ -387,7 +399,10 @@ export default function Debts() {
 
       <section className="space-y-2">
         <button
-          onClick={() => setShowHistory((v) => !v)}
+          onClick={() => {
+            setShowHistory((v) => !v)
+            setHistoryPage(1)
+          }}
           className="text-xs text-neutral-500 underline-offset-2 hover:underline"
         >
           {showHistory ? 'Esconder histórico' : `Ver histórico (${settled.length})`}
@@ -397,18 +412,27 @@ export default function Debts() {
           settled.length === 0 ? (
             <p className="py-2 text-center text-sm text-neutral-500">Ainda sem dívidas acertadas.</p>
           ) : (
-            <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
-              {settled.map((debt) => (
-                <li key={debt.id} className="flex items-center justify-between py-2 text-sm text-neutral-500">
-                  <span>
-                    {debt.counterparty_name} · {eur(debt.amount)}
-                  </span>
-                  <span className="text-xs">
-                    {debt.direction === 'owed_to_me' ? 'Recebido' : 'Pago'}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+                {settled
+                  .slice((historyPage - 1) * HISTORY_PAGE_SIZE, historyPage * HISTORY_PAGE_SIZE)
+                  .map((debt) => (
+                    <li key={debt.id} className="flex items-center justify-between py-2 text-sm text-neutral-500">
+                      <span>
+                        {debt.counterparty_name} · {eur(debt.amount)}
+                      </span>
+                      <span className="text-xs">
+                        {debt.direction === 'owed_to_me' ? 'Recebido' : 'Pago'}
+                      </span>
+                    </li>
+                  ))}
+              </ul>
+              <Pager
+                page={historyPage}
+                totalPages={Math.ceil(settled.length / HISTORY_PAGE_SIZE)}
+                onChange={setHistoryPage}
+              />
+            </>
           )
         )}
       </section>

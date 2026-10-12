@@ -160,6 +160,9 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       </div>
 
       <div>
+        <label htmlFor="quick-entry-amount" className="mb-1 block text-xs font-medium text-neutral-500">
+          Valor
+        </label>
         <input
           id="quick-entry-amount"
           type="number"
@@ -174,7 +177,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
             setAmountSuggested(false)
             setAmount(e.target.value)
           }}
-          className="w-full rounded-lg border border-neutral-300 px-3 py-3 text-2xl font-semibold dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+          className="w-full rounded-lg border border-neutral-300 px-3 py-3 text-2xl font-semibold focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
         />
         {amountSuggested && (
           <p className="mt-0.5 text-xs text-neutral-400">valor sugerido a partir do histórico</p>
@@ -183,6 +186,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
 
       <div className="grid grid-cols-2 gap-2">
         <div>
+          <label className="mb-1 block text-xs font-medium text-neutral-500">Categoria</label>
           <select
             value={effectiveCategoryId}
             onChange={(e) => {
@@ -190,7 +194,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
               setSuggested(false)
               setCategoryId(e.target.value)
             }}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
           >
             {categoriesForType.map((c) => (
               <option key={c.id} value={c.id}>
@@ -203,33 +207,42 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
           )}
         </div>
 
-        <select
-          value={accountId}
-          onChange={(e) => setAccountId(e.target.value)}
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-        >
-          {accounts.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-            </option>
-          ))}
-        </select>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-neutral-500">Conta</label>
+          <select
+            value={accountId}
+            onChange={(e) => setAccountId(e.target.value)}
+            className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+          >
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <input
-          type="date"
-          value={occurredOn}
-          onChange={(e) => setOccurredOn(e.target.value)}
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-        />
-        <input
-          type="text"
-          placeholder="Nota (opcional)"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-        />
+        <div>
+          <label className="mb-1 block text-xs font-medium text-neutral-500">Data</label>
+          <input
+            type="date"
+            value={occurredOn}
+            onChange={(e) => setOccurredOn(e.target.value)}
+            className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-neutral-500">Nota (opcional)</label>
+          <input
+            type="text"
+            placeholder="Ex: supermercado"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+          />
+        </div>
       </div>
 
       {type === 'expense' && (
