@@ -302,7 +302,7 @@ export default function NetWorth() {
             <select
               value={snapAccountId}
               onChange={(e) => setSnapAccountId(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
             >
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -317,7 +317,7 @@ export default function NetWorth() {
               type="date"
               value={snapDate}
               onChange={(e) => setSnapDate(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
             />
           </div>
           <div>
@@ -331,7 +331,7 @@ export default function NetWorth() {
               placeholder="0.00 €"
               value={snapValue}
               onChange={(e) => setSnapValue(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
             />
           </div>
           {formError && <p className="text-sm text-red-600">{formError}</p>}

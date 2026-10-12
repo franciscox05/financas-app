@@ -30,12 +30,33 @@ input[type='date']::-webkit-date-and-time-value {
   text-align: left;
 }
 
-/* Foco consistente em todos os campos e botões, para os formulários (a parte
-   da app onde se realizam tarefas) darem feedback visual claro ao navegar
-   por teclado ou ao tocar num campo. */
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible,
+/* No iOS Safari, qualquer campo com letra abaixo de 16px faz o ecrã inteiro
+   fazer zoom automático ao tocar nesse campo (e voltar atrás ao sair) — isto
+   parece a app "desformatar-se" por um instante sempre que se toca num
+   campo. Força 16px como mínimo em todos os campos por omissão; classes
+   Tailwind mais específicas (ex. o valor grande do Registo) continuam a
+   ganhar por terem maior especificidade CSS. Também fixa uma altura mínima
+   igual para todos, porque o <input type="date"> nativo do iOS tem uma
+   altura interna própria que não respeita sempre o padding como os outros
+   campos, o que desalinhava linhas com Data + Nota lado a lado. */
+input,
+select,
+textarea {
+  font-size: 16px;
+  min-height: 2.75rem;
+  box-sizing: border-box;
+}
+
+/* Foco consistente nos campos e botões: só a cor da margem muda (sem
+   outline a mais), para não sobrepor campos vizinhos em grelhas apertadas
+   no telemóvel. */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #2a78d6;
+}
+
 button:focus-visible {
   outline: 2px solid #2a78d6;
   outline-offset: 1px;

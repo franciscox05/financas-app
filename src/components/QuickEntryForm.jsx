@@ -177,7 +177,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
             setAmountSuggested(false)
             setAmount(e.target.value)
           }}
-          className="w-full rounded-lg border border-neutral-300 px-3 py-3 text-2xl font-semibold focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+          className="w-full rounded-lg border border-neutral-300 px-3 py-3 text-2xl font-semibold dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
         />
         {amountSuggested && (
           <p className="mt-0.5 text-xs text-neutral-400">valor sugerido a partir do histórico</p>
@@ -194,7 +194,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
               setSuggested(false)
               setCategoryId(e.target.value)
             }}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
           >
             {categoriesForType.map((c) => (
               <option key={c.id} value={c.id}>
@@ -212,7 +212,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
           <select
             value={accountId}
             onChange={(e) => setAccountId(e.target.value)}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
           >
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
@@ -230,7 +230,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
             type="date"
             value={occurredOn}
             onChange={(e) => setOccurredOn(e.target.value)}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
           />
         </div>
         <div>
@@ -240,7 +240,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
             placeholder="Ex: supermercado"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
           />
         </div>
       </div>

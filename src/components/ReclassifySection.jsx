@@ -113,7 +113,7 @@ export default function ReclassifySection({ accounts, categories }) {
           <select
             value={month}
             onChange={(e) => setMonth(Number(e.target.value))}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
           >
             {MONTH_NAMES.map((name, idx) => (
               <option key={name} value={idx + 1}>
@@ -127,7 +127,7 @@ export default function ReclassifySection({ accounts, categories }) {
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
           >
             {yearOptions.map((y) => (
               <option key={y} value={y}>
