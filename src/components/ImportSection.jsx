@@ -1,5 +1,6 @@
-import { Plus, TriangleAlert, Upload } from 'lucide-react'
+import { TriangleAlert, Upload } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import CollapsibleSection from './CollapsibleSection'
 import { useToast } from '../context/toastContext'
 import { applyCategoryRules } from '../lib/categoryRules'
 import { normalize, suggestCategoryId } from '../lib/categorySuggest'
@@ -168,33 +169,20 @@ export default function ImportSection({ accounts, categories }) {
   }
 
   return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-neutral-500">Importar histórico</h2>
-        <button
-          onClick={() => setShowSection((v) => !v)}
-          className="flex items-center gap-0.5 text-xs text-neutral-500 underline-offset-2 hover:underline"
-        >
-          {showSection ? 'Fechar' : (
-            <>
-              <Plus size={13} /> Importar
-            </>
-          )}
-        </button>
-      </div>
-
-      {showSection && (
-        <div className="space-y-3 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
-          <p className="text-xs text-neutral-500">
-            Cola o texto de um mês (linhas no formato "Dia N -valor€ descrição"). O resto do texto
-            (resumos, totais) é ignorado automaticamente.
-          </p>
-
-          <div className="grid grid-cols-2 gap-2">
+    <CollapsibleSection
+      title="Importar histórico"
+      description='Cola o texto de um mês (linhas no formato "Dia N -valor€ descrição"). O resto do texto (resumos, totais) é ignorado automaticamente.'
+      open={showSection}
+      onToggle={() => setShowSection((v) => !v)}
+    >
+      <div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-neutral-500">Mês</label>
             <select
               value={month}
               onChange={(e) => setMonth(Number(e.target.value))}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
             >
               {MONTH_NAMES.map((name, idx) => (
                 <option key={name} value={idx + 1}>
@@ -202,10 +190,13 @@ export default function ImportSection({ accounts, categories }) {
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-neutral-500">Ano</label>
             <select
               value={year}
               onChange={(e) => setYear(Number(e.target.value))}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
             >
               {yearOptions.map((y) => (
                 <option key={y} value={y}>
@@ -214,18 +205,23 @@ export default function ImportSection({ accounts, categories }) {
               ))}
             </select>
           </div>
+        </div>
+      </div>
 
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={'Dia 3 -100€ aparelho\nDia 4 -20€ gasóleo\n...'}
-            rows={8}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-          />
+      <div>
+        <label className="mb-1 block text-xs font-medium text-neutral-500">Texto a importar</label>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={'Dia 3 -100€ aparelho\nDia 4 -20€ gasóleo\n...'}
+          rows={8}
+          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+        />
+      </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
-          {!groups && (
+      {!groups && (
             <button
               onClick={handleAnalyze}
               disabled={analyzing || !text.trim()}
@@ -335,8 +331,6 @@ export default function ImportSection({ accounts, categories }) {
               </div>
             </div>
           )}
-        </div>
-      )}
-    </section>
+    </CollapsibleSection>
   )
 }

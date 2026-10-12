@@ -90,6 +90,7 @@ export default function Manage() {
         items={accounts}
         groups={ACCOUNT_GROUPS}
         scope="all"
+        deleteWarning="Só é possível apagar se não tiver transações, atualizações de saldo ou dívidas associadas."
         onCreate={async (values) => {
           const created = await createAccount(values)
           setAccounts((prev) => [...prev, created].sort(byName))
@@ -120,6 +121,7 @@ export default function Manage() {
         items={categories}
         groups={CATEGORY_GROUPS}
         scope="group"
+        deleteWarning="Só é possível apagar se não tiver transações ou regras de categorização associadas."
         onCreate={async (values) => {
           const created = await createCategory(values)
           setCategories((prev) => [...prev, created].sort(byName))
@@ -139,11 +141,12 @@ export default function Manage() {
         }}
       />
 
-      <CategoryRulesSection categories={categories} />
-
-      <ImportSection accounts={accounts} categories={categories} />
-
-      <ReclassifySection accounts={accounts} categories={categories} />
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold text-neutral-500">Ferramentas avançadas</h2>
+        <CategoryRulesSection categories={categories} />
+        <ImportSection accounts={accounts} categories={categories} />
+        <ReclassifySection accounts={accounts} categories={categories} />
+      </section>
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { Plus, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import CollapsibleSection from './CollapsibleSection'
 import { useToast } from '../context/toastContext'
 import { createCategoryRule, deleteCategoryRule, listCategoryRules } from '../lib/db'
 import { EmptyState } from './Feedback'
@@ -85,26 +86,12 @@ export default function CategoryRulesSection({ categories }) {
   }
 
   return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-neutral-500">Regras de categorização</h2>
-        <button
-          onClick={() => setShowSection((v) => !v)}
-          className="text-xs text-neutral-500 underline-offset-2 hover:underline"
-        >
-          {showSection ? 'Fechar' : 'Abrir'}
-        </button>
-      </div>
-
-      {showSection && (
-        <div className="space-y-3 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
-          <p className="text-xs text-neutral-500">
-            Associa uma palavra a uma categoria (ex. "gas" → Transporte). Aplica-se a qualquer nota
-            que contenha essa palavra — "gasolina", "gasóleo" ou "gasolina bmw" caem todas na mesma
-            categoria, mesmo escritas de forma diferente mês a mês. Usado automaticamente ao
-            importar histórico.
-          </p>
-
+    <CollapsibleSection
+      title="Regras de categorização"
+      description='Associa uma palavra a uma categoria (ex. "gas" → Transporte). Aplica-se a qualquer nota que contenha essa palavra — "gasolina", "gasóleo" ou "gasolina bmw" caem todas na mesma categoria, mesmo escritas de forma diferente mês a mês. Usado automaticamente ao importar histórico.'
+      open={showSection}
+      onToggle={() => setShowSection((v) => !v)}
+    >
           {loading ? (
             <p className="text-sm text-neutral-500">A carregar...</p>
           ) : rules.length === 0 && !showForm ? (
@@ -162,24 +149,30 @@ export default function CategoryRulesSection({ categories }) {
           {showForm && (
             <form onSubmit={handleCreate} className="space-y-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
               <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="text"
-                  placeholder='Palavra-chave (ex. "gas")'
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-                />
-                <select
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-                >
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.type === 'income' ? 'Ganho' : 'Gasto'})
-                    </option>
-                  ))}
-                </select>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-neutral-500">Palavra-chave</label>
+                  <input
+                    type="text"
+                    placeholder='Ex: "gas"'
+                    value={keyword}
+                    onChange={(e) => setKeyword(e.target.value)}
+                    className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-neutral-500">Categoria</label>
+                  <select
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
+                    className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                  >
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} ({c.type === 'income' ? 'Ganho' : 'Gasto'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               {error && <p className="text-xs text-red-600">{error}</p>}
               <div className="flex gap-2">
@@ -200,8 +193,6 @@ export default function CategoryRulesSection({ categories }) {
               </div>
             </form>
           )}
-        </div>
-      )}
-    </section>
+    </CollapsibleSection>
   )
 }
