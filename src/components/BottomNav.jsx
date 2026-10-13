@@ -19,7 +19,7 @@ const linkClass = ({ isActive }) =>
 export default function BottomNav() {
   return (
     <nav
-      className="shrink-0 border-t border-neutral-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95"
+      className="fixed inset-x-0 bottom-0 z-10 border-t border-neutral-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95"
       aria-label="Navegação principal"
     >
       <div className="mx-auto flex max-w-md">
