@@ -81,12 +81,31 @@ button {
   }
 }
 
+/* Saída: desce e desvanece, um pouco mais curta que a entrada (160ms —
+   igual a EXIT_MS em ToastProvider). `forwards` evita um flash do toast
+   antes de ser removido. */
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
 .toast-in {
   animation: toast-in 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.toast-out {
+  animation: toast-out 160ms ease-in forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .toast-in {
+  .toast-in,
+  .toast-out {
     animation: none;
   }
 }

@@ -8,8 +8,11 @@ export default function AppLayout() {
   const { user, signOut } = useAuth()
 
   return (
-    <div className="flex h-dvh flex-col bg-neutral-50 dark:bg-neutral-900">
-      <header className="flex shrink-0 items-center justify-between gap-3 p-4 pt-[max(1rem,env(safe-area-inset-top))]">
+    // O +1px torna o documento sempre ligeiramente "scrollável". No iOS (PWA),
+    // quando a página não faz scroll o ecrã útil encolhe e a barra fixa fica
+    // a meio do ecrã (só acontecia em páginas curtas, como as Dívidas).
+    <div className="min-h-[calc(100lvh+1px)] bg-neutral-50 dark:bg-neutral-900">
+      <header className="flex items-center justify-between gap-3 p-4 pt-[max(1rem,env(safe-area-inset-top))]">
         <span className="flex items-center gap-1.5 text-sm font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
           <Wallet size={18} className="text-green-600" />
           FinancasApp
@@ -26,12 +29,8 @@ export default function AppLayout() {
         </div>
       </header>
 
-      {/* Só o <main> faz scroll; o rodapé é um item normal da coluna (não
-          fixed), por isso fica sempre na base, mesmo em páginas curtas. */}
-      <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <div className="mx-auto max-w-md space-y-6 px-4 pb-6">
-          <Outlet />
-        </div>
+      <main className="mx-auto max-w-md space-y-6 px-4 pb-[calc(5rem+env(safe-area-inset-bottom))]">
+        <Outlet />
       </main>
 
       <BottomNav />
