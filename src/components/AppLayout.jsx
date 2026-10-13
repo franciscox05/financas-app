@@ -1,11 +1,14 @@
 import { Wallet } from 'lucide-react'
+import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import BottomNav from './BottomNav'
+import ConfirmDialog from './ConfirmDialog'
 import NotificationToggle from './NotificationToggle'
 
 export default function AppLayout() {
   const { user, signOut } = useAuth()
+  const [confirmLogout, setConfirmLogout] = useState(false)
 
   return (
     // O +1px torna o documento sempre ligeiramente "scrollável". No iOS (PWA),
@@ -21,7 +24,7 @@ export default function AppLayout() {
           <span className="hidden text-sm text-neutral-500 sm:inline">{user.email}</span>
           <NotificationToggle />
           <button
-            onClick={() => signOut()}
+            onClick={() => setConfirmLogout(true)}
             className="rounded-lg border border-neutral-300 px-3 py-1 text-sm dark:border-neutral-700"
           >
             Sair
@@ -34,6 +37,18 @@ export default function AppLayout() {
       </main>
 
       <BottomNav />
+
+      <ConfirmDialog
+        open={confirmLogout}
+        title="Terminar sessão?"
+        message="Vais ter de entrar novamente para voltar a ver os teus dados."
+        confirmLabel="Terminar sessão"
+        onCancel={() => setConfirmLogout(false)}
+        onConfirm={() => {
+          setConfirmLogout(false)
+          signOut()
+        }}
+      />
     </div>
   )
 }

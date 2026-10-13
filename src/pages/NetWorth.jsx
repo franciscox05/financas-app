@@ -257,8 +257,8 @@ export default function NetWorth() {
         <h3 className="mb-2 text-sm font-semibold text-neutral-500">Evolução (últimos 6 meses)</h3>
         <div className="h-56 w-full rounded-xl border border-neutral-200 p-2 dark:border-neutral-800">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <CartesianGrid vertical={false} stroke="#e1e0d9" strokeDasharray="3 3" />
+            <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+              <CartesianGrid vertical={false} stroke="#898781" strokeOpacity={0.35} strokeDasharray="3 3" />
               <XAxis
                 dataKey="month"
                 tick={{ fontSize: 12, fill: '#898781' }}
@@ -269,11 +269,19 @@ export default function NetWorth() {
                 tick={{ fontSize: 12, fill: '#898781' }}
                 axisLine={false}
                 tickLine={false}
-                width={50}
+                width={40}
               />
               <Tooltip
                 formatter={(value) => eur(Number(value))}
-                contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                contentStyle={{
+                  fontSize: 12,
+                  borderRadius: 8,
+                  backgroundColor: 'var(--tooltip-bg)',
+                  borderColor: 'var(--tooltip-border)',
+                  color: 'var(--tooltip-text)',
+                }}
+                itemStyle={{ color: 'var(--tooltip-text)' }}
+                labelStyle={{ color: 'var(--tooltip-text)' }}
               />
               <Line
                 type="monotone"
