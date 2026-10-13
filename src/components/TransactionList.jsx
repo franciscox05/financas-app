@@ -258,7 +258,7 @@ function TransactionFilters({ filters, onChange, categories, accounts }) {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2.5">
       <div className="relative">
         <Search
           size={15}
@@ -274,7 +274,7 @@ function TransactionFilters({ filters, onChange, categories, accounts }) {
         />
       </div>
 
-      <div role="group" aria-label="Filtrar por tipo" className="grid grid-cols-3 gap-1.5">
+      <div role="group" aria-label="Filtrar por tipo" className="grid grid-cols-3 gap-2">
         {TYPE_OPTIONS.map((opt) => (
           <button
             key={opt.value}
@@ -292,7 +292,7 @@ function TransactionFilters({ filters, onChange, categories, accounts }) {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2.5">
         <select
           value={filters.accountId}
           onChange={(e) => onChange({ ...filters, accountId: e.target.value })}

@@ -184,8 +184,8 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="min-w-0">
           <label className="mb-1 block text-xs font-medium text-neutral-500">Categoria</label>
           <select
             value={effectiveCategoryId}
@@ -194,7 +194,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
               setSuggested(false)
               setCategoryId(e.target.value)
             }}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
           >
             {categoriesForType.map((c) => (
               <option key={c.id} value={c.id}>
@@ -207,12 +207,12 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
           )}
         </div>
 
-        <div>
+        <div className="min-w-0">
           <label className="mb-1 block text-xs font-medium text-neutral-500">Conta</label>
           <select
             value={accountId}
             onChange={(e) => setAccountId(e.target.value)}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
           >
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
@@ -223,24 +223,24 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="min-w-0">
           <label className="mb-1 block text-xs font-medium text-neutral-500">Data</label>
           <input
             type="date"
             value={occurredOn}
             onChange={(e) => setOccurredOn(e.target.value)}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            className="w-full min-w-0 appearance-none rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <label className="mb-1 block text-xs font-medium text-neutral-500">Nota (opcional)</label>
           <input
             type="text"
             placeholder="Ex: supermercado"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
           />
         </div>
       </div>
@@ -253,7 +253,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
               if (!showDebt && !debtAmount && amount) setDebtAmount(amount)
               setShowDebt((v) => !v)
             }}
-            className="flex items-center gap-0.5 text-xs text-neutral-500 underline-offset-2 hover:underline"
+            className="-my-1 flex min-h-9 items-center gap-0.5 text-xs text-neutral-600 underline-offset-2 hover:underline dark:text-neutral-400"
           >
             {showDebt ? 'Fechar' : (
               <>
@@ -291,7 +291,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       <button
         type="submit"
         disabled={submitting}
-        className="w-full rounded-lg bg-neutral-900 py-3 font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+        className="min-h-12 w-full rounded-lg bg-neutral-900 py-3 font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
       >
         {submitting ? 'A guardar...' : 'Registar'}
       </button>

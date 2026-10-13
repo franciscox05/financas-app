@@ -149,7 +149,7 @@ export default function Dashboard() {
         }}
       />
 
-      <section className="space-y-2">
+      <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-neutral-500">Transações recentes</h2>
           <button
