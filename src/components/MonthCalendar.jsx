@@ -1,10 +1,7 @@
 import { useMemo, useState } from 'react'
+import Money from './Money'
 
 const WEEKDAY_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
-
-function eur(value) {
-  return `${Number(value).toFixed(2)} €`
-}
 
 // Calendário do mês selecionado: cada dia mostra o saldo líquido desse dia
 // (ganhos - gastos; verde se ≥0, vermelho se negativo), e clicar num dia
@@ -72,7 +69,7 @@ export default function MonthCalendar({ monthDate, transactions }) {
                     }`}
                   >
                     {entry.income - entry.expense >= 0 ? '+' : ''}
-                    {(entry.income - entry.expense).toFixed(0)}€
+                    <Money>{`${(entry.income - entry.expense).toFixed(0)}€`}</Money>
                   </span>
                 )}
               </button>
@@ -99,7 +96,7 @@ export default function MonthCalendar({ monthDate, transactions }) {
                       }`}
                     >
                       {tx.type === 'income' ? '+' : '-'}
-                      {eur(tx.amount)}
+                      <Money value={tx.amount} />
                     </span>
                   </li>
                 ))}

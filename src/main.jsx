@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 import App from './App.jsx'
+import PrivacyProvider from './components/PrivacyProvider.jsx'
 
 // Sem isto, o vite-plugin-pwa só injeta um registo minimo que nunca verifica
 // se ha uma versao nova — por isso a app instalada (sobretudo no iOS) ficava
@@ -19,6 +20,8 @@ registerSW({
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <PrivacyProvider>
+      <App />
+    </PrivacyProvider>
   </StrictMode>,
 )

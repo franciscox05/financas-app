@@ -14,10 +14,7 @@ import {
   listTransactions,
   listTransactionsInRange,
 } from '../lib/db'
-
-function eur(value) {
-  return `${value.toFixed(2)} €`
-}
+import Money from '../components/Money'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -132,7 +129,7 @@ export default function Dashboard() {
               className={`text-xl font-semibold ${saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}
             >
               {saldo >= 0 ? '+' : '-'}
-              {eur(Math.abs(saldo))}
+              <Money value={Math.abs(saldo)} />
             </p>
           </div>
           <ChevronRight className="text-neutral-400" size={20} />

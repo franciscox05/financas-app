@@ -15,6 +15,8 @@ import MonthCalendar from '../components/MonthCalendar'
 import { EmptyState, ErrorNotice, ListSkeleton, Skeleton } from '../components/Feedback'
 import { listCategories, listTransactionsInRange } from '../lib/db'
 import { addMonths, monthKey, monthLabel, monthStart, shortMonthLabel, toIsoDate } from '../lib/dates'
+import Money from '../components/Money'
+import { usePrivacy } from '../context/privacyContext'
 
 const INCOME_COLOR = '#16a34a' // tailwind green-600 — consistente com o resto da UI
 const EXPENSE_COLOR = '#dc2626' // tailwind red-600
@@ -30,6 +32,7 @@ function eur(value) {
 }
 
 export default function Balance() {
+  const { hidden } = usePrivacy()
   const navigate = useNavigate()
   const [selectedMonth, setSelectedMonth] = useState(() => monthStart(new Date()))
   const [sixMonthData, setSixMonthData] = useState([])
@@ -266,7 +269,7 @@ export default function Balance() {
 
       {savingsAmount > 0 && (
         <p className="text-center text-xs text-neutral-400">
-          Dessas, {eur(savingsAmount)} foram para poupança/investimento — não contam como gasto do
+          Dessas, <Money value={savingsAmount} /> foram para poupança/investimento — não contam como gasto do
           dia a dia.
         </p>
       )}
@@ -275,13 +278,13 @@ export default function Balance() {
         <div className="min-w-0 rounded-xl border border-neutral-200 p-2 dark:border-neutral-800 sm:p-3">
           <p className="text-xs text-neutral-500">Ganhos</p>
           <p className="break-words text-sm font-semibold text-green-600 sm:text-base">
-            {eur(income)}
+            <Money value={income} />
           </p>
         </div>
         <div className="min-w-0 rounded-xl border border-neutral-200 p-2 dark:border-neutral-800 sm:p-3">
           <p className="text-xs text-neutral-500">Gastos</p>
           <p className="break-words text-sm font-semibold text-red-600 sm:text-base">
-            {eur(expense)}
+            <Money value={expense} />
           </p>
         </div>
         <div className="min-w-0 rounded-xl border border-neutral-200 p-2 dark:border-neutral-800 sm:p-3">
@@ -289,7 +292,7 @@ export default function Balance() {
           <p
             className={`break-words text-sm font-semibold sm:text-base ${saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}
           >
-            {eur(saldo)}
+            <Money value={saldo} />
           </p>
         </div>
       </div>
@@ -330,7 +333,7 @@ export default function Balance() {
                 <div className="mb-1 flex justify-between text-sm">
                   <span className="text-neutral-700 dark:text-neutral-300">{c.name}</span>
                   <span className="font-medium text-neutral-900 dark:text-neutral-100">
-                    {eur(c.amount)}
+                    <Money value={c.amount} />
                   </span>
                 </div>
                 <div className="h-2 w-full rounded-full bg-neutral-100 dark:bg-neutral-800">
@@ -352,7 +355,11 @@ export default function Balance() {
         <h3 className="mb-2 text-sm font-semibold text-neutral-500">
           Evolução (últimos 6 meses)
         </h3>
-        <div className="h-56 w-full rounded-xl border border-neutral-200 p-2 dark:border-neutral-800">
+        <div
+          className={`h-56 w-full rounded-xl border border-neutral-200 p-2 transition-[filter] duration-200 dark:border-neutral-800 ${
+            hidden ? 'pointer-events-none select-none blur-sm' : ''
+          }`}
+        >
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} barGap={2}>
               <CartesianGrid vertical={false} stroke="#e1e0d9" strokeDasharray="3 3" />

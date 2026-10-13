@@ -1,3 +1,4 @@
+import { ChevronRight } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   CartesianGrid,
@@ -20,6 +21,9 @@ import { ErrorNotice, Pager, Skeleton } from '../components/Feedback'
 import { useToast } from '../context/toastContext'
 import { balanceAt } from '../lib/accountBalance'
 import { addMonths, endOfMonth, monthStart, shortMonthLabel, toIsoDate, today } from '../lib/dates'
+import Money from '../components/Money'
+import { usePrivacy } from '../context/privacyContext'
+import AccountHistoryDialog from '../components/AccountHistoryDialog'
 
 const HISTORY_PAGE_SIZE = 10
 
@@ -40,6 +44,7 @@ function groupBalanceAt(transactions, snapshots, accountIds, asOfDate) {
 }
 
 export default function NetWorth() {
+  const { hidden } = usePrivacy()
   const toast = useToast()
   const [accounts, setAccounts] = useState([])
   const [transactions, setTransactions] = useState([])
@@ -54,6 +59,7 @@ export default function NetWorth() {
   const [formError, setFormError] = useState('')
   const [confirmingSnapshotId, setConfirmingSnapshotId] = useState(null)
   const [historyPage, setHistoryPage] = useState(1)
+  const [historyAccount, setHistoryAccount] = useState(null)
 
   const loadAll = useCallback(async () => {
     setError('')
@@ -214,28 +220,33 @@ export default function NetWorth() {
       <div className="rounded-xl border border-neutral-200 p-4 text-center dark:border-neutral-800">
         <p className="text-xs text-neutral-500">Património total</p>
         <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
-          {eur(totalNetWorth)}
+          <Money value={totalNetWorth} />
         </p>
       </div>
 
       <section className="grid grid-cols-1 gap-2">
         {cashAccounts.map((acc) => (
-          <div
+          <button
             key={acc.id}
-            className="flex items-center justify-between rounded-xl border border-neutral-200 p-3 dark:border-neutral-800"
+            type="button"
+            onClick={() => setHistoryAccount(acc)}
+            className="flex w-full items-center justify-between rounded-xl border border-neutral-200 p-3 text-left transition-transform active:scale-[0.99] dark:border-neutral-800"
           >
             <span className="text-sm text-neutral-700 dark:text-neutral-300">{acc.name}</span>
-            <span className="font-semibold text-neutral-900 dark:text-neutral-100">
-              {eur(balanceByAccountId.get(acc.id) ?? 0)}
+            <span className="flex items-center gap-1.5 font-semibold text-neutral-900 dark:text-neutral-100">
+              <Money value={balanceByAccountId.get(acc.id) ?? 0} />
+              <ChevronRight size={14} className="text-neutral-400" aria-hidden="true" />
             </span>
-          </div>
+          </button>
         ))}
         {investmentAccounts.map((acc) => {
           const latest = latestByAccount.get(acc.id)
           return (
-            <div
+            <button
               key={acc.id}
-              className="flex items-center justify-between rounded-xl border border-neutral-200 p-3 dark:border-neutral-800"
+              type="button"
+              onClick={() => setHistoryAccount(acc)}
+              className="flex w-full items-center justify-between rounded-xl border border-neutral-200 p-3 text-left transition-transform active:scale-[0.99] dark:border-neutral-800"
             >
               <div>
                 <p className="text-sm text-neutral-700 dark:text-neutral-300">{acc.name}</p>
@@ -245,17 +256,22 @@ export default function NetWorth() {
                   </p>
                 )}
               </div>
-              <span className="font-semibold text-neutral-900 dark:text-neutral-100">
-                {eur(balanceByAccountId.get(acc.id) ?? 0)}
+              <span className="flex items-center gap-1.5 font-semibold text-neutral-900 dark:text-neutral-100">
+                <Money value={balanceByAccountId.get(acc.id) ?? 0} />
+                <ChevronRight size={14} className="text-neutral-400" aria-hidden="true" />
               </span>
-            </div>
+            </button>
           )
         })}
       </section>
 
       <section>
         <h3 className="mb-2 text-sm font-semibold text-neutral-500">Evolução (últimos 6 meses)</h3>
-        <div className="h-56 w-full rounded-xl border border-neutral-200 p-2 dark:border-neutral-800">
+        <div
+          className={`h-56 w-full rounded-xl border border-neutral-200 p-2 transition-[filter] duration-200 dark:border-neutral-800 ${
+            hidden ? 'pointer-events-none select-none blur-sm' : ''
+          }`}
+        >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
               <CartesianGrid vertical={false} stroke="#898781" strokeOpacity={0.35} strokeDasharray="3 3" />
@@ -366,7 +382,7 @@ export default function NetWorth() {
                   </span>
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-neutral-900 dark:text-neutral-100">
-                      {eur(Number(s.value))}
+                      <Money value={Number(s.value)} />
                     </span>
                     {confirmingSnapshotId === s.id ? (
                       <span className="flex items-center gap-1">
@@ -403,6 +419,12 @@ export default function NetWorth() {
           />
         </section>
       )}
+
+      <AccountHistoryDialog
+        account={historyAccount}
+        snapshots={snapshots}
+        onClose={() => setHistoryAccount(null)}
+      />
     </div>
   )
 }
