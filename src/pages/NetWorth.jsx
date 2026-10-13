@@ -20,6 +20,8 @@ import { ErrorNotice, Pager, Skeleton } from '../components/Feedback'
 import { useToast } from '../context/toastContext'
 import { balanceAt } from '../lib/accountBalance'
 import { addMonths, endOfMonth, monthStart, shortMonthLabel, toIsoDate, today } from '../lib/dates'
+import Money from '../components/Money'
+import { usePrivacy } from '../context/privacyContext'
 
 const HISTORY_PAGE_SIZE = 10
 
@@ -40,6 +42,7 @@ function groupBalanceAt(transactions, snapshots, accountIds, asOfDate) {
 }
 
 export default function NetWorth() {
+  const { hidden } = usePrivacy()
   const toast = useToast()
   const [accounts, setAccounts] = useState([])
   const [transactions, setTransactions] = useState([])
@@ -214,7 +217,7 @@ export default function NetWorth() {
       <div className="rounded-xl border border-neutral-200 p-4 text-center dark:border-neutral-800">
         <p className="text-xs text-neutral-500">Património total</p>
         <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
-          {eur(totalNetWorth)}
+          <Money value={totalNetWorth} />
         </p>
       </div>
 
@@ -226,7 +229,7 @@ export default function NetWorth() {
           >
             <span className="text-sm text-neutral-700 dark:text-neutral-300">{acc.name}</span>
             <span className="font-semibold text-neutral-900 dark:text-neutral-100">
-              {eur(balanceByAccountId.get(acc.id) ?? 0)}
+              <Money value={balanceByAccountId.get(acc.id) ?? 0} />
             </span>
           </div>
         ))}
@@ -246,7 +249,7 @@ export default function NetWorth() {
                 )}
               </div>
               <span className="font-semibold text-neutral-900 dark:text-neutral-100">
-                {eur(balanceByAccountId.get(acc.id) ?? 0)}
+                <Money value={balanceByAccountId.get(acc.id) ?? 0} />
               </span>
             </div>
           )
@@ -255,7 +258,11 @@ export default function NetWorth() {
 
       <section>
         <h3 className="mb-2 text-sm font-semibold text-neutral-500">Evolução (últimos 6 meses)</h3>
-        <div className="h-56 w-full rounded-xl border border-neutral-200 p-2 dark:border-neutral-800">
+        <div
+          className={`h-56 w-full rounded-xl border border-neutral-200 p-2 transition-[filter] duration-200 dark:border-neutral-800 ${
+            hidden ? 'pointer-events-none select-none blur-sm' : ''
+          }`}
+        >
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
               <CartesianGrid vertical={false} stroke="#898781" strokeOpacity={0.35} strokeDasharray="3 3" />
@@ -366,7 +373,7 @@ export default function NetWorth() {
                   </span>
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-neutral-900 dark:text-neutral-100">
-                      {eur(Number(s.value))}
+                      <Money value={Number(s.value)} />
                     </span>
                     {confirmingSnapshotId === s.id ? (
                       <span className="flex items-center gap-1">

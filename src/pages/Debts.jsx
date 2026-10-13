@@ -15,6 +15,7 @@ import {
   listDebts,
   updateDebt,
 } from '../lib/db'
+import Money from '../components/Money'
 
 const HISTORY_PAGE_SIZE = 10
 
@@ -332,8 +333,8 @@ export default function Debts() {
             {debt.note && <p className="truncate text-xs text-neutral-400">{debt.note}</p>}
           </div>
           <div className="shrink-0 text-right">
-            <p className={`font-semibold ${isOwedToMe ? 'text-green-600' : 'text-red-600'}`}>{eur(left)}</p>
-            {partial && <p className="text-xs text-neutral-400">de {eur(debt.amount)}</p>}
+            <p className={`font-semibold ${isOwedToMe ? 'text-green-600' : 'text-red-600'}`}><Money value={left} /></p>
+            {partial && <p className="text-xs text-neutral-400">de <Money value={debt.amount} /></p>}
           </div>
         </div>
 
@@ -341,7 +342,7 @@ export default function Debts() {
           <ul className="space-y-0.5 text-xs text-neutral-400">
             {debtPayments.map((p) => (
               <li key={p.id}>
-                {isOwedToMe ? 'Recebido' : 'Pago'} {eur(p.amount)} em{' '}
+                {isOwedToMe ? 'Recebido' : 'Pago'} <Money value={p.amount} /> em{' '}
                 {new Date(`${p.paid_on}T00:00:00`).toLocaleDateString('pt-PT')}
                 {p.note ? ` · ${p.note}` : ''}
               </li>
@@ -455,7 +456,7 @@ export default function Debts() {
               className={inputClass}
             />
             <p className="text-xs text-neutral-400">
-              Podes registar só uma parte; o resto fica pendente. Faltam {eur(left)}.
+              Podes registar só uma parte; o resto fica pendente. Faltam <Money value={left} />.
             </p>
             {settleError && <p className="text-xs text-red-600">{settleError}</p>}
             <div className="flex items-center gap-2">
@@ -523,7 +524,7 @@ export default function Debts() {
         {closingId === debt.id && (
           <div className="space-y-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
             <p className="text-xs text-neutral-500">
-              Fecha os {eur(left)} em falta sem criar nenhuma transação nas contas (ex.: acertaram contas
+              Fecha os <Money value={left} /> em falta sem criar nenhuma transação nas contas (ex.: acertaram contas
               entre vocês).
             </p>
             <input
@@ -558,11 +559,11 @@ export default function Debts() {
       <div className="grid grid-cols-2 gap-2">
         <div className="min-w-0 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
           <p className="text-xs text-neutral-500">A receber</p>
-          <p className="text-lg font-semibold text-green-600">{eur(totalOwedToMe)}</p>
+          <p className="text-lg font-semibold text-green-600"><Money value={totalOwedToMe} /></p>
         </div>
         <div className="min-w-0 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
           <p className="text-xs text-neutral-500">A pagar</p>
-          <p className="text-lg font-semibold text-red-600">{eur(totalIOwe)}</p>
+          <p className="text-lg font-semibold text-red-600"><Money value={totalIOwe} /></p>
         </div>
       </div>
 
@@ -694,7 +695,7 @@ export default function Debts() {
                     <li key={debt.id} className="flex items-center justify-between py-2 text-sm text-neutral-500">
                       <span className="min-w-0">
                         <span className="block truncate">
-                          {debt.counterparty_name} · {eur(debt.amount)}
+                          {debt.counterparty_name} · <Money value={debt.amount} />
                         </span>
                         {debt.settled_note && (
                           <span className="block truncate text-xs text-neutral-400">{debt.settled_note}</span>

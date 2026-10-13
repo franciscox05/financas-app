@@ -4,6 +4,7 @@ import { useToast } from '../context/toastContext'
 import { createTransaction, deleteTransaction, listTransactionsPage, updateTransaction } from '../lib/db'
 import { parseSmartQuery } from '../lib/smartSearch'
 import { EmptyState, ErrorNotice, ListSkeleton, Pager } from './Feedback'
+import Money from './Money'
 
 const PAGE_SIZE = 25
 
@@ -196,7 +197,7 @@ function TransactionRow({ tx, categories, accounts, onUpdated, onDeleted, onRest
             tx.type === 'income' ? 'text-green-600' : 'text-red-600'
           }`}
         >
-          {formatAmount(tx.amount, tx.type)}
+          <Money>{formatAmount(tx.amount, tx.type)}</Money>
         </span>
         <button
           onClick={() => setEditing(true)}

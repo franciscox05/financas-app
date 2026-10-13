@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import BottomNav from './BottomNav'
 import ConfirmDialog from './ConfirmDialog'
 import NotificationToggle from './NotificationToggle'
+import PrivacyToggle from './PrivacyToggle'
 
 export default function AppLayout() {
   const { user, signOut } = useAuth()
@@ -22,6 +23,7 @@ export default function AppLayout() {
         </span>
         <div className="flex items-center gap-3">
           <span className="hidden text-sm text-neutral-500 sm:inline">{user.email}</span>
+          <PrivacyToggle />
           <NotificationToggle />
           <button
             onClick={() => setConfirmLogout(true)}
