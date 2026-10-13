@@ -296,14 +296,14 @@ export default function NetWorth() {
       </section>
 
       <section>
-        <h3 className="mb-2 text-sm font-semibold text-neutral-500">Atualizar saldo de uma conta</h3>
-        <p className="mb-2 text-xs text-neutral-400">
+        <h3 className="mb-1.5 text-sm font-semibold text-neutral-500">Atualizar saldo de uma conta</h3>
+        <p className="mb-3 text-xs leading-relaxed text-neutral-400">
           Regista quanto tens numa conta numa data — só afeta o património a partir desse dia,
           nunca os meses anteriores.
         </p>
         <form
           onSubmit={handleAddSnapshot}
-          className="space-y-3 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
+          className="space-y-4 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
         >
           <div>
             <label className="mb-1 block text-xs font-medium text-neutral-500">Conta</label>
@@ -319,13 +319,13 @@ export default function NetWorth() {
               ))}
             </select>
           </div>
-          <div>
+          <div className="min-w-0">
             <label className="mb-1 block text-xs font-medium text-neutral-500">Data</label>
             <input
               type="date"
               value={snapDate}
               onChange={(e) => setSnapDate(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
             />
           </div>
           <div>
@@ -346,7 +346,7 @@ export default function NetWorth() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-lg bg-neutral-900 py-2.5 font-medium text-white transition-colors disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+            className="w-full rounded-lg bg-neutral-900 min-h-12 py-2.5 font-medium text-white transition-colors disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
           >
             {submitting ? 'A guardar...' : 'Guardar atualização'}
           </button>
