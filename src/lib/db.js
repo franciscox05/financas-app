@@ -1,4 +1,3 @@
-import { today } from './dates'
 import { supabase } from './supabase'
 
 export async function listAccounts() {
@@ -233,30 +232,6 @@ export async function createDebt({ direction, counterpartyName, amount, note, tr
   return data
 }
 
-export async function settleDebt({ id, direction, amount, counterpartyName, accountId, categoryId }) {
-  const settledTransaction = await createTransaction({
-    amount,
-    type: direction === 'owed_to_me' ? 'income' : 'expense',
-    accountId,
-    categoryId,
-    occurredOn: today(),
-    note: `Dívida: ${counterpartyName}`,
-  })
-
-  const { data, error } = await supabase
-    .from('debts')
-    .update({
-      status: 'settled',
-      settled_at: new Date().toISOString(),
-      settled_transaction_id: settledTransaction.id,
-    })
-    .eq('id', id)
-    .select()
-    .single()
-  if (error) throw error
-  return data
-}
-
 export async function deleteDebt(id) {
   const { error } = await supabase.from('debts').delete().eq('id', id)
   if (error) throw error
@@ -358,4 +333,87 @@ export async function createCategoryRule({ keyword, categoryId }) {
 export async function deleteCategoryRule(id) {
   const { error } = await supabase.from('category_rules').delete().eq('id', id)
   if (error) throw error
+}
+
+// --- Pagamentos parciais de dívidas ----------------------------------------
+
+export async function listDebtPayments() {
+  const { data, error } = await supabase
+    .from('debt_payments')
+    .select('*')
+    .order('paid_on', { ascending: true })
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return data
+}
+
+// Regista um pagamento (total ou parcial): cria a transação na conta, guarda o
+// pagamento e fecha a dívida quando o remanescente chega a zero.
+export async function addDebtPayment({ debt, amount, remaining, accountId, categoryId, paidOn, note }) {
+  const transaction = await createTransaction({
+    amount,
+    type: debt.direction === 'owed_to_me' ? 'income' : 'expense',
+    accountId,
+    categoryId,
+    occurredOn: paidOn,
+    note: note || `Dívida: ${debt.counterparty_name}`,
+  })
+
+  let paymentId = null
+  try {
+    const { data: payment, error } = await supabase
+      .from('debt_payments')
+      .insert({
+        user_id: transaction.user_id,
+        debt_id: debt.id,
+        amount,
+        paid_on: paidOn,
+        note: note || null,
+        transaction_id: transaction.id,
+      })
+      .select('id')
+      .single()
+    if (error) throw error
+    paymentId = payment.id
+
+    if (Math.round(amount * 100) >= Math.round(remaining * 100)) {
+      const { error: closeError } = await supabase
+        .from('debts')
+        .update({
+          status: 'settled',
+          settled_at: new Date().toISOString(),
+          settled_transaction_id: transaction.id,
+        })
+        .eq('id', debt.id)
+      if (closeError) throw closeError
+    }
+  } catch (err) {
+    // Desfaz tudo se algum passo falhou, para não ficar uma transação ou pagamento órfãos.
+    if (paymentId) await supabase.from('debt_payments').delete().eq('id', paymentId)
+    await supabase.from('transactions').delete().eq('id', transaction.id)
+    throw err
+  }
+}
+
+export async function updateDebt({ id, counterpartyName, amount, note }) {
+  const { data, error } = await supabase
+    .from('debts')
+    .update({ counterparty_name: counterpartyName, amount, note: note || null })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+// Fecha o remanescente sem criar transação (ex.: acerto de contas entre as partes).
+export async function closeDebtByAgreement({ id, note }) {
+  const { data, error } = await supabase
+    .from('debts')
+    .update({ status: 'settled', settled_at: new Date().toISOString(), settled_note: note || null })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
 }

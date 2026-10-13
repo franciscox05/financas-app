@@ -37,6 +37,15 @@ body {
 /* iOS Safari desalinha o texto de <input type="date"> (fica à direita e
    verticalmente deslocado) — força alinhamento consistente com os outros
    campos do formulário. */
+input[type='date'] {
+  /* O iOS dá ao campo de data uma largura intrínseca que pode ultrapassar o
+     cartão (transbordava no Património); obriga-o a respeitar o contentor. */
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  max-width: 100%;
+}
+
 input[type='date']::-webkit-date-and-time-value {
   text-align: left;
 }
