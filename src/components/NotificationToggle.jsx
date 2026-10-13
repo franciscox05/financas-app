@@ -1,34 +1,75 @@
 import { Bell, BellOff } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { useToast } from '../context/toastContext'
 import { getExistingSubscription, isPushSupported, subscribeToPush, unsubscribeFromPush } from '../lib/push'
 
+const BLOCKED_MESSAGE =
+  'As notificações estão bloqueadas para esta app. Ativa-as em Definições do telemóvel → Notificações → FinancasApp.'
+
 export default function NotificationToggle() {
+  const toast = useToast()
   const [supported, setSupported] = useState(false)
   const [subscribed, setSubscribed] = useState(false)
+  const [blocked, setBlocked] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
 
-  useEffect(() => {
+  // O estado vem sempre do browser (permissão + subscrição), não de memória:
+  // assim, se a pessoa mudar a permissão nas Definições e voltar à app, o
+  // botão acompanha sem precisar de recarregar.
+  const refresh = useCallback(async () => {
     const ok = isPushSupported()
     setSupported(ok)
-    if (ok) {
-      getExistingSubscription().then((sub) => setSubscribed(!!sub))
+    if (!ok) return
+    const denied = Notification.permission === 'denied'
+    setBlocked(denied)
+    try {
+      const sub = await getExistingSubscription()
+      setSubscribed(!!sub && !denied)
+    } catch {
+      setSubscribed(false)
     }
   }, [])
 
+  useEffect(() => {
+    refresh()
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refresh()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', refresh)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', refresh)
+    }
+  }, [refresh])
+
   async function handleToggle() {
+    if (busy) return
+    // Depois de "Não permitir" o browser nunca volta a perguntar; o pedido
+    // falharia sempre em silêncio. Explica onde se desbloqueia.
+    if (!subscribed && Notification.permission === 'denied') {
+      setBlocked(true)
+      toast.info(BLOCKED_MESSAGE)
+      return
+    }
     setBusy(true)
-    setError('')
     try {
       if (subscribed) {
         await unsubscribeFromPush()
         setSubscribed(false)
+        toast.info('Lembrete diário desativado.')
       } else {
         await subscribeToPush()
         setSubscribed(true)
+        toast.success('Lembrete diário ativado.')
       }
     } catch (err) {
-      setError(err.message)
+      if (Notification.permission === 'denied') {
+        setBlocked(true)
+        toast.info(BLOCKED_MESSAGE)
+      } else {
+        toast.error(err.message)
+      }
     } finally {
       setBusy(false)
     }
@@ -36,19 +77,26 @@ export default function NotificationToggle() {
 
   if (!supported) return null
 
+  const title = blocked
+    ? 'Notificações bloqueadas'
+    : subscribed
+      ? 'Desativar lembretes'
+      : 'Ativar lembrete diário'
+
   return (
-    <div className="relative">
-      <button
-        onClick={handleToggle}
-        disabled={busy}
-        title={subscribed ? 'Desativar lembretes' : 'Ativar lembrete diário'}
-        className="rounded-lg border border-neutral-300 p-1.5 disabled:opacity-50 dark:border-neutral-700"
-      >
-        {subscribed ? <Bell size={16} /> : <BellOff size={16} className="text-neutral-400" />}
-      </button>
-      {error && (
-        <p className="absolute right-0 top-full mt-1 w-48 text-xs text-red-600">{error}</p>
+    <button
+      onClick={handleToggle}
+      disabled={busy}
+      title={title}
+      aria-label={title}
+      aria-pressed={subscribed}
+      className="rounded-lg border border-neutral-300 p-1.5 disabled:opacity-50 dark:border-neutral-700"
+    >
+      {subscribed ? (
+        <Bell size={16} />
+      ) : (
+        <BellOff size={16} className={blocked ? 'text-red-500' : 'text-neutral-400'} />
       )}
-    </div>
+    </button>
   )
 }
