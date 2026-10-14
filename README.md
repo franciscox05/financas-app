@@ -26,6 +26,13 @@ supabase link --project-ref <project-ref>
 supabase db push
 ```
 
+## Fluxo de trabalho e deploy
+
+1. Criar uma branch a partir da `main`, fazer as alterações e abrir um Pull Request.
+2. Fazer merge do PR com "Create a merge commit". A Vercel faz o deploy da `main` automaticamente.
+3. Migrações SQL novas (`supabase/migrations/`) têm de ser aplicadas ao projeto Supabase **antes** de fazer o deploy do código que as usa.
+4. Na PWA instalada, fechar e abrir a app duas vezes para carregar a versão nova.
+
 ## Estado
 
 Ver plano completo e progresso documentado em `CerebroPessoal/Projects/FinancasApp.md` (Obsidian, fora deste repo).
