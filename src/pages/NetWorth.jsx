@@ -1,5 +1,6 @@
 import { ChevronRight } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   CartesianGrid,
   Line,
@@ -23,7 +24,7 @@ import { balanceAt } from '../lib/accountBalance'
 import { addMonths, endOfMonth, monthStart, shortMonthLabel, toIsoDate, today } from '../lib/dates'
 import Money from '../components/Money'
 import { usePrivacy } from '../context/privacyContext'
-import AccountHistoryDialog from '../components/AccountHistoryDialog'
+import HiddenChartNotice from '../components/HiddenChartNotice'
 
 const HISTORY_PAGE_SIZE = 10
 
@@ -59,7 +60,6 @@ export default function NetWorth() {
   const [formError, setFormError] = useState('')
   const [confirmingSnapshotId, setConfirmingSnapshotId] = useState(null)
   const [historyPage, setHistoryPage] = useState(1)
-  const [historyAccount, setHistoryAccount] = useState(null)
 
   const loadAll = useCallback(async () => {
     setError('')
@@ -226,10 +226,9 @@ export default function NetWorth() {
 
       <section className="grid grid-cols-1 gap-2">
         {cashAccounts.map((acc) => (
-          <button
+          <Link
             key={acc.id}
-            type="button"
-            onClick={() => setHistoryAccount(acc)}
+            to={`/patrimonio/conta/${acc.id}`}
             className="flex w-full items-center justify-between rounded-xl border border-neutral-200 p-3 text-left transition-transform active:scale-[0.99] dark:border-neutral-800"
           >
             <span className="text-sm text-neutral-700 dark:text-neutral-300">{acc.name}</span>
@@ -237,15 +236,14 @@ export default function NetWorth() {
               <Money value={balanceByAccountId.get(acc.id) ?? 0} />
               <ChevronRight size={14} className="text-neutral-400" aria-hidden="true" />
             </span>
-          </button>
+          </Link>
         ))}
         {investmentAccounts.map((acc) => {
           const latest = latestByAccount.get(acc.id)
           return (
-            <button
+            <Link
               key={acc.id}
-              type="button"
-              onClick={() => setHistoryAccount(acc)}
+              to={`/patrimonio/conta/${acc.id}`}
               className="flex w-full items-center justify-between rounded-xl border border-neutral-200 p-3 text-left transition-transform active:scale-[0.99] dark:border-neutral-800"
             >
               <div>
@@ -260,54 +258,54 @@ export default function NetWorth() {
                 <Money value={balanceByAccountId.get(acc.id) ?? 0} />
                 <ChevronRight size={14} className="text-neutral-400" aria-hidden="true" />
               </span>
-            </button>
+            </Link>
           )
         })}
       </section>
 
       <section>
         <h3 className="mb-2 text-sm font-semibold text-neutral-500">Evolução (últimos 6 meses)</h3>
-        <div
-          className={`h-56 w-full rounded-xl border border-neutral-200 p-2 transition-[filter] duration-200 dark:border-neutral-800 ${
-            hidden ? 'pointer-events-none select-none blur-sm' : ''
-          }`}
-        >
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-              <CartesianGrid vertical={false} stroke="#898781" strokeOpacity={0.35} strokeDasharray="3 3" />
-              <XAxis
-                dataKey="month"
-                tick={{ fontSize: 12, fill: '#898781' }}
-                axisLine={{ stroke: '#c3c2b7' }}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 12, fill: '#898781' }}
-                axisLine={false}
-                tickLine={false}
-                width={40}
-              />
-              <Tooltip
-                formatter={(value) => eur(Number(value))}
-                contentStyle={{
-                  fontSize: 12,
-                  borderRadius: 8,
-                  backgroundColor: 'var(--tooltip-bg)',
-                  borderColor: 'var(--tooltip-border)',
-                  color: 'var(--tooltip-text)',
-                }}
-                itemStyle={{ color: 'var(--tooltip-text)' }}
-                labelStyle={{ color: 'var(--tooltip-text)' }}
-              />
-              <Line
-                type="monotone"
-                dataKey="Património"
-                stroke={LINE_COLOR}
-                strokeWidth={2}
-                dot={{ r: 4, fill: LINE_COLOR }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="h-56 w-full rounded-xl border border-neutral-200 p-2 dark:border-neutral-800">
+          {hidden ? (
+            <HiddenChartNotice />
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                <CartesianGrid vertical={false} stroke="#898781" strokeOpacity={0.35} strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: 12, fill: '#898781' }}
+                  axisLine={{ stroke: '#c3c2b7' }}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 12, fill: '#898781' }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={40}
+                />
+                <Tooltip
+                  formatter={(value) => eur(Number(value))}
+                  contentStyle={{
+                    fontSize: 12,
+                    borderRadius: 8,
+                    backgroundColor: 'var(--tooltip-bg)',
+                    borderColor: 'var(--tooltip-border)',
+                    color: 'var(--tooltip-text)',
+                  }}
+                  itemStyle={{ color: 'var(--tooltip-text)' }}
+                  labelStyle={{ color: 'var(--tooltip-text)' }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Património"
+                  stroke={LINE_COLOR}
+                  strokeWidth={2}
+                  dot={{ r: 4, fill: LINE_COLOR }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </section>
 
@@ -420,11 +418,6 @@ export default function NetWorth() {
         </section>
       )}
 
-      <AccountHistoryDialog
-        account={historyAccount}
-        snapshots={snapshots}
-        onClose={() => setHistoryAccount(null)}
-      />
     </div>
   )
 }

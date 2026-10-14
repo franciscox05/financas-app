@@ -1,17 +1,16 @@
 import { usePrivacy } from '../context/privacyContext'
 
-// Mostra um montante e desfoca-o quando o modo privacidade está ativo.
+// Mostra um montante; com o modo privacidade ativo mostra uma máscara fixa
+// ("•••• €"), que não revela nem o valor nem quantos dígitos tem.
 // Usa `value` (formata como "12.50 €") ou `children` (texto já formatado).
-// aria-hidden esconde o valor real aos leitores de ecrã enquanto desfocado.
-export default function Money({ value, children, className = '' }) {
+export default function Money({ value, children, mask = '•••• €' }) {
   const { hidden } = usePrivacy()
-  const text = children ?? `${Number(value).toFixed(2)} €`
-  return (
-    <span
-      className={`transition-[filter] duration-200 ${hidden ? 'select-none blur-sm' : ''} ${className}`.trim()}
-      aria-hidden={hidden || undefined}
-    >
-      {text}
-    </span>
-  )
+  if (hidden) {
+    return (
+      <span className="select-none tracking-wider" role="img" aria-label="Valor escondido">
+        {mask}
+      </span>
+    )
+  }
+  return <>{children ?? `${Number(value).toFixed(2)} €`}</>
 }
