@@ -17,6 +17,7 @@ import { listCategories, listTransactionsInRange } from '../lib/db'
 import { addMonths, monthKey, monthLabel, monthStart, shortMonthLabel, toIsoDate } from '../lib/dates'
 import Money from '../components/Money'
 import { usePrivacy } from '../context/privacyContext'
+import HiddenChartNotice from '../components/HiddenChartNotice'
 
 const INCOME_COLOR = '#16a34a' // tailwind green-600 — consistente com o resto da UI
 const EXPENSE_COLOR = '#dc2626' // tailwind red-600
@@ -355,35 +356,35 @@ export default function Balance() {
         <h3 className="mb-2 text-sm font-semibold text-neutral-500">
           Evolução (últimos 6 meses)
         </h3>
-        <div
-          className={`h-56 w-full rounded-xl border border-neutral-200 p-2 transition-[filter] duration-200 dark:border-neutral-800 ${
-            hidden ? 'pointer-events-none select-none blur-sm' : ''
-          }`}
-        >
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} barGap={2}>
-              <CartesianGrid vertical={false} stroke="#e1e0d9" strokeDasharray="3 3" />
-              <XAxis
-                dataKey="month"
-                tick={{ fontSize: 12, fill: '#898781' }}
-                axisLine={{ stroke: '#c3c2b7' }}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 12, fill: '#898781' }}
-                axisLine={false}
-                tickLine={false}
-                width={40}
-              />
-              <Tooltip
-                formatter={(value) => eur(Number(value))}
-                contentStyle={{ fontSize: 12, borderRadius: 8 }}
-              />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey="Ganhos" fill={INCOME_COLOR} radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Gastos" fill={EXPENSE_COLOR} radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="h-56 w-full rounded-xl border border-neutral-200 p-2 dark:border-neutral-800">
+          {hidden ? (
+            <HiddenChartNotice />
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} barGap={2}>
+                <CartesianGrid vertical={false} stroke="#e1e0d9" strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: 12, fill: '#898781' }}
+                  axisLine={{ stroke: '#c3c2b7' }}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 12, fill: '#898781' }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={40}
+                />
+                <Tooltip
+                  formatter={(value) => eur(Number(value))}
+                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="Ganhos" fill={INCOME_COLOR} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Gastos" fill={EXPENSE_COLOR} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </section>
     </div>

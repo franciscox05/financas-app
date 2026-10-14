@@ -69,7 +69,7 @@ export default function MonthCalendar({ monthDate, transactions }) {
                     }`}
                   >
                     {entry.income - entry.expense >= 0 ? '+' : ''}
-                    <Money>{`${(entry.income - entry.expense).toFixed(0)}€`}</Money>
+                    <Money mask="••">{`${(entry.income - entry.expense).toFixed(0)}€`}</Money>
                   </span>
                 )}
               </button>
