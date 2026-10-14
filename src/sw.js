@@ -14,11 +14,12 @@ self.addEventListener('push', (event) => {
       body: data.body,
       icon: '/pwa-192x192.png',
       badge: '/pwa-192x192.png',
+      data: { url: data.url ?? '/' },
     }),
   )
 })
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  event.waitUntil(self.clients.openWindow('/'))
+  event.waitUntil(self.clients.openWindow(event.notification.data?.url ?? '/'))
 })
