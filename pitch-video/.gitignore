@@ -1,0 +1,4 @@
+.env.demo
+node_modules/
+out/
+public/captures/
