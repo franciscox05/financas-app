@@ -1,5 +1,6 @@
 import { ChevronRight } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   CartesianGrid,
   Line,
@@ -23,7 +24,6 @@ import { balanceAt } from '../lib/accountBalance'
 import { addMonths, endOfMonth, monthStart, shortMonthLabel, toIsoDate, today } from '../lib/dates'
 import Money from '../components/Money'
 import { usePrivacy } from '../context/privacyContext'
-import AccountHistoryDialog from '../components/AccountHistoryDialog'
 
 const HISTORY_PAGE_SIZE = 10
 
@@ -59,7 +59,6 @@ export default function NetWorth() {
   const [formError, setFormError] = useState('')
   const [confirmingSnapshotId, setConfirmingSnapshotId] = useState(null)
   const [historyPage, setHistoryPage] = useState(1)
-  const [historyAccount, setHistoryAccount] = useState(null)
 
   const loadAll = useCallback(async () => {
     setError('')
@@ -226,10 +225,9 @@ export default function NetWorth() {
 
       <section className="grid grid-cols-1 gap-2">
         {cashAccounts.map((acc) => (
-          <button
+          <Link
             key={acc.id}
-            type="button"
-            onClick={() => setHistoryAccount(acc)}
+            to={`/patrimonio/conta/${acc.id}`}
             className="flex w-full items-center justify-between rounded-xl border border-neutral-200 p-3 text-left transition-transform active:scale-[0.99] dark:border-neutral-800"
           >
             <span className="text-sm text-neutral-700 dark:text-neutral-300">{acc.name}</span>
@@ -237,15 +235,14 @@ export default function NetWorth() {
               <Money value={balanceByAccountId.get(acc.id) ?? 0} />
               <ChevronRight size={14} className="text-neutral-400" aria-hidden="true" />
             </span>
-          </button>
+          </Link>
         ))}
         {investmentAccounts.map((acc) => {
           const latest = latestByAccount.get(acc.id)
           return (
-            <button
+            <Link
               key={acc.id}
-              type="button"
-              onClick={() => setHistoryAccount(acc)}
+              to={`/patrimonio/conta/${acc.id}`}
               className="flex w-full items-center justify-between rounded-xl border border-neutral-200 p-3 text-left transition-transform active:scale-[0.99] dark:border-neutral-800"
             >
               <div>
@@ -260,7 +257,7 @@ export default function NetWorth() {
                 <Money value={balanceByAccountId.get(acc.id) ?? 0} />
                 <ChevronRight size={14} className="text-neutral-400" aria-hidden="true" />
               </span>
-            </button>
+            </Link>
           )
         })}
       </section>
@@ -420,11 +417,6 @@ export default function NetWorth() {
         </section>
       )}
 
-      <AccountHistoryDialog
-        account={historyAccount}
-        snapshots={snapshots}
-        onClose={() => setHistoryAccount(null)}
-      />
     </div>
   )
 }

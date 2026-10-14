@@ -146,3 +146,13 @@ button {
     animation: none;
   }
 }
+
+/* Com um diálogo modal aberto (ex. confirmar "Sair"), a página por baixo não deve
+   fazer scroll — no iOS o <dialog> não bloqueia isso sozinho. */
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
+dialog {
+  overscroll-behavior: contain;
+}

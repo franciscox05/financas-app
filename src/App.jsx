@@ -3,6 +3,7 @@ import AppLayout from './components/AppLayout'
 import ProtectedRoute from './components/ProtectedRoute'
 import ToastProvider from './components/ToastProvider'
 import { AuthProvider } from './context/AuthContext'
+import AccountHistory from './pages/AccountHistory'
 import Balance from './pages/Balance'
 import Dashboard from './pages/Dashboard'
 import Debts from './pages/Debts'
@@ -24,6 +25,7 @@ function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/balanco" element={<Balance />} />
               <Route path="/patrimonio" element={<NetWorth />} />
+              <Route path="/patrimonio/conta/:accountId" element={<AccountHistory />} />
               <Route path="/dividas" element={<Debts />} />
               <Route path="/gestao" element={<Manage />} />
             </Route>
