@@ -12,10 +12,13 @@ import {
 } from 'recharts'
 import {
   createSnapshot,
+  createTransfer,
   deleteSnapshot,
+  deleteTransfer,
   listAccounts,
   listAllTransactionsForBalance,
   listNetWorthSnapshots,
+  listTransfers,
 } from '../lib/db'
 import { Trash2 } from 'lucide-react'
 import { ErrorNotice, Pager, Skeleton } from '../components/Feedback'
@@ -37,9 +40,9 @@ function eur(value) {
 // Soma o saldo (snapshot mais recente + transações desde esse snapshot) de
 // cada conta do grupo, na mesma data — serve tanto para contas à ordem como
 // de investimento.
-function groupBalanceAt(transactions, snapshots, accountIds, asOfDate) {
+function groupBalanceAt(transactions, snapshots, accountIds, asOfDate, transfers) {
   return accountIds.reduce(
-    (sum, accountId) => sum + balanceAt(accountId, transactions, snapshots, asOfDate),
+    (sum, accountId) => sum + balanceAt(accountId, transactions, snapshots, asOfDate, transfers),
     0,
   )
 }
@@ -50,6 +53,7 @@ export default function NetWorth() {
   const [accounts, setAccounts] = useState([])
   const [transactions, setTransactions] = useState([])
   const [snapshots, setSnapshots] = useState([])
+  const [transfers, setTransfers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -61,18 +65,32 @@ export default function NetWorth() {
   const [confirmingSnapshotId, setConfirmingSnapshotId] = useState(null)
   const [historyPage, setHistoryPage] = useState(1)
 
+  const [transferFromId, setTransferFromId] = useState('')
+  const [transferToId, setTransferToId] = useState('')
+  const [transferAmount, setTransferAmount] = useState('')
+  const [transferDate, setTransferDate] = useState(today())
+  const [transferNote, setTransferNote] = useState('')
+  const [transferSubmitting, setTransferSubmitting] = useState(false)
+  const [transferError, setTransferError] = useState('')
+  const [confirmingTransferId, setConfirmingTransferId] = useState(null)
+  const [transferHistoryPage, setTransferHistoryPage] = useState(1)
+
   const loadAll = useCallback(async () => {
     setError('')
     try {
-      const [accs, txs, snaps] = await Promise.all([
+      const [accs, txs, snaps, trs] = await Promise.all([
         listAccounts(),
         listAllTransactionsForBalance(),
         listNetWorthSnapshots(),
+        listTransfers(),
       ])
       setAccounts(accs)
       setTransactions(txs)
       setSnapshots(snaps)
+      setTransfers(trs)
       setSnapAccountId((prev) => prev || accs[0]?.id || '')
+      setTransferFromId((prev) => prev || accs[0]?.id || '')
+      setTransferToId((prev) => prev || accs[1]?.id || accs[0]?.id || '')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -90,6 +108,11 @@ export default function NetWorth() {
     if (historyPage > totalPages) setHistoryPage(totalPages)
   }, [snapshots, historyPage])
 
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(transfers.length / HISTORY_PAGE_SIZE))
+    if (transferHistoryPage > totalPages) setTransferHistoryPage(totalPages)
+  }, [transfers, transferHistoryPage])
+
   const cashAccounts = useMemo(() => accounts.filter((a) => a.type === 'cash'), [accounts])
   const investmentAccounts = useMemo(
     () => accounts.filter((a) => a.type === 'investment'),
@@ -102,18 +125,18 @@ export default function NetWorth() {
   const cashAccountIds = useMemo(() => cashAccounts.map((a) => a.id), [cashAccounts])
 
   const cashBalance = useMemo(
-    () => groupBalanceAt(transactions, snapshots, cashAccountIds, today()),
-    [transactions, snapshots, cashAccountIds],
+    () => groupBalanceAt(transactions, snapshots, cashAccountIds, today(), transfers),
+    [transactions, snapshots, cashAccountIds, transfers],
   )
 
   const balanceByAccountId = useMemo(() => {
     const now = today()
     const map = new Map()
     for (const acc of accounts) {
-      map.set(acc.id, balanceAt(acc.id, transactions, snapshots, now))
+      map.set(acc.id, balanceAt(acc.id, transactions, snapshots, now, transfers))
     }
     return map
-  }, [accounts, transactions, snapshots])
+  }, [accounts, transactions, snapshots, transfers])
 
   const latestByAccount = useMemo(() => {
     const map = new Map()
@@ -127,8 +150,8 @@ export default function NetWorth() {
   }, [snapshots, investmentAccountIds])
 
   const investmentTotal = useMemo(
-    () => groupBalanceAt(transactions, snapshots, investmentAccountIds, today()),
-    [transactions, snapshots, investmentAccountIds],
+    () => groupBalanceAt(transactions, snapshots, investmentAccountIds, today(), transfers),
+    [transactions, snapshots, investmentAccountIds, transfers],
   )
 
   const totalNetWorth = cashBalance + investmentTotal
@@ -140,11 +163,11 @@ export default function NetWorth() {
       const monthDate = addMonths(monthStart(new Date()), -i)
       const isCurrentMonth = i === 0
       const asOfDate = isCurrentMonth ? today() : toIsoDate(endOfMonth(monthDate))
-      const total = groupBalanceAt(transactions, snapshots, allAccountIds, asOfDate)
+      const total = groupBalanceAt(transactions, snapshots, allAccountIds, asOfDate, transfers)
       points.push({ month: shortMonthLabel(monthDate), Património: Number(total.toFixed(2)) })
     }
     return points
-  }, [transactions, snapshots, accounts])
+  }, [transactions, snapshots, accounts, transfers])
 
   async function handleAddSnapshot(e) {
     e.preventDefault()
@@ -189,6 +212,73 @@ export default function NetWorth() {
               })
               await loadAll()
               toast.success('Snapshot restaurado.')
+            } catch (err) {
+              toast.error(`Não foi possível desfazer: ${err.message}`)
+            }
+          },
+        },
+      })
+    } catch (err) {
+      toast.error(`Não foi possível apagar: ${err.message}`)
+    }
+  }
+
+  async function handleAddTransfer(e) {
+    e.preventDefault()
+    const numericAmount = Number(transferAmount)
+    if (!transferFromId || !transferToId) {
+      setTransferError('Escolhe as duas contas.')
+      return
+    }
+    if (transferFromId === transferToId) {
+      setTransferError('A conta de origem e destino têm de ser diferentes.')
+      return
+    }
+    if (!numericAmount || numericAmount <= 0) {
+      setTransferError('Indica um valor válido.')
+      return
+    }
+    setTransferSubmitting(true)
+    setTransferError('')
+    try {
+      await createTransfer({
+        fromAccountId: transferFromId,
+        toAccountId: transferToId,
+        amount: numericAmount,
+        occurredOn: transferDate,
+        note: transferNote.trim(),
+      })
+      setTransferAmount('')
+      setTransferNote('')
+      setTransferDate(today())
+      await loadAll()
+      toast.success('Transferência registada.')
+    } catch (err) {
+      setTransferError(err.message)
+    } finally {
+      setTransferSubmitting(false)
+    }
+  }
+
+  async function handleDeleteTransfer(transfer) {
+    try {
+      await deleteTransfer(transfer.id)
+      setConfirmingTransferId(null)
+      await loadAll()
+      toast.success('Transferência apagada.', {
+        action: {
+          label: 'Desfazer',
+          onClick: async () => {
+            try {
+              await createTransfer({
+                fromAccountId: transfer.from_account_id,
+                toAccountId: transfer.to_account_id,
+                amount: Number(transfer.amount),
+                occurredOn: transfer.occurred_on,
+                note: transfer.note,
+              })
+              await loadAll()
+              toast.success('Transferência restaurada.')
             } catch (err) {
               toast.error(`Não foi possível desfazer: ${err.message}`)
             }
@@ -414,6 +504,142 @@ export default function NetWorth() {
             page={historyPage}
             totalPages={Math.ceil(snapshots.length / HISTORY_PAGE_SIZE)}
             onChange={setHistoryPage}
+          />
+        </section>
+      )}
+
+      <section>
+        <h3 className="mb-1.5 text-sm font-semibold text-neutral-500">Transferir entre contas</h3>
+        <p className="mb-3 text-xs leading-relaxed text-neutral-400">
+          Para mover dinheiro entre as tuas contas (ex.: Conta Corrente → XTB ao investir). Atualiza os
+          dois saldos de imediato e não conta como Gasto/Ganho no Balanço.
+        </p>
+        <form
+          onSubmit={handleAddTransfer}
+          className="space-y-4 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
+        >
+          <div className="grid grid-cols-2 gap-3">
+            <div className="min-w-0">
+              <label className="mb-1 block text-xs font-medium text-neutral-500">De</label>
+              <select
+                value={transferFromId}
+                onChange={(e) => setTransferFromId(e.target.value)}
+                className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              >
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="min-w-0">
+              <label className="mb-1 block text-xs font-medium text-neutral-500">Para</label>
+              <select
+                value={transferToId}
+                onChange={(e) => setTransferToId(e.target.value)}
+                className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              >
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="min-w-0">
+            <label className="mb-1 block text-xs font-medium text-neutral-500">Data</label>
+            <input
+              type="date"
+              value={transferDate}
+              onChange={(e) => setTransferDate(e.target.value)}
+              className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-neutral-500">Valor</label>
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              min="0"
+              required
+              placeholder="0.00 €"
+              value={transferAmount}
+              onChange={(e) => setTransferAmount(e.target.value)}
+              className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-neutral-500">Nota (opcional)</label>
+            <input
+              type="text"
+              placeholder="Ex: aporte mensal"
+              value={transferNote}
+              onChange={(e) => setTransferNote(e.target.value)}
+              className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            />
+          </div>
+          {transferError && <p className="text-sm text-red-600">{transferError}</p>}
+          <button
+            type="submit"
+            disabled={transferSubmitting}
+            className="w-full rounded-lg bg-neutral-900 min-h-12 py-2.5 font-medium text-white transition-colors disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+          >
+            {transferSubmitting ? 'A guardar...' : 'Transferir'}
+          </button>
+        </form>
+      </section>
+
+      {transfers.length > 0 && (
+        <section>
+          <h3 className="mb-2 text-sm font-semibold text-neutral-500">Histórico de transferências</h3>
+          <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+            {transfers
+              .slice((transferHistoryPage - 1) * HISTORY_PAGE_SIZE, transferHistoryPage * HISTORY_PAGE_SIZE)
+              .map((t) => (
+                <li key={t.id} className="flex items-center justify-between py-2 text-sm">
+                  <span className="min-w-0 truncate text-neutral-600 dark:text-neutral-400">
+                    {t.from_account?.name ?? 'Conta'} → {t.to_account?.name ?? 'Conta'} · {t.occurred_on}
+                    {t.note ? ` · ${t.note}` : ''}
+                  </span>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="font-medium text-neutral-900 dark:text-neutral-100">
+                      <Money value={Number(t.amount)} />
+                    </span>
+                    {confirmingTransferId === t.id ? (
+                      <span className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleDeleteTransfer(t)}
+                          className="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white"
+                        >
+                          Confirmar
+                        </button>
+                        <button
+                          onClick={() => setConfirmingTransferId(null)}
+                          className="rounded border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700"
+                        >
+                          Cancelar
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmingTransferId(t.id)}
+                        aria-label="Apagar transferência"
+                        className="rounded p-1 text-neutral-400 hover:text-red-600"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+                </li>
+              ))}
+          </ul>
+          <Pager
+            page={transferHistoryPage}
+            totalPages={Math.ceil(transfers.length / HISTORY_PAGE_SIZE)}
+            onChange={setTransferHistoryPage}
           />
         </section>
       )}

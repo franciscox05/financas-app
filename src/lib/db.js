@@ -264,7 +264,9 @@ export async function renameAccount(id, name) {
 export async function deleteAccount(id) {
   const { error } = await supabase.from('accounts').delete().eq('id', id)
   if (error?.code === FK_VIOLATION) {
-    throw new Error('Esta conta ainda tem transações, recorrências ou registos de património associados.')
+    throw new Error(
+      'Esta conta ainda tem transações, transferências, atualizações de saldo ou dívidas associadas.',
+    )
   }
   if (error) throw error
 }
@@ -340,7 +342,7 @@ export async function deleteCategoryRule(id) {
 export async function listDebtPayments() {
   const { data, error } = await supabase
     .from('debt_payments')
-    .select('*')
+    .select('*, transactions(occurred_on, note, accounts(name), categories(name))')
     .order('paid_on', { ascending: true })
     .order('created_at', { ascending: true })
   if (error) throw error
@@ -395,13 +397,10 @@ export async function addDebtPayment({ debt, amount, remaining, accountId, categ
   }
 }
 
-export async function updateDebt({ id, counterpartyName, amount, note }) {
-  const { data, error } = await supabase
-    .from('debts')
-    .update({ counterparty_name: counterpartyName, amount, note: note || null })
-    .eq('id', id)
-    .select()
-    .single()
+export async function updateDebt({ id, counterpartyName, amount, note, settledNote }) {
+  const fields = { counterparty_name: counterpartyName, amount, note: note || null }
+  if (settledNote !== undefined) fields.settled_note = settledNote || null
+  const { data, error } = await supabase.from('debts').update(fields).eq('id', id).select().single()
   if (error) throw error
   return data
 }
@@ -416,4 +415,44 @@ export async function closeDebtByAgreement({ id, note }) {
     .single()
   if (error) throw error
   return data
+}
+
+// --- Transferências entre contas próprias ----------------------------------
+// Movimentar dinheiro entre contas (ex.: Conta Corrente -> XTB) não é um
+// Gasto/Ganho real, por isso vive na sua própria tabela, fora de `transactions`
+// — nunca entra nos totais de Balanço/Dashboard/calendário. `accountBalance.js`
+// soma-a diretamente no saldo de cada conta envolvida.
+export async function listTransfers() {
+  const { data, error } = await supabase
+    .from('transfers')
+    .select('*, from_account:accounts!from_account_id(name), to_account:accounts!to_account_id(name)')
+    .order('occurred_on', { ascending: false })
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+export async function createTransfer({ fromAccountId, toAccountId, amount, occurredOn, note }) {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+
+  const { data, error } = await supabase
+    .from('transfers')
+    .insert({
+      user_id: userData.user.id,
+      from_account_id: fromAccountId,
+      to_account_id: toAccountId,
+      amount,
+      occurred_on: occurredOn,
+      note: note || null,
+    })
+    .select('*, from_account:accounts!from_account_id(name), to_account:accounts!to_account_id(name)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteTransfer(id) {
+  const { error } = await supabase.from('transfers').delete().eq('id', id)
+  if (error) throw error
 }

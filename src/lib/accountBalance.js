@@ -14,7 +14,7 @@
 // snapshot ter sido criado (já estava embutida no valor que a pessoa indicou),
 // e qualquer transação nova a partir daí — seja de hoje ou um registo
 // histórico adicionado mais tarde — soma-se normalmente por cima.
-export function balanceAt(accountId, transactions, snapshots, asOfDate) {
+export function balanceAt(accountId, transactions, snapshots, asOfDate, transfers = []) {
   const latestSnapshot = snapshots
     .filter((s) => s.account_id === accountId && s.snapshot_date <= asOfDate)
     .sort((a, b) => {
@@ -28,6 +28,16 @@ export function balanceAt(accountId, transactions, snapshots, asOfDate) {
     if (tx.occurred_on > asOfDate) continue
     if (latestSnapshot && new Date(tx.created_at) <= new Date(latestSnapshot.created_at)) continue
     total += tx.type === 'income' ? Number(tx.amount) : -Number(tx.amount)
+  }
+  // Transferências entre contas próprias: não são Gasto/Ganho, mas movem
+  // dinheiro de facto — contam no saldo das duas contas envolvidas, com o
+  // mesmo corte por snapshot usado acima para as transações normais.
+  for (const tr of transfers) {
+    if (tr.from_account_id !== accountId && tr.to_account_id !== accountId) continue
+    if (tr.occurred_on > asOfDate) continue
+    if (latestSnapshot && new Date(tr.created_at) <= new Date(latestSnapshot.created_at)) continue
+    if (tr.from_account_id === accountId) total -= Number(tr.amount)
+    if (tr.to_account_id === accountId) total += Number(tr.amount)
   }
   return total
 }

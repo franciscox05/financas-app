@@ -185,32 +185,39 @@ export default function Debts() {
     setEditingId(debt.id)
     setEditName(debt.counterparty_name)
     setEditAmount(String(debt.amount))
-    setEditNote(debt.note ?? '')
+    setEditNote(debt.status === 'settled' ? debt.settled_note ?? '' : debt.note ?? '')
     setEditError('')
   }
 
   async function handleEdit(debt) {
-    const numericAmount = Number(editAmount)
-    const paid = Number(debt.amount) - remaining(debt)
+    const isSettled = debt.status === 'settled'
     if (!editName.trim()) {
       setEditError('Indica o nome da pessoa.')
       return
     }
-    if (!numericAmount || numericAmount <= 0) {
-      setEditError('Indica um valor válido.')
-      return
+
+    let numericAmount = Number(debt.amount)
+    if (!isSettled) {
+      numericAmount = Number(editAmount)
+      const paid = Number(debt.amount) - remaining(debt)
+      if (!numericAmount || numericAmount <= 0) {
+        setEditError('Indica um valor válido.')
+        return
+      }
+      if (paid > 0 && Math.round(numericAmount * 100) <= Math.round(paid * 100)) {
+        setEditError(`Já foram pagos ${eur(paid)}; o valor tem de ser superior.`)
+        return
+      }
     }
-    if (paid > 0 && Math.round(numericAmount * 100) <= Math.round(paid * 100)) {
-      setEditError(`Já foram pagos ${eur(paid)}; o valor tem de ser superior.`)
-      return
-    }
+
     setSaving(true)
     try {
       await updateDebt({
         id: debt.id,
         counterpartyName: editName.trim(),
         amount: numericAmount,
-        note: editNote.trim(),
+        note: isSettled ? debt.note : editNote.trim(),
+        settledNote: isSettled ? editNote.trim() : undefined,
       })
       setEditingId(null)
       await load()
@@ -315,6 +322,7 @@ export default function Debts() {
 
   function renderDebtRow(debt) {
     const isOwedToMe = debt.direction === 'owed_to_me'
+    const isSettled = debt.status === 'settled'
     const debtPayments = paymentsByDebt.get(debt.id) ?? []
     const left = remaining(debt)
     const partial = debtPayments.length > 0
@@ -334,9 +342,16 @@ export default function Debts() {
           </div>
           <div className="shrink-0 text-right">
             <p className={`font-semibold ${isOwedToMe ? 'text-green-600' : 'text-red-600'}`}><Money value={left} /></p>
-            {partial && <p className="text-xs text-neutral-400">de <Money value={debt.amount} /></p>}
+            {partial && !isSettled && <p className="text-xs text-neutral-400">de <Money value={debt.amount} /></p>}
           </div>
         </div>
+
+        {isSettled && debt.settled_note && !partial && (
+          <p className="text-xs text-neutral-400">
+            Acertado em {debt.settled_at ? new Date(debt.settled_at).toLocaleDateString('pt-PT') : '—'} ·{' '}
+            {debt.settled_note}
+          </p>
+        )}
 
         {partial && (
           <ul className="space-y-0.5 text-xs text-neutral-400">
@@ -344,6 +359,9 @@ export default function Debts() {
               <li key={p.id}>
                 {isOwedToMe ? 'Recebido' : 'Pago'} <Money value={p.amount} /> em{' '}
                 {new Date(`${p.paid_on}T00:00:00`).toLocaleDateString('pt-PT')}
+                {p.transactions && (
+                  <> · {p.transactions.accounts?.name ?? 'conta'} · {p.transactions.categories?.name ?? 'sem categoria'}</>
+                )}
                 {p.note ? ` · ${p.note}` : ''}
               </li>
             ))}
@@ -365,15 +383,19 @@ export default function Debts() {
             </>
           ) : (
             <>
-              <button
-                onClick={() => openSettle(debt)}
-                className="min-h-9 rounded-lg bg-neutral-900 px-3 text-xs font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
-              >
-                {isOwedToMe ? 'Registar recebimento' : 'Registar pagamento'}
-              </button>
-              <button onClick={() => openClose(debt)} className={`${smallButton} text-neutral-600 dark:text-neutral-300`}>
-                Fechar por acerto
-              </button>
+              {!isSettled && (
+                <>
+                  <button
+                    onClick={() => openSettle(debt)}
+                    className="min-h-9 rounded-lg bg-neutral-900 px-3 text-xs font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
+                  >
+                    {isOwedToMe ? 'Registar recebimento' : 'Registar pagamento'}
+                  </button>
+                  <button onClick={() => openClose(debt)} className={`${smallButton} text-neutral-600 dark:text-neutral-300`}>
+                    Fechar por acerto
+                  </button>
+                </>
+              )}
               <span className="ml-auto flex items-center">
                 <button
                   onClick={() => openEdit(debt)}
@@ -483,16 +505,18 @@ export default function Debts() {
               onChange={(e) => setEditName(e.target.value)}
               className={inputClass}
             />
-            <input
-              type="number"
-              inputMode="decimal"
-              step="0.01"
-              min="0"
-              aria-label="Valor original"
-              value={editAmount}
-              onChange={(e) => setEditAmount(e.target.value)}
-              className={inputClass}
-            />
+            {debt.status !== 'settled' && (
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0"
+                aria-label="Valor original"
+                value={editAmount}
+                onChange={(e) => setEditAmount(e.target.value)}
+                className={inputClass}
+              />
+            )}
             <input
               type="text"
               placeholder="Nota (opcional)"
@@ -500,7 +524,7 @@ export default function Debts() {
               onChange={(e) => setEditNote(e.target.value)}
               className={inputClass}
             />
-            {partial && (
+            {partial && debt.status !== 'settled' && (
               <p className="text-xs text-neutral-400">
                 O valor é o original da dívida; os pagamentos já registados mantêm-se.
               </p>
@@ -691,21 +715,7 @@ export default function Debts() {
               <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
                 {settled
                   .slice((historyPage - 1) * HISTORY_PAGE_SIZE, historyPage * HISTORY_PAGE_SIZE)
-                  .map((debt) => (
-                    <li key={debt.id} className="flex items-center justify-between py-2 text-sm text-neutral-500">
-                      <span className="min-w-0">
-                        <span className="block truncate">
-                          {debt.counterparty_name} · <Money value={debt.amount} />
-                        </span>
-                        {debt.settled_note && (
-                          <span className="block truncate text-xs text-neutral-400">{debt.settled_note}</span>
-                        )}
-                      </span>
-                      <span className="shrink-0 pl-3 text-xs">
-                        {debt.settled_note ? 'Acertado' : debt.direction === 'owed_to_me' ? 'Recebido' : 'Pago'}
-                      </span>
-                    </li>
-                  ))}
+                  .map(renderDebtRow)}
               </ul>
               <Pager
                 page={historyPage}

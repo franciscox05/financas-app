@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { EmptyState, ErrorNotice, ListSkeleton, Pager } from '../components/Feedback'
 import Money from '../components/Money'
-import { listAccounts, listNetWorthSnapshots, listTransactionsPage } from '../lib/db'
+import { listAccounts, listNetWorthSnapshots, listTransactionsPage, listTransfers } from '../lib/db'
 
 const PAGE_SIZE = 20
 
@@ -21,6 +21,7 @@ export default function AccountHistory() {
   const { accountId } = useParams()
   const [account, setAccount] = useState(null)
   const [snapshots, setSnapshots] = useState([])
+  const [transfers, setTransfers] = useState([])
   const [rows, setRows] = useState([])
   const [totalCount, setTotalCount] = useState(0)
   const [page, setPage] = useState(1)
@@ -29,11 +30,12 @@ export default function AccountHistory() {
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([listAccounts(), listNetWorthSnapshots()])
-      .then(([accounts, snaps]) => {
+    Promise.all([listAccounts(), listNetWorthSnapshots(), listTransfers()])
+      .then(([accounts, snaps, trs]) => {
         if (cancelled) return
         setAccount(accounts.find((a) => a.id === accountId) ?? null)
         setSnapshots(snaps.filter((s) => s.account_id === accountId))
+        setTransfers(trs.filter((t) => t.from_account_id === accountId || t.to_account_id === accountId))
       })
       .catch((err) => !cancelled && setError(err.message))
     return () => {
@@ -89,6 +91,28 @@ export default function AccountHistory() {
                 </span>
               </li>
             ))}
+          </ul>
+        </section>
+      )}
+
+      {transfers.length > 0 && (
+        <section className="space-y-1">
+          <h3 className="text-sm font-semibold text-neutral-500">Transferências</h3>
+          <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+            {transfers.slice(0, 10).map((t) => {
+              const isOutgoing = t.from_account_id === accountId
+              return (
+                <li key={t.id} className="flex items-center justify-between py-2 text-sm">
+                  <span className="min-w-0 truncate text-neutral-500">
+                    {formatDate(t.occurred_on)} ·{' '}
+                    {isOutgoing ? `para ${t.to_account?.name ?? 'conta'}` : `de ${t.from_account?.name ?? 'conta'}`}
+                  </span>
+                  <span className={`shrink-0 font-semibold ${isOutgoing ? 'text-red-600' : 'text-green-600'}`}>
+                    <Money>{`${isOutgoing ? '-' : '+'}${Number(t.amount).toFixed(2)} €`}</Money>
+                  </span>
+                </li>
+              )
+            })}
           </ul>
         </section>
       )}

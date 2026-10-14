@@ -16,6 +16,7 @@ import {
   listAllTransactionsForBalance,
   listCategories,
   listNetWorthSnapshots,
+  listTransfers,
   renameAccount,
   renameCategory,
   updateCategorySavingsFlag,
@@ -38,22 +39,25 @@ export default function Manage() {
   const [categories, setCategories] = useState([])
   const [transactions, setTransactions] = useState([])
   const [snapshots, setSnapshots] = useState([])
+  const [transfers, setTransfers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   const load = useCallback(async () => {
     setError('')
     try {
-      const [accs, cats, txs, snaps] = await Promise.all([
+      const [accs, cats, txs, snaps, trs] = await Promise.all([
         listAccounts(),
         listCategories(),
         listAllTransactionsForBalance(),
         listNetWorthSnapshots(),
+        listTransfers(),
       ])
       setAccounts(accs)
       setCategories(cats)
       setTransactions(txs)
       setSnapshots(snaps)
+      setTransfers(trs)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -69,10 +73,10 @@ export default function Manage() {
     const now = today()
     const map = new Map()
     for (const account of accounts) {
-      map.set(account.id, balanceAt(account.id, transactions, snapshots, now))
+      map.set(account.id, balanceAt(account.id, transactions, snapshots, now, transfers))
     }
     return map
-  }, [accounts, transactions, snapshots])
+  }, [accounts, transactions, snapshots, transfers])
 
   if (loading) {
     return <ListSkeleton rows={6} />
@@ -90,7 +94,7 @@ export default function Manage() {
         items={accounts}
         groups={ACCOUNT_GROUPS}
         scope="all"
-        deleteWarning="Só é possível apagar se não tiver transações, atualizações de saldo ou dívidas associadas."
+        deleteWarning="Só é possível apagar se não tiver transações, transferências, atualizações de saldo ou dívidas associadas."
         onCreate={async (values) => {
           const created = await createAccount(values)
           setAccounts((prev) => [...prev, created].sort(byName))
