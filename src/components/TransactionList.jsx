@@ -1,7 +1,14 @@
-import { Pencil, Search, Trash2 } from 'lucide-react'
+import { ArrowRightLeft, Pencil, Search, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useToast } from '../context/toastContext'
-import { createTransaction, deleteTransaction, listTransactionsPage, updateTransaction } from '../lib/db'
+import {
+  createTransaction,
+  createTransfer,
+  deleteTransaction,
+  deleteTransfer,
+  listMovementsPage,
+  updateTransaction,
+} from '../lib/db'
 import { parseSmartQuery } from '../lib/smartSearch'
 import { EmptyState, ErrorNotice, ListSkeleton, Pager } from './Feedback'
 import Money from './Money'
@@ -19,6 +26,90 @@ function formatDate(isoDate) {
     month: '2-digit',
     year: 'numeric',
   })
+}
+
+function TransferRow({ tx, onDeleted, onRestored }) {
+  const toast = useToast()
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  async function handleDelete() {
+    setBusy(true)
+    try {
+      await deleteTransfer(tx.id)
+      onDeleted(tx.id)
+      toast.success('Transferência apagada.', {
+        action: {
+          label: 'Desfazer',
+          onClick: async () => {
+            try {
+              await createTransfer({
+                fromAccountId: tx.account_id,
+                toAccountId: tx.counter_account_id,
+                amount: Number(tx.amount),
+                occurredOn: tx.occurred_on,
+                note: tx.note,
+              })
+              onRestored()
+              toast.success('Transferência restaurada.')
+            } catch (err) {
+              toast.error(`Não foi possível desfazer: ${err.message}`)
+            }
+          },
+        },
+      })
+    } catch (err) {
+      setConfirmingDelete(false)
+      toast.error(`Não foi possível apagar: ${err.message}`)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <li className="flex items-center justify-between gap-3 py-2">
+      <div className="min-w-0">
+        <p className="flex items-center gap-1.5 truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+          <ArrowRightLeft size={13} className="shrink-0 text-blue-500" />
+          {tx.note || 'Transferência'}
+        </p>
+        <p className="truncate text-xs text-neutral-500">
+          {formatDate(tx.occurred_on)} · {tx.account_name ?? 'Conta'} → {tx.counter_account_name ?? 'Conta'}
+        </p>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <span className="text-sm font-semibold text-blue-500">
+          <Money>{`${Number(tx.amount).toFixed(2)} €`}</Money>
+        </span>
+        {confirmingDelete ? (
+          <span className="flex items-center gap-1">
+            <button
+              onClick={handleDelete}
+              disabled={busy}
+              className="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
+            >
+              Confirmar
+            </button>
+            <button
+              onClick={() => setConfirmingDelete(false)}
+              disabled={busy}
+              className="rounded border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700"
+            >
+              Cancelar
+            </button>
+          </span>
+        ) : (
+          <button
+            onClick={() => setConfirmingDelete(true)}
+            aria-label="Apagar"
+            className="rounded p-1 text-neutral-400 hover:text-red-600"
+          >
+            <Trash2 size={16} />
+          </button>
+        )}
+      </div>
+    </li>
+  )
 }
 
 function TransactionRow({ tx, categories, accounts, onUpdated, onDeleted, onRestored }) {
@@ -92,8 +183,8 @@ function TransactionRow({ tx, categories, accounts, onUpdated, onDeleted, onRest
       onUpdated({
         ...tx,
         ...updated,
-        categories: categories.find((c) => c.id === updated.category_id),
-        accounts: accounts.find((a) => a.id === updated.account_id),
+        category_name: categories.find((c) => c.id === updated.category_id)?.name,
+        account_name: accounts.find((a) => a.id === updated.account_id)?.name,
       })
       setEditing(false)
       toast.success('Transação atualizada.')
@@ -184,11 +275,11 @@ function TransactionRow({ tx, categories, accounts, onUpdated, onDeleted, onRest
     <li className="flex items-center justify-between gap-3 py-2">
       <div className="min-w-0">
         <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
-          {tx.note || tx.categories?.name || 'Sem nota'}
+          {tx.note || tx.category_name || 'Sem nota'}
         </p>
         <p className="truncate text-xs text-neutral-500">
           {formatDate(tx.occurred_on)}
-          {tx.note && ` · ${tx.categories?.name ?? 'Sem categoria'}`} · {tx.accounts?.name ?? 'Sem conta'}
+          {tx.note && ` · ${tx.category_name ?? 'Sem categoria'}`} · {tx.account_name ?? 'Sem conta'}
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-2">
@@ -345,7 +436,7 @@ export default function TransactionList({ categories, accounts, refreshToken, on
   const smart = useMemo(() => parseSmartQuery(debouncedQuery), [debouncedQuery])
 
   async function loadPage(offset) {
-    const { rows: pageRows, totalCount: count } = await listTransactionsPage({
+    const { rows: pageRows, totalCount: count } = await listMovementsPage({
       limit: PAGE_SIZE,
       offset,
       type: filters.type,
@@ -457,17 +548,21 @@ export default function TransactionList({ categories, accounts, refreshToken, on
       ) : (
         <>
           <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
-            {rows.map((tx) => (
-              <TransactionRow
-                key={tx.id}
-                tx={tx}
-                categories={categories}
-                accounts={accounts}
-                onUpdated={handleUpdated}
-                onDeleted={handleDeleted}
-                onRestored={handleRestored}
-              />
-            ))}
+            {rows.map((tx) =>
+              tx.source === 'transfer' ? (
+                <TransferRow key={tx.id} tx={tx} onDeleted={handleDeleted} onRestored={handleRestored} />
+              ) : (
+                <TransactionRow
+                  key={tx.id}
+                  tx={tx}
+                  categories={categories}
+                  accounts={accounts}
+                  onUpdated={handleUpdated}
+                  onDeleted={handleDeleted}
+                  onRestored={handleRestored}
+                />
+              ),
+            )}
           </ul>
           <Pager page={page} totalPages={Math.ceil(totalCount / PAGE_SIZE)} onChange={setPage} />
         </>
