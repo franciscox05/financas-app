@@ -21,8 +21,9 @@ export default function AppLayout() {
           câmara/Dynamic Island mesmo respeitando o mínimo reportado — um
           screenshot não mostra isto (captura o conteúdo completo, não o que
           fica fisicamente coberto), por isso só se vê ao vivo no aparelho.
-          0.75rem ainda não chegou; subiu para 1.5rem. */}
-      <header className="flex items-center justify-between gap-3 p-4 pt-[calc(max(1rem,env(safe-area-inset-top))+1.5rem)]">
+          0.75rem não chegou; 1.5rem resolveu no 17 Pro mas ficou com
+          espaço a mais num 15 Pro — 1.1rem é o meio-termo a testar agora. */}
+      <header className="flex items-center justify-between gap-3 p-4 pt-[calc(max(1rem,env(safe-area-inset-top))+1.1rem)]">
         <span className="flex items-center gap-1.5 text-sm font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
           <Wallet size={18} className="text-green-600" />
           FinancasApp
