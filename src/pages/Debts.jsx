@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { EmptyState, ErrorNotice, PageSkeleton, Pager } from '../components/Feedback'
 import { useToast } from '../context/toastContext'
 import { today } from '../lib/dates'
-import { remainingOf } from '../lib/debtMath'
+import ConfirmDialog from '../components/ConfirmDialog'
+import { daysUntil, remainingOf } from '../lib/debtMath'
 import {
   addDebtPayment,
   closeDebtByAgreement,
@@ -13,6 +14,8 @@ import {
   listCategories,
   listDebtPayments,
   listDebts,
+  reopenDebt,
+  undoDebtPayment,
   updateDebt,
 } from '../lib/db'
 import Money from '../components/Money'
@@ -42,6 +45,7 @@ export default function Debts() {
   const [counterpartyName, setCounterpartyName] = useState('')
   const [amount, setAmount] = useState('')
   const [note, setNote] = useState('')
+  const [dueOn, setDueOn] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
 
@@ -58,6 +62,9 @@ export default function Debts() {
   const [editAmount, setEditAmount] = useState('')
   const [editNote, setEditNote] = useState('')
   const [editError, setEditError] = useState('')
+  const [editDue, setEditDue] = useState('')
+  const [undoTarget, setUndoTarget] = useState(null)
+  const [expandedHistoryId, setExpandedHistoryId] = useState(null)
 
   const [closingId, setClosingId] = useState(null)
   const [closeNote, setCloseNote] = useState('')
@@ -186,6 +193,7 @@ export default function Debts() {
     setEditName(debt.counterparty_name)
     setEditAmount(String(debt.amount))
     setEditNote(debt.status === 'settled' ? debt.settled_note ?? '' : debt.note ?? '')
+    setEditDue(debt.due_on ?? '')
     setEditError('')
   }
 
@@ -218,6 +226,7 @@ export default function Debts() {
         amount: numericAmount,
         note: isSettled ? debt.note : editNote.trim(),
         settledNote: isSettled ? editNote.trim() : undefined,
+        dueOn: editDue,
       })
       setEditingId(null)
       await load()
@@ -298,7 +307,9 @@ export default function Debts() {
         counterpartyName: counterpartyName.trim(),
         amount: numericAmount,
         note,
+        dueOn,
       })
+      setDueOn('')
       setCounterpartyName('')
       setAmount('')
       setNote('')
@@ -311,6 +322,35 @@ export default function Debts() {
       setSubmitting(false)
     }
   }
+
+  async function handleUndo() {
+    const { payment, debt } = undoTarget
+    setUndoTarget(null)
+    try {
+      await undoDebtPayment({ payment, debt })
+      await load()
+      toast.success('Pagamento anulado.')
+    } catch (err) {
+      toast.error(`Não foi possível anular o pagamento: ${err.message}`)
+      await load()
+    }
+  }
+
+  async function handleReopen(debt) {
+    try {
+      await reopenDebt(debt.id)
+      await load()
+      toast.success('Dívida reaberta.')
+    } catch (err) {
+      toast.error(`Não foi possível reabrir: ${err.message}`)
+    }
+  }
+
+  const todayIso = today()
+  const overdue = pending.filter((d) => {
+    const days = daysUntil(d.due_on, todayIso)
+    return days !== null && days < 0
+  })
 
   if (loading) {
     return <PageSkeleton />
@@ -339,6 +379,7 @@ export default function Debts() {
               {debt.counterparty_name}
             </p>
             {debt.note && <p className="truncate text-xs text-neutral-400">{debt.note}</p>}
+            {dueLabel(debt.due_on, todayIso)}
           </div>
           <div className="shrink-0 text-right">
             <p className={`font-semibold ${isOwedToMe ? 'text-green-600' : 'text-red-600'}`}><Money value={left} /></p>
@@ -363,6 +404,13 @@ export default function Debts() {
                   <> · {p.transactions.accounts?.name ?? 'conta'} · {p.transactions.categories?.name ?? 'sem categoria'}</>
                 )}
                 {p.note ? ` · ${p.note}` : ''}
+                <button
+                  type="button"
+                  onClick={() => setUndoTarget({ payment: p, debt })}
+                  className="ml-2 inline-flex min-h-8 items-center text-xs text-neutral-500 underline underline-offset-2"
+                >
+                  Anular
+                </button>
               </li>
             ))}
           </ul>
@@ -524,6 +572,17 @@ export default function Debts() {
               onChange={(e) => setEditNote(e.target.value)}
               className={inputClass}
             />
+            {debt.status !== 'settled' && (
+              <div className="min-w-0">
+                <label className="mb-1 block text-xs text-neutral-500">Data limite (opcional)</label>
+                <input
+                  type="date"
+                  value={editDue}
+                  onChange={(e) => setEditDue(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+            )}
             {partial && debt.status !== 'settled' && (
               <p className="text-xs text-neutral-400">
                 O valor é o original da dívida; os pagamentos já registados mantêm-se.
@@ -576,9 +635,99 @@ export default function Debts() {
     )
   }
 
+  function dueLabel(dueOn, todayIso) {
+    const days = daysUntil(dueOn, todayIso)
+    if (days === null) return null
+    const late = days < 0
+    const text = late
+      ? `Atrasada há ${-days} ${-days === 1 ? 'dia' : 'dias'}`
+      : days === 0
+        ? 'Vence hoje'
+        : `Vence em ${days} ${days === 1 ? 'dia' : 'dias'}`
+    return (
+      <p className={`text-xs ${late || days === 0 ? 'font-medium text-red-500' : 'text-neutral-400'}`}>
+        {text}
+      </p>
+    )
+  }
+
+  function renderHistoryRow(debt) {
+    const debtPayments = paymentsByDebt.get(debt.id) ?? []
+    const expanded = expandedHistoryId === debt.id
+    const canExpand = debtPayments.length > 0 || Boolean(debt.settled_note)
+    return (
+      <li key={debt.id} className="space-y-1 py-2 text-sm text-neutral-500">
+        <div className="flex items-center justify-between">
+          <span className="min-w-0">
+            <span className="block truncate">
+              {debt.counterparty_name} · <Money value={debt.amount} />
+            </span>
+            {debt.settled_note && (
+              <span className="block truncate text-xs text-neutral-400">{debt.settled_note}</span>
+            )}
+          </span>
+          <span className="shrink-0 pl-3 text-xs">
+            {debt.settled_note ? 'Acertado' : debt.direction === 'owed_to_me' ? 'Recebido' : 'Pago'}
+          </span>
+        </div>
+        {canExpand && (
+          <button
+            type="button"
+            onClick={() => setExpandedHistoryId(expanded ? null : debt.id)}
+            className="min-h-8 text-xs underline underline-offset-2"
+          >
+            {expanded ? 'Esconder detalhes' : 'Detalhes'}
+          </button>
+        )}
+        {expanded && (
+          <div className="space-y-1 text-xs text-neutral-400">
+            {debtPayments.map((p) => (
+              <p key={p.id}>
+                {debt.direction === 'owed_to_me' ? 'Recebido' : 'Pago'} <Money value={p.amount} /> em{' '}
+                {new Date(`${p.paid_on}T00:00:00`).toLocaleDateString('pt-PT')}
+                {p.transactions && (
+                  <> · {p.transactions.accounts?.name ?? 'conta'} · {p.transactions.categories?.name ?? 'sem categoria'}</>
+                )}
+                {p.note ? ` · ${p.note}` : ''}
+                <button
+                  type="button"
+                  onClick={() => setUndoTarget({ payment: p, debt })}
+                  className="ml-2 inline-flex min-h-8 items-center underline underline-offset-2"
+                >
+                  Anular
+                </button>
+              </p>
+            ))}
+            {debt.settled_note && (
+              <button
+                type="button"
+                onClick={() => handleReopen(debt)}
+                className="min-h-8 underline underline-offset-2"
+              >
+                Reabrir dívida
+              </button>
+            )}
+          </div>
+        )}
+      </li>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {error && <ErrorNotice message={error} onRetry={load} />}
+
+      {overdue.length > 0 && (
+        <div
+          role="status"
+          className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
+        >
+          {overdue.length === 1
+            ? 'Tens 1 dívida atrasada: '
+            : `Tens ${overdue.length} dívidas atrasadas: `}
+          {overdue.map((d) => d.counterparty_name).join(', ')}.
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-2">
         <div className="min-w-0 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
@@ -669,6 +818,17 @@ export default function Debts() {
                 className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
               />
             </div>
+            <div className="min-w-0">
+              <label className="mb-1 block text-xs font-medium text-neutral-500">
+                Data limite (opcional) — para receberes um lembrete
+              </label>
+              <input
+                type="date"
+                value={dueOn}
+                onChange={(e) => setDueOn(e.target.value)}
+                className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              />
+            </div>
 
             {formError && <p className="text-sm text-red-600">{formError}</p>}
 
@@ -715,7 +875,7 @@ export default function Debts() {
               <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
                 {settled
                   .slice((historyPage - 1) * HISTORY_PAGE_SIZE, historyPage * HISTORY_PAGE_SIZE)
-                  .map(renderDebtRow)}
+                  .map((debt) => renderHistoryRow(debt))}
               </ul>
               <Pager
                 page={historyPage}
@@ -726,6 +886,15 @@ export default function Debts() {
           )
         )}
       </section>
+
+      <ConfirmDialog
+        open={undoTarget !== null}
+        title="Anular pagamento?"
+        message="O pagamento e a transação que criou na conta serão apagados."
+        confirmLabel="Anular pagamento"
+        onCancel={() => setUndoTarget(null)}
+        onConfirm={handleUndo}
+      />
     </div>
   )
 }

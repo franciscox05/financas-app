@@ -212,7 +212,7 @@ export async function listDebts() {
   return data
 }
 
-export async function createDebt({ direction, counterpartyName, amount, note, transactionId }) {
+export async function createDebt({ direction, counterpartyName, amount, note, transactionId, dueOn }) {
   const { data: userData, error: userError } = await supabase.auth.getUser()
   if (userError) throw userError
 
@@ -225,6 +225,7 @@ export async function createDebt({ direction, counterpartyName, amount, note, tr
       amount,
       note: note || null,
       transaction_id: transactionId || null,
+      due_on: dueOn || null,
     })
     .select()
     .single()
@@ -397,9 +398,10 @@ export async function addDebtPayment({ debt, amount, remaining, accountId, categ
   }
 }
 
-export async function updateDebt({ id, counterpartyName, amount, note, settledNote }) {
+export async function updateDebt({ id, counterpartyName, amount, note, settledNote, dueOn }) {
   const fields = { counterparty_name: counterpartyName, amount, note: note || null }
   if (settledNote !== undefined) fields.settled_note = settledNote || null
+  if (dueOn !== undefined) fields.due_on = dueOn || null
   const { data, error } = await supabase.from('debts').update(fields).eq('id', id).select().single()
   if (error) throw error
   return data
@@ -415,6 +417,27 @@ export async function closeDebtByAgreement({ id, note }) {
     .single()
   if (error) throw error
   return data
+}
+
+// Reabre uma dívida fechada (ex.: fechada por acerto por engano).
+export async function reopenDebt(id) {
+  const { error } = await supabase
+    .from('debts')
+    .update({ status: 'pending', settled_at: null, settled_transaction_id: null, settled_note: null })
+    .eq('id', id)
+  if (error) throw error
+}
+
+// Anula um pagamento: apaga o pagamento e a transação que gerou na conta; se a
+// dívida tinha sido fechada por este pagamento, volta a ficar pendente.
+export async function undoDebtPayment({ payment, debt }) {
+  if (debt.status === 'settled') await reopenDebt(debt.id)
+  const { error } = await supabase.from('debt_payments').delete().eq('id', payment.id)
+  if (error) throw error
+  if (payment.transaction_id) {
+    const { error: txError } = await supabase.from('transactions').delete().eq('id', payment.transaction_id)
+    if (txError) throw txError
+  }
 }
 
 // --- Transferências entre contas próprias ----------------------------------
