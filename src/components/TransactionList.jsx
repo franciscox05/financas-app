@@ -9,9 +9,11 @@ import {
   listMovementsPage,
   updateTransaction,
 } from '../lib/db'
+import { addMonths, monthLabel, monthStart, toIsoDate } from '../lib/dates'
 import { parseSmartQuery } from '../lib/smartSearch'
 import { EmptyState, ErrorNotice, ListSkeleton, Pager } from './Feedback'
 import Money from './Money'
+import MonthPicker from './MonthPicker'
 
 const PAGE_SIZE = 25
 
@@ -420,6 +422,7 @@ const EMPTY_FILTERS = { query: '', type: 'all', accountId: '', categoryId: '' }
 
 export default function TransactionList({ categories, accounts, refreshToken, onAddFirst, onRowChanged }) {
   const [filters, setFilters] = useState(EMPTY_FILTERS)
+  const [selectedMonth, setSelectedMonth] = useState(() => monthStart(new Date()))
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [rows, setRows] = useState([])
   const [totalCount, setTotalCount] = useState(0)
@@ -433,7 +436,19 @@ export default function TransactionList({ categories, accounts, refreshToken, on
     return () => clearTimeout(id)
   }, [filters.query])
 
-  const smart = useMemo(() => parseSmartQuery(debouncedQuery), [debouncedQuery])
+  const parsedSmart = useMemo(() => parseSmartQuery(debouncedQuery), [debouncedQuery])
+
+  // Por omissão a lista fica presa ao mês selecionado (como o resto da app),
+  // em vez de mostrar tudo desde sempre. Uma pesquisa com data explícita (ex.
+  // "maio 2025") é mais específica, por isso tem prioridade sobre o mês.
+  const smart = useMemo(() => {
+    if (parsedSmart.dateFrom || parsedSmart.dateTo) return parsedSmart
+    return {
+      ...parsedSmart,
+      dateFrom: toIsoDate(selectedMonth),
+      dateTo: toIsoDate(addMonths(selectedMonth, 1)),
+    }
+  }, [parsedSmart, selectedMonth])
 
   async function loadPage(offset) {
     const { rows: pageRows, totalCount: count } = await listMovementsPage({
@@ -447,10 +462,10 @@ export default function TransactionList({ categories, accounts, refreshToken, on
     return { pageRows, count }
   }
 
-  // Mudar filtros ou pesquisa volta sempre à primeira página.
+  // Mudar filtros, mês ou pesquisa volta sempre à primeira página.
   useEffect(() => {
     setPage(1)
-  }, [filters.type, filters.accountId, filters.categoryId, debouncedQuery, refreshToken])
+  }, [filters.type, filters.accountId, filters.categoryId, debouncedQuery, selectedMonth, refreshToken])
 
   useEffect(() => {
     let cancelled = false
@@ -473,7 +488,7 @@ export default function TransactionList({ categories, accounts, refreshToken, on
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.type, filters.accountId, filters.categoryId, debouncedQuery, refreshToken, page])
+  }, [filters.type, filters.accountId, filters.categoryId, debouncedQuery, selectedMonth, refreshToken, page])
 
   function handleUpdated(updatedTx) {
     setRows((prev) => prev.map((r) => (r.id === updatedTx.id ? updatedTx : r)))
@@ -514,6 +529,8 @@ export default function TransactionList({ categories, accounts, refreshToken, on
 
   return (
     <div className="space-y-3">
+      <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
+
       <TransactionFilters
         filters={filters}
         onChange={setFilters}
@@ -536,11 +553,11 @@ export default function TransactionList({ categories, accounts, refreshToken, on
 
       {rows.length === 0 ? (
         <EmptyState
-          title={hasActiveFilters ? 'Nenhuma transação corresponde à pesquisa' : 'Ainda sem transações'}
+          title={hasActiveFilters ? 'Nenhuma transação corresponde à pesquisa' : `Sem transações em ${monthLabel(selectedMonth)}`}
           description={
             hasActiveFilters
               ? 'Pesquisa por texto, valor (">20") ou mês ("maio 2025").'
-              : 'Regista o primeiro gasto ou ganho para começares a ver o teu balanço.'
+              : 'Regista um gasto ou ganho, ou navega para outro mês acima.'
           }
           actionLabel={hasActiveFilters ? 'Limpar filtros' : 'Registar primeira transação'}
           onAction={hasActiveFilters ? () => setFilters(EMPTY_FILTERS) : onAddFirst}

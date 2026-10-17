@@ -15,6 +15,10 @@ export default function MonthCalendar({ monthDate, transactions }) {
   const daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate()
   const firstWeekday = (new Date(monthDate.getFullYear(), monthDate.getMonth(), 1).getDay() + 6) % 7
 
+  const now = new Date()
+  const isCurrentMonth = monthDate.getFullYear() === now.getFullYear() && monthDate.getMonth() === now.getMonth()
+  const todayDay = now.getDate()
+
   const byDay = useMemo(() => {
     const map = new Map()
     for (const tx of transactions) {
@@ -49,11 +53,12 @@ export default function MonthCalendar({ monthDate, transactions }) {
             if (day === null) return <div key={`blank-${i}`} />
             const entry = byDay.get(day)
             const isSelected = selectedDay === day
+            const isToday = isCurrentMonth && day === todayDay
             return (
               <button
                 key={day}
                 onClick={() => setSelectedDay(isSelected ? null : day)}
-                className={`flex flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 text-xs transition-colors ${
+                className={`relative flex flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 text-xs transition-colors ${
                   isSelected
                     ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
                     : entry
@@ -61,6 +66,9 @@ export default function MonthCalendar({ monthDate, transactions }) {
                       : 'text-neutral-400'
                 }`}
               >
+                {isToday && (
+                  <span className="absolute top-1 right-1 size-1.5 rounded-full bg-blue-500" aria-hidden="true" />
+                )}
                 <span>{day}</span>
                 {entry && (
                   <span

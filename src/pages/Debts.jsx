@@ -259,29 +259,38 @@ export default function Debts() {
   }
 
   async function handleDelete(debt) {
+    // Quando há pagamentos, deleteDebt também apaga as transações que eles
+    // criaram — "Desfazer" só recriaria a dívida (sem pagamentos nem
+    // transações), o que seria enganador, por isso não se oferece nesse caso.
+    const hadPayments = (paymentsByDebt.get(debt.id) ?? []).length > 0
     try {
       await deleteDebt(debt.id)
       setConfirmingDeleteId(null)
       await load()
-      toast.success('Dívida apagada.', {
-        action: {
-          label: 'Desfazer',
-          onClick: async () => {
-            try {
-              await createDebt({
-                direction: debt.direction,
-                counterpartyName: debt.counterparty_name,
-                amount: Number(debt.amount),
-                note: debt.note,
-              })
-              await load()
-              toast.success('Dívida restaurada.')
-            } catch (err) {
-              toast.error(`Não foi possível desfazer: ${err.message}`)
-            }
-          },
-        },
-      })
+      toast.success(
+        'Dívida apagada.',
+        hadPayments
+          ? undefined
+          : {
+              action: {
+                label: 'Desfazer',
+                onClick: async () => {
+                  try {
+                    await createDebt({
+                      direction: debt.direction,
+                      counterpartyName: debt.counterparty_name,
+                      amount: Number(debt.amount),
+                      note: debt.note,
+                    })
+                    await load()
+                    toast.success('Dívida restaurada.')
+                  } catch (err) {
+                    toast.error(`Não foi possível desfazer: ${err.message}`)
+                  }
+                },
+              },
+            },
+      )
     } catch (err) {
       toast.error(`Não foi possível apagar: ${err.message}`)
     }
@@ -416,6 +425,13 @@ export default function Debts() {
           </ul>
         )}
 
+        {confirmingDeleteId === debt.id && partial && (
+          <p className="text-xs text-amber-600 dark:text-amber-500">
+            Também apaga {debtPayments.length === 1 ? 'a transação' : `as ${debtPayments.length} transações`} criada
+            {debtPayments.length === 1 ? '' : 's'} pelos pagamentos desta dívida.
+          </p>
+        )}
+
         <div className="flex items-center gap-2">
           {confirmingDeleteId === debt.id ? (
             <>
@@ -452,19 +468,13 @@ export default function Debts() {
                 >
                   <Pencil size={16} />
                 </button>
-                {debtPayments.length === 0 ? (
-                  <button
-                    onClick={() => setConfirmingDeleteId(debt.id)}
-                    aria-label="Apagar dívida"
-                    className="flex size-9 items-center justify-center rounded-lg text-neutral-400 hover:text-red-600"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                ) : (
-                  <span className="pl-2 text-xs text-neutral-400" title="Anula os pagamentos para poderes apagar a dívida">
-                    Tem pagamentos
-                  </span>
-                )}
+                <button
+                  onClick={() => setConfirmingDeleteId(debt.id)}
+                  aria-label="Apagar dívida"
+                  className="flex size-9 items-center justify-center rounded-lg text-neutral-400 hover:text-red-600"
+                >
+                  <Trash2 size={16} />
+                </button>
               </span>
             </>
           )}
@@ -665,9 +675,21 @@ export default function Debts() {
       <li key={debt.id} className="space-y-1 py-2 text-sm text-neutral-500">
         <div className="flex items-center justify-between">
           <span className="min-w-0">
-            <span className="block truncate">
+            <span className="block truncate font-medium text-neutral-700 dark:text-neutral-300">
               {debt.counterparty_name} · <Money value={debt.amount} />
             </span>
+            {debt.note && <span className="block truncate text-xs text-neutral-400">{debt.note}</span>}
+            <span className="block text-xs text-neutral-400">
+              Criada em {new Date(debt.created_at).toLocaleDateString('pt-PT')}
+              {debt.settled_at && ` · Acertada em ${new Date(debt.settled_at).toLocaleDateString('pt-PT')}`}
+            </span>
+            {debtPayments.length === 1 && debtPayments[0].transactions && (
+              <span className="block text-xs text-neutral-400">
+                {debt.direction === 'owed_to_me' ? 'Recebido em' : 'Pago de'}{' '}
+                {debtPayments[0].transactions.accounts?.name ?? 'conta'} ·{' '}
+                {debtPayments[0].transactions.categories?.name ?? 'sem categoria'}
+              </span>
+            )}
             {debt.settled_note && (
               <span className="block truncate text-xs text-neutral-400">{debt.settled_note}</span>
             )}

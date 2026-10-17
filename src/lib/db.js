@@ -271,7 +271,24 @@ export async function createDebt({ direction, counterpartyName, amount, note, tr
   return data
 }
 
+// Apaga a dívida e, se tinha pagamentos (ex.: marcada como recebida por
+// engano), também as transações bancárias que esses pagamentos criaram —
+// senão ficava dinheiro "recebido"/"pago" a mais nas contas sem a dívida
+// correspondente. Os registos de debt_payments são apagados em cascata pela
+// FK (on delete cascade), não é preciso fazê-lo aqui.
 export async function deleteDebt(id) {
+  const { data: payments, error: paymentsError } = await supabase
+    .from('debt_payments')
+    .select('transaction_id')
+    .eq('debt_id', id)
+  if (paymentsError) throw paymentsError
+
+  const transactionIds = payments.map((p) => p.transaction_id).filter(Boolean)
+  if (transactionIds.length > 0) {
+    const { error: txError } = await supabase.from('transactions').delete().in('id', transactionIds)
+    if (txError) throw txError
+  }
+
   const { error } = await supabase.from('debts').delete().eq('id', id)
   if (error) throw error
 }
