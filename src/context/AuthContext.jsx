@@ -7,7 +7,10 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(undefined) // undefined = ainda a carregar
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session))
+    supabase.auth
+      .getSession()
+      .then(({ data }) => setSession(data.session))
+      .catch(() => setSession(null))
 
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession)

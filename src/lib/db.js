@@ -188,10 +188,13 @@ export async function deletePushSubscription(endpoint) {
   if (error) throw error
 }
 
+// Exporta de `movements` (transações + transferências) em vez de só
+// `transactions`, para o CSV ser um livro-razão completo de tudo o que
+// mexeu nas contas — antes as transferências ficavam de fora em silêncio.
 export async function listAllTransactionsForExport() {
   const { data, error } = await supabase
-    .from('transactions')
-    .select('occurred_on, type, amount, note, accounts(name), categories(name)')
+    .from('movements')
+    .select('occurred_on, source, type, amount, note, account_name, category_name, counter_account_name')
     .order('occurred_on', { ascending: false })
     .limit(10000)
   if (error) throw error

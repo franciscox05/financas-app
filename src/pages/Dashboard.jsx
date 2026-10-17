@@ -69,12 +69,14 @@ export default function Dashboard() {
     setExporting(true)
     try {
       const all = await listAllTransactionsForExport()
+      const tipoLabel = { income: 'Ganho', expense: 'Gasto', transfer: 'Transferência' }
       const csv = toCsv(all, [
         { label: 'Data', value: (t) => t.occurred_on },
-        { label: 'Tipo', value: (t) => (t.type === 'income' ? 'Ganho' : 'Gasto') },
+        { label: 'Tipo', value: (t) => tipoLabel[t.type] ?? t.type },
         { label: 'Valor', value: (t) => Number(t.amount).toFixed(2) },
-        { label: 'Categoria', value: (t) => t.categories?.name ?? '' },
-        { label: 'Conta', value: (t) => t.accounts?.name ?? '' },
+        { label: 'Categoria', value: (t) => t.category_name ?? '' },
+        { label: 'Conta', value: (t) => t.account_name ?? '' },
+        { label: 'Conta destino', value: (t) => t.counter_account_name ?? '' },
         { label: 'Nota', value: (t) => t.note ?? '' },
       ])
       downloadCsv(`financasapp-transacoes-${today()}.csv`, csv)
