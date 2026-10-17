@@ -694,10 +694,45 @@ export default function Debts() {
               <span className="block truncate text-xs text-neutral-400">{debt.settled_note}</span>
             )}
           </span>
-          <span className="shrink-0 pl-3 text-xs">
+          <span className="flex shrink-0 items-center gap-1 pl-3 text-xs">
             {debt.settled_note ? 'Acertado' : debt.direction === 'owed_to_me' ? 'Recebido' : 'Pago'}
+            {confirmingDeleteId !== debt.id && (
+              <button
+                onClick={() => setConfirmingDeleteId(debt.id)}
+                aria-label="Apagar dívida"
+                className="flex size-7 items-center justify-center rounded-lg text-neutral-400 hover:text-red-600"
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
           </span>
         </div>
+
+        {confirmingDeleteId === debt.id && (
+          <div className="space-y-1.5">
+            {debtPayments.length > 0 && (
+              <p className="text-xs text-amber-600 dark:text-amber-500">
+                Também apaga {debtPayments.length === 1 ? 'a transação' : `as ${debtPayments.length} transações`}{' '}
+                criada{debtPayments.length === 1 ? '' : 's'} pelos pagamentos desta dívida.
+              </p>
+            )}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleDelete(debt)}
+                className="min-h-8 rounded-lg bg-red-600 px-3 text-xs font-medium text-white"
+              >
+                Confirmar
+              </button>
+              <button
+                onClick={() => setConfirmingDeleteId(null)}
+                className="min-h-8 rounded-lg border border-neutral-300 px-3 text-xs font-medium dark:border-neutral-700"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
         {canExpand && (
           <button
             type="button"
