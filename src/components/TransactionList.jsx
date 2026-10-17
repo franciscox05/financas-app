@@ -184,11 +184,11 @@ function TransactionRow({ tx, categories, accounts, onUpdated, onDeleted, onRest
     <li className="flex items-center justify-between gap-3 py-2">
       <div className="min-w-0">
         <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
-          {tx.categories?.name ?? 'Sem categoria'}
-          {tx.note ? <span className="text-neutral-400"> · {tx.note}</span> : null}
+          {tx.note || tx.categories?.name || 'Sem nota'}
         </p>
-        <p className="text-xs text-neutral-500">
-          {formatDate(tx.occurred_on)} · {tx.accounts?.name ?? 'Sem conta'}
+        <p className="truncate text-xs text-neutral-500">
+          {formatDate(tx.occurred_on)}
+          {tx.note && ` · ${tx.categories?.name ?? 'Sem categoria'}`} · {tx.accounts?.name ?? 'Sem conta'}
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-2">

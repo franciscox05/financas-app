@@ -87,8 +87,8 @@ export default function MonthCalendar({ monthDate, transactions }) {
                 {selectedEntry.txs.map((tx) => (
                   <li key={tx.id} className="flex items-center justify-between gap-2 py-1.5 text-sm">
                     <span className="min-w-0 truncate text-neutral-700 dark:text-neutral-300">
-                      {tx.categories?.name ?? 'Sem categoria'}
-                      {tx.note ? ` · ${tx.note}` : ''}
+                      {tx.note || tx.categories?.name || 'Sem nota'}
+                      {tx.note && ` · ${tx.categories?.name ?? 'Sem categoria'}`}
                     </span>
                     <span
                       className={`shrink-0 font-medium ${

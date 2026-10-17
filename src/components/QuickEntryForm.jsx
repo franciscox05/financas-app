@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { suggestAmount, suggestCategoryId } from '../lib/categorySuggest'
 import { useToast } from '../context/toastContext'
 import { today } from '../lib/dates'
@@ -32,6 +33,15 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
   const effectiveCategoryId = categoriesForType.some((c) => c.id === categoryId)
     ? categoryId
     : categoriesForType[0]?.id ?? ''
+
+  // "Investimentos"/"Outros Ganhos" são muitas vezes usadas para mover dinheiro
+  // entre contas próprias (ex. Conta à Ordem -> XTB) registando um gasto numa
+  // conta e um ganho na outra à mão — a secção "Transferir entre contas" em
+  // Património faz isto automaticamente e não distorce o Balanço.
+  const isLikelyOwnTransfer = categoriesForType
+    .find((c) => c.id === effectiveCategoryId)
+    ?.name?.toLowerCase()
+    .includes('investiment')
 
   // Sugere categoria a partir do histórico quando o utilizador escreve uma nota,
   // desde que não tenha escolhido a categoria manualmente para esta transação.
@@ -81,6 +91,10 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       setError('Escolhe conta e categoria.')
       return
     }
+    if (!note.trim()) {
+      setError('Indica uma nota (ex: supermercado).')
+      return
+    }
 
     const numericDebtAmount = Number(debtAmount)
     if (showDebt && (!debtCounterparty.trim() || !numericDebtAmount || numericDebtAmount <= 0)) {
@@ -97,7 +111,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
         accountId,
         categoryId: effectiveCategoryId,
         occurredOn,
-        note,
+        note: note.trim(),
       })
       if (showDebt) {
         await createDebt({
@@ -205,6 +219,15 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
           {suggested && (
             <p className="mt-0.5 text-xs text-neutral-400">sugerido a partir do histórico</p>
           )}
+          {isLikelyOwnTransfer && (
+            <p className="mt-0.5 text-xs text-neutral-400">
+              A mover dinheiro entre as tuas contas?{' '}
+              <Link to="/patrimonio" className="underline underline-offset-2">
+                Usa Transferir entre contas
+              </Link>{' '}
+              em vez disto — não conta como Gasto/Ganho.
+            </p>
+          )}
         </div>
 
         <div className="min-w-0">
@@ -234,10 +257,11 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
           />
         </div>
         <div className="min-w-0">
-          <label className="mb-1 block text-xs font-medium text-neutral-500">Nota (opcional)</label>
+          <label className="mb-1 block text-xs font-medium text-neutral-500">Nota</label>
           <input
             type="text"
             placeholder="Ex: supermercado"
+            required
             value={note}
             onChange={(e) => setNote(e.target.value)}
             className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
