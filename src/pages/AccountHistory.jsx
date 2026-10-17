@@ -25,6 +25,8 @@ export default function AccountHistory() {
   const [rows, setRows] = useState([])
   const [totalCount, setTotalCount] = useState(0)
   const [page, setPage] = useState(1)
+  const [snapPage, setSnapPage] = useState(1)
+  const [transferPage, setTransferPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -83,7 +85,7 @@ export default function AccountHistory() {
         <section className="space-y-1">
           <h3 className="text-sm font-semibold text-neutral-500">Atualizações de saldo</h3>
           <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
-            {snapshots.slice(0, 10).map((s) => (
+            {snapshots.slice((snapPage - 1) * PAGE_SIZE, snapPage * PAGE_SIZE).map((s) => (
               <li key={s.id} className="flex items-center justify-between py-2 text-sm">
                 <span className="text-neutral-500">{formatDate(s.snapshot_date)}</span>
                 <span className="font-semibold text-neutral-900 dark:text-neutral-100">
@@ -92,6 +94,7 @@ export default function AccountHistory() {
               </li>
             ))}
           </ul>
+          <Pager page={snapPage} totalPages={Math.ceil(snapshots.length / PAGE_SIZE)} onChange={setSnapPage} />
         </section>
       )}
 
@@ -99,7 +102,7 @@ export default function AccountHistory() {
         <section className="space-y-1">
           <h3 className="text-sm font-semibold text-neutral-500">Transferências</h3>
           <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
-            {transfers.slice(0, 10).map((t) => {
+            {transfers.slice((transferPage - 1) * PAGE_SIZE, transferPage * PAGE_SIZE).map((t) => {
               const isOutgoing = t.from_account_id === accountId
               return (
                 <li key={t.id} className="flex items-center justify-between py-2 text-sm">
@@ -114,6 +117,7 @@ export default function AccountHistory() {
               )
             })}
           </ul>
+          <Pager page={transferPage} totalPages={Math.ceil(transfers.length / PAGE_SIZE)} onChange={setTransferPage} />
         </section>
       )}
 

@@ -452,13 +452,19 @@ export default function Debts() {
                 >
                   <Pencil size={16} />
                 </button>
-                <button
-                  onClick={() => setConfirmingDeleteId(debt.id)}
-                  aria-label="Apagar dívida"
-                  className="flex size-9 items-center justify-center rounded-lg text-neutral-400 hover:text-red-600"
-                >
-                  <Trash2 size={16} />
-                </button>
+                {debtPayments.length === 0 ? (
+                  <button
+                    onClick={() => setConfirmingDeleteId(debt.id)}
+                    aria-label="Apagar dívida"
+                    className="flex size-9 items-center justify-center rounded-lg text-neutral-400 hover:text-red-600"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                ) : (
+                  <span className="pl-2 text-xs text-neutral-400" title="Anula os pagamentos para poderes apagar a dívida">
+                    Tem pagamentos
+                  </span>
+                )}
               </span>
             </>
           )}

@@ -239,8 +239,8 @@ export async function deleteDebt(id) {
 }
 
 // --- Gestão de contas e categorias ---------------------------------------
-// accounts/categories usam `on delete restrict` nas transações, recorrências e
-// snapshots: apagar um item em uso falha com o código 23503 (foreign_key_violation).
+// accounts/categories usam `on delete restrict` nas transações e snapshots:
+// apagar um item em uso falha com o código 23503 (foreign_key_violation).
 const FK_VIOLATION = '23503'
 
 export async function createAccount({ name, type }) {
@@ -302,11 +302,10 @@ export async function updateCategorySavingsFlag(id, isSavings) {
   return data
 }
 
-// Atenção: os orçamentos (budgets) da categoria são apagados em cascata.
 export async function deleteCategory(id) {
   const { error } = await supabase.from('categories').delete().eq('id', id)
   if (error?.code === FK_VIOLATION) {
-    throw new Error('Esta categoria ainda tem transações ou recorrências associadas.')
+    throw new Error('Esta categoria ainda tem transações associadas.')
   }
   if (error) throw error
 }

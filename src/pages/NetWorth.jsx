@@ -523,7 +523,13 @@ export default function NetWorth() {
               <label className="mb-1 block text-xs font-medium text-neutral-500">De</label>
               <select
                 value={transferFromId}
-                onChange={(e) => setTransferFromId(e.target.value)}
+                onChange={(e) => {
+                  const nextFrom = e.target.value
+                  setTransferFromId(nextFrom)
+                  if (nextFrom === transferToId) {
+                    setTransferToId(accounts.find((a) => a.id !== nextFrom)?.id ?? '')
+                  }
+                }}
                 className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
               >
                 {accounts.map((a) => (
@@ -541,7 +547,7 @@ export default function NetWorth() {
                 className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
               >
                 {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
+                  <option key={a.id} value={a.id} disabled={a.id === transferFromId}>
                     {a.name}
                   </option>
                 ))}
