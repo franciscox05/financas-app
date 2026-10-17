@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Sem isto, o iOS gera o ícone do ecrã principal tirando um
+         "screenshot" da página na hora de instalar, em vez de usar um
+         ícone limpo — o que pode ficar com um ar desfocado/estranho. -->
+    <link rel="apple-touch-icon" href="/pwa-192x192.png" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
