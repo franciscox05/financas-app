@@ -143,6 +143,7 @@ export default function Dashboard() {
         onCreated={(tx) => {
           setTransactions((prev) => [tx, ...prev])
           setRefreshToken((prev) => prev + 1)
+          loadAll()
         }}
       />
 

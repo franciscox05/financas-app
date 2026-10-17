@@ -16,13 +16,21 @@ const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT')!
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
 
+// O servidor corre em UTC; `occurred_on`/`due_on` são sempre a data LOCAL do
+// utilizador (Europe/Lisbon). Usar toISOString().slice(0,10) aqui comparava
+// com a data UTC, que fica um dia atrasada em relação a Lisboa na primeira
+// hora depois da meia-noite local durante o horário de verão.
+function todayLisbon() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Lisbon' }).format(new Date())
+}
+
 Deno.serve(async (req) => {
   if (req.headers.get('x-cron-secret') !== CRON_SECRET) {
     return new Response('Unauthorized', { status: 401 })
   }
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayLisbon()
 
   const { data: debts, error: debtError } = await supabase
     .from('debts')

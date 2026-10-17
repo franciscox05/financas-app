@@ -57,11 +57,11 @@ export default function NotificationToggle() {
       if (subscribed) {
         await unsubscribeFromPush()
         setSubscribed(false)
-        toast.info('Lembrete diário desativado.')
+        toast.info('Notificações desativadas.')
       } else {
         await subscribeToPush()
         setSubscribed(true)
-        toast.success('Lembrete diário ativado.')
+        toast.success('Notificações ativadas.')
       }
     } catch (err) {
       if (Notification.permission === 'denied') {
@@ -80,8 +80,8 @@ export default function NotificationToggle() {
   const title = blocked
     ? 'Notificações bloqueadas'
     : subscribed
-      ? 'Desativar lembretes'
-      : 'Ativar lembrete diário'
+      ? 'Desativar notificações'
+      : 'Ativar notificações (lembrete diário, resumo mensal, dívidas atrasadas)'
 
   return (
     <button

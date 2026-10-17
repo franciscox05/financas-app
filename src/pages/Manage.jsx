@@ -125,7 +125,7 @@ export default function Manage() {
         items={categories}
         groups={CATEGORY_GROUPS}
         scope="group"
-        deleteWarning="Só é possível apagar se não tiver transações ou regras de categorização associadas."
+        deleteWarning="Só é possível apagar se não tiver transações associadas. Regras de categorização desta categoria são apagadas juntamente."
         onCreate={async (values) => {
           const created = await createCategory(values)
           setCategories((prev) => [...prev, created].sort(byName))
