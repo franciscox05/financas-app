@@ -16,12 +16,13 @@ export default function AppLayout() {
     // quando a página não faz scroll o ecrã útil encolhe e a barra fixa fica
     // a meio do ecrã (só acontecia em páginas curtas, como as Dívidas).
     <div className="min-h-[calc(100lvh+1px)] bg-neutral-50 dark:bg-neutral-900">
-      {/* Folga extra (0.75rem) além do que o iOS reporta como safe-area-inset-top:
-          num ecrã (iPhone 17 Pro) o cabeçalho ficava tapado pela zona da
+      {/* Folga extra além do que o iOS reporta como safe-area-inset-top: num
+          ecrã (iPhone 17 Pro) o cabeçalho ficava tapado pela zona da
           câmara/Dynamic Island mesmo respeitando o mínimo reportado — um
           screenshot não mostra isto (captura o conteúdo completo, não o que
-          fica fisicamente coberto), por isso só se vê ao vivo no aparelho. */}
-      <header className="flex items-center justify-between gap-3 p-4 pt-[calc(max(1rem,env(safe-area-inset-top))+0.75rem)]">
+          fica fisicamente coberto), por isso só se vê ao vivo no aparelho.
+          0.75rem ainda não chegou; subiu para 1.5rem. */}
+      <header className="flex items-center justify-between gap-3 p-4 pt-[calc(max(1rem,env(safe-area-inset-top))+1.5rem)]">
         <span className="flex items-center gap-1.5 text-sm font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
           <Wallet size={18} className="text-green-600" />
           FinancasApp
