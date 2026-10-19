@@ -7,15 +7,12 @@ import { normalize, suggestCategoryId } from '../lib/categorySuggest'
 import { createTransactionsBulk, listCategoryRules, listTransactionsInRange } from '../lib/db'
 import { endOfMonth, toIsoDate } from '../lib/dates'
 import { buildImportRows, detectMonthHeader, parseMonthText } from '../lib/importParser'
+import { eur } from '../lib/format'
 
 const MONTH_NAMES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ]
-
-function eur(value) {
-  return `${Number(value).toFixed(2)} €`
-}
 
 export default function ImportSection({ accounts, categories }) {
   const toast = useToast()

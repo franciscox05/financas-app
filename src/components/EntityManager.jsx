@@ -2,13 +2,10 @@ import { Pencil, PiggyBank, TrendingUp, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { MAX_NAME_LENGTH, validateName } from '../lib/names'
+import { eur } from '../lib/format'
 
 const inputClass =
   'w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100'
-
-function eur(value) {
-  return `${Number(value).toFixed(2)} €`
-}
 
 function ManageRow({
   item,

@@ -28,14 +28,11 @@ import { addMonths, endOfMonth, monthStart, shortMonthLabel, toIsoDate, today } 
 import Money from '../components/Money'
 import { usePrivacy } from '../context/privacyContext'
 import HiddenChartNotice from '../components/HiddenChartNotice'
+import { eur } from '../lib/format'
 
 const HISTORY_PAGE_SIZE = 10
 
 const LINE_COLOR = '#2a78d6'
-
-function eur(value) {
-  return `${value.toFixed(2)} €`
-}
 
 // Soma o saldo (snapshot mais recente + transações desde esse snapshot) de
 // cada conta do grupo, na mesma data — serve tanto para contas à ordem como

@@ -5,6 +5,7 @@ import { suggestAmount, suggestCategoryId } from '../lib/categorySuggest'
 import { useToast } from '../context/toastContext'
 import { today } from '../lib/dates'
 import { createDebt, createTransaction } from '../lib/db'
+import { eur } from '../lib/format'
 
 export default function QuickEntryForm({ accounts, categories, transactions, onCreated }) {
   const toast = useToast()
@@ -134,7 +135,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       setDebtAmount('')
       onCreated(created)
       toast.success(
-        `${type === 'income' ? 'Ganho' : 'Gasto'} de ${numericAmount.toFixed(2)} € registado.`,
+        `${type === 'income' ? 'Ganho' : 'Gasto'} de ${eur(numericAmount)} registado.`,
       )
     } catch (err) {
       toast.error(`Não foi possível registar: ${err.message}`)

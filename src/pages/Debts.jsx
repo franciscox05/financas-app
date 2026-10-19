@@ -19,12 +19,9 @@ import {
   updateDebt,
 } from '../lib/db'
 import Money from '../components/Money'
+import { eur } from '../lib/format'
 
 const HISTORY_PAGE_SIZE = 10
-
-function eur(value) {
-  return `${Number(value).toFixed(2)} €`
-}
 
 export default function Debts() {
   const toast = useToast()
