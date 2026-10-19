@@ -44,7 +44,9 @@ function SummaryRow({ label, tone, bold = false, children }) {
   )
 }
 
-// Calendário do mês selecionado: cada dia mostra o saldo líquido desse dia
+// Calendário do mês selecionado: o dia de hoje leva um anel azul à volta da
+// célula (e o número a negrito), em vez de um ponto no canto — visível mesmo
+// num dia sem transações, e sem depender só da cor. Cada dia mostra o saldo líquido desse dia
 // (ganhos - gastos; verde se ≥0, vermelho se negativo), e clicar num dia
 // revela as transações desse dia ao detalhe. occurred_on já vem em
 // "YYYY-MM-DD", por isso o dia é lido diretamente da string — sem criar Date
@@ -99,7 +101,10 @@ export default function MonthCalendar({ monthDate, transactions }) {
               <button
                 key={day}
                 onClick={() => setSelectedDay(isSelected ? null : day)}
+                aria-current={isToday ? 'date' : undefined}
                 className={`relative flex flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 text-xs transition-colors ${
+                  isToday ? 'ring-2 ring-blue-500 ring-inset' : ''
+                } ${
                   isSelected
                     ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
                     : entry
@@ -107,10 +112,13 @@ export default function MonthCalendar({ monthDate, transactions }) {
                       : 'text-neutral-400'
                 }`}
               >
-                {isToday && (
-                  <span className="absolute top-1 right-1 size-1.5 rounded-full bg-blue-500" aria-hidden="true" />
-                )}
-                <span>{day}</span>
+                <span
+                  className={
+                    isToday ? (isSelected ? 'font-bold' : 'font-bold text-blue-600 dark:text-blue-400') : undefined
+                  }
+                >
+                  {day}
+                </span>
                 {entry && (
                   <span
                     className={`text-[9px] ${
