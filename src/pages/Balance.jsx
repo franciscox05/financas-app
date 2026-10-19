@@ -78,6 +78,7 @@ export default function Balance() {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [expenseOpen, setExpenseOpen] = useState(true)
   const [incomeOpen, setIncomeOpen] = useState(false)
 
   // A janela de 6 meses acompanha o mês selecionado (termina nele), em vez de
@@ -267,21 +268,25 @@ export default function Balance() {
         </section>
       )}
 
-      <section>
-        <h3 className="mb-2 text-sm font-semibold text-neutral-500">
-          Gastos por categoria
-        </h3>
-        {categoryBreakdown.length === 0 ? (
+      {categoryBreakdown.length === 0 ? (
+        <section>
+          <h3 className="mb-2 text-sm font-semibold text-neutral-500">Gastos por categoria</h3>
           <EmptyState
             title="Sem gastos neste mês"
             description="Quando registares gastos, vês aqui para onde vai o dinheiro."
             actionLabel="Registar um gasto"
             onAction={() => navigate('/')}
           />
-        ) : (
+        </section>
+      ) : (
+        <CollapsibleSection
+          title="Gastos por categoria"
+          open={expenseOpen}
+          onToggle={() => setExpenseOpen((v) => !v)}
+        >
           <CategoryBars items={categoryBreakdown} color={BAR_COLOR} />
-        )}
-      </section>
+        </CollapsibleSection>
+      )}
 
       <CollapsibleSection
         title="Ganhos por categoria"
