@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import { EmptyState, ErrorNotice, ListSkeleton, Pager } from '../components/Feedback'
 import Money from '../components/Money'
 import { listAccounts, listNetWorthSnapshots, listTransactionsPage, listTransfers } from '../lib/db'
+import { eur } from '../lib/format'
 
 const PAGE_SIZE = 20
 
@@ -111,7 +112,7 @@ export default function AccountHistory() {
                     {isOutgoing ? `para ${t.to_account?.name ?? 'conta'}` : `de ${t.from_account?.name ?? 'conta'}`}
                   </span>
                   <span className={`shrink-0 font-semibold ${isOutgoing ? 'text-red-600' : 'text-green-600'}`}>
-                    <Money>{`${isOutgoing ? '-' : '+'}${Number(t.amount).toFixed(2)} €`}</Money>
+                    <Money>{`${isOutgoing ? '-' : '+'}${eur(t.amount)}`}</Money>
                   </span>
                 </li>
               )
@@ -148,7 +149,7 @@ export default function AccountHistory() {
                       tx.type === 'income' ? 'text-green-600' : 'text-red-600'
                     }`}
                   >
-                    <Money>{`${tx.type === 'income' ? '+' : '-'}${Number(tx.amount).toFixed(2)} €`}</Money>
+                    <Money>{`${tx.type === 'income' ? '+' : '-'}${eur(tx.amount)}`}</Money>
                   </span>
                 </li>
               ))}

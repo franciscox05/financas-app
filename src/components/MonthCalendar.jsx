@@ -1,7 +1,48 @@
 import { useMemo, useState } from 'react'
+import { eurCompact, eurSigned } from '../lib/format'
 import Money from './Money'
 
 const WEEKDAY_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+
+// Resumo do dia aberto: num dia só de gastos (ou só de ganhos) basta o total;
+// num dia misto discrimina Ganhos / Gastos / Saldo, porque o número da célula
+// do calendário é só o saldo líquido e não diz de onde vem.
+function DaySummary({ entry }) {
+  const net = entry.income - entry.expense
+  const mixed = entry.income > 0 && entry.expense > 0
+  return (
+    <dl className="space-y-0.5 border-t border-neutral-200 pt-1.5 text-sm dark:border-neutral-800">
+      {mixed ? (
+        <>
+          <SummaryRow label="Ganhos" tone="text-green-600">
+            {eurSigned(entry.income)}
+          </SummaryRow>
+          <SummaryRow label="Gastos" tone="text-red-600">
+            {eurSigned(-entry.expense)}
+          </SummaryRow>
+          <SummaryRow label="Saldo do dia" tone={net >= 0 ? 'text-green-600' : 'text-red-600'} bold>
+            {eurSigned(net)}
+          </SummaryRow>
+        </>
+      ) : (
+        <SummaryRow label="Total do dia" tone={net >= 0 ? 'text-green-600' : 'text-red-600'} bold>
+          {eurSigned(net)}
+        </SummaryRow>
+      )}
+    </dl>
+  )
+}
+
+function SummaryRow({ label, tone, bold = false, children }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <dt className={`text-neutral-500 ${bold ? 'font-semibold' : ''}`}>{label}</dt>
+      <dd className={`${tone} ${bold ? 'font-semibold' : 'font-medium'}`}>
+        <Money>{children}</Money>
+      </dd>
+    </div>
+  )
+}
 
 // Calendário do mês selecionado: cada dia mostra o saldo líquido desse dia
 // (ganhos - gastos; verde se ≥0, vermelho se negativo), e clicar num dia
@@ -76,8 +117,7 @@ export default function MonthCalendar({ monthDate, transactions }) {
                       isSelected ? '' : entry.income - entry.expense >= 0 ? 'text-green-600' : 'text-red-600'
                     }`}
                   >
-                    {entry.income - entry.expense >= 0 ? '+' : ''}
-                    <Money mask="••">{`${(entry.income - entry.expense).toFixed(0)}€`}</Money>
+                    <Money mask="••">{eurCompact(entry.income - entry.expense, { signed: true })}</Money>
                   </span>
                 )}
               </button>
@@ -110,6 +150,7 @@ export default function MonthCalendar({ monthDate, transactions }) {
                 ))}
               </ul>
             )}
+            {selectedEntry && selectedEntry.txs.length > 1 && <DaySummary entry={selectedEntry} />}
           </div>
         )}
       </div>

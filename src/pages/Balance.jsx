@@ -18,14 +18,11 @@ import { addMonths, monthKey, monthStart, shortMonthLabel, toIsoDate } from '../
 import Money from '../components/Money'
 import { usePrivacy } from '../context/privacyContext'
 import HiddenChartNotice from '../components/HiddenChartNotice'
+import { eur } from '../lib/format'
 
 const INCOME_COLOR = '#16a34a' // tailwind green-600 — consistente com o resto da UI
 const EXPENSE_COLOR = '#dc2626' // tailwind red-600
 const BAR_COLOR = '#2a78d6' // categorical slot 1 (azul) — magnitude, não identidade
-
-function eur(value) {
-  return `${value.toFixed(2)} €`
-}
 
 export default function Balance() {
   const { hidden } = usePrivacy()

@@ -5,15 +5,12 @@ import { useToast } from '../context/toastContext'
 import { normalize } from '../lib/categorySuggest'
 import { listTransactionsInRange, updateTransactionsBulk } from '../lib/db'
 import { addMonths, toIsoDate } from '../lib/dates'
+import { eur } from '../lib/format'
 
 const MONTH_NAMES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ]
-
-function eur(value) {
-  return `${Number(value).toFixed(2)} €`
-}
 
 // Agrupa transações já guardadas pela mesma nota exata (e tipo), para
 // corrigir a categoria/conta de muitas de uma vez — útil depois de uma

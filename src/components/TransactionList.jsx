@@ -14,12 +14,13 @@ import { parseSmartQuery } from '../lib/smartSearch'
 import { EmptyState, ErrorNotice, ListSkeleton, Pager } from './Feedback'
 import Money from './Money'
 import MonthPicker from './MonthPicker'
+import { eur } from '../lib/format'
 
 const PAGE_SIZE = 25
 
 function formatAmount(amount, type) {
   const sign = type === 'income' ? '+' : '-'
-  return `${sign}${Number(amount).toFixed(2)} €`
+  return `${sign}${eur(amount)}`
 }
 
 function formatDate(isoDate) {
@@ -81,7 +82,7 @@ function TransferRow({ tx, onDeleted, onRestored }) {
       </div>
       <div className="flex shrink-0 items-center gap-2">
         <span className="text-sm font-semibold text-blue-500">
-          <Money>{`${Number(tx.amount).toFixed(2)} €`}</Money>
+          <Money>{eur(tx.amount)}</Money>
         </span>
         {confirmingDelete ? (
           <span className="flex items-center gap-1">
