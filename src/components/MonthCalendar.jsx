@@ -114,7 +114,7 @@ export default function MonthCalendar({ monthDate, transactions }) {
               >
                 <span
                   className={
-                    isToday ? (isSelected ? 'font-bold' : 'font-bold text-blue-600 dark:text-blue-400') : undefined
+                    isToday ? (isSelected ? 'font-bold' : 'font-bold text-neutral-900 dark:text-white') : undefined
                   }
                 >
                   {day}
