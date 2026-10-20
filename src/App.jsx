@@ -6,6 +6,7 @@ import { AuthProvider } from './context/AuthContext'
 import AccountHistory from './pages/AccountHistory'
 import Balance from './pages/Balance'
 import Dashboard from './pages/Dashboard'
+import FriendLedger from './pages/FriendLedger'
 import Friends from './pages/Friends'
 import Login from './pages/Login'
 import Manage from './pages/Manage'
@@ -27,6 +28,7 @@ function App() {
               <Route path="/patrimonio" element={<NetWorth />} />
               <Route path="/patrimonio/conta/:accountId" element={<AccountHistory />} />
               <Route path="/dividas" element={<Friends />} />
+              <Route path="/dividas/:friendId" element={<FriendLedger />} />
               <Route path="/gestao" element={<Manage />} />
             </Route>
           </Route>
