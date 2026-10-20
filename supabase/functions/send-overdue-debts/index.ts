@@ -37,6 +37,7 @@ Deno.serve(async (req) => {
     .from('ledger_entries')
     .select('user_id, friend_id')
     .eq('kind', 'paid_for_them')
+    .in('status', ['confirmed', 'cancel_requested'])
     .lt('due_on', today)
   if (overdueError) {
     return new Response(JSON.stringify({ error: overdueError.message }), { status: 500 })
