@@ -7,6 +7,7 @@ import FriendRequestPanel from '../components/FriendRequestPanel'
 import LedgerEntryRow from '../components/LedgerEntryRow'
 import Money from '../components/Money'
 import NewExpenseSheet from '../components/NewExpenseSheet'
+import OpeningBalanceOffer from '../components/OpeningBalanceOffer'
 import ReminderButtons from '../components/ReminderButtons'
 import RepaymentSheet from '../components/RepaymentSheet'
 import { useToast } from '../context/toastContext'
@@ -15,6 +16,7 @@ import { deleteEntry, deleteFriend, listEntries, listFriendsWithBalance, updateF
 import { formatPhoneDisplay } from '../lib/contactMessage'
 import { hasOpenBalance } from '../lib/friendsLogic'
 import { balanceOf, describeBalance, suggestedRepayment } from '../lib/ledgerMath'
+import { hasPendingOpening, privateConfirmedEntries } from '../lib/linkedLogic'
 
 const inputClass =
   'min-h-11 w-full rounded-lg border border-neutral-300 px-3 py-2 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 motion-reduce:transition-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus-visible:outline-neutral-100'
@@ -178,6 +180,10 @@ export default function FriendLedger() {
   const { state, amount } = describeBalance(balance)
   const repayment = suggestedRepayment(balance)
   const canDeleteFriend = !hasOpenBalance(balance)
+  const connected = friend.status === 'connected'
+  const privateOnly = privateConfirmedEntries(entries)
+  const privateBalance = balanceOf(privateOnly)
+  const showOpeningOffer = connected && privateBalance !== 0 && !hasPendingOpening(entries)
   const deleteHasBank = deleteTarget?.settlement === 'bank' && Boolean(deleteTarget?.transaction_id)
 
   return (
@@ -271,6 +277,10 @@ export default function FriendLedger() {
       </header>
 
       <FriendRequestPanel friend={friend} onChanged={() => load({ silent: true })} />
+
+      {showOpeningOffer && (
+        <OpeningBalanceOffer friend={friend} balance={privateBalance} onShared={() => load({ silent: true })} />
+      )}
 
       <div className="rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
         <p className="text-xs text-neutral-500">Neste momento</p>
