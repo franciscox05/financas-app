@@ -123,8 +123,8 @@ export default function FriendRequestPanel({ friend, onChanged }) {
     )
   }
 
-  const pending =
-    request?.status === 'pending' || (friend.status === 'invited' && request?.status !== 'declined')
+  // O último pedido manda; o estado do contacto só decide quando não há pedido visível.
+  const pending = request ? request.status === 'pending' : friend.status === 'invited'
   const declined = !pending && request?.status === 'declined'
 
   const errorLine = error && (
