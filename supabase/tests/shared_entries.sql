@@ -274,4 +274,64 @@ begin
   end if;
 end $$;
 
+-- (i) conta bancária escolhida pelo criador apagada antes de o outro aceitar: aceitar continua a funcionar
+reset role;
+insert into public.accounts (id, user_id, name, type)
+values ('cccccccc-0000-0000-0000-0000000000a9', '00000000-0000-0000-0000-0000000000a1', 'Conta A2', 'cash');
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a1"}', true);
+select public.create_shared_entry('aaaaaaaa-0000-0000-0000-0000000000f1', 'repaid_to_me', 1, null, null, null, 'bank',
+  'cccccccc-0000-0000-0000-0000000000a9', 'cccccccc-0000-0000-0000-0000000000a2');
+reset role;
+delete from public.accounts where id = 'cccccccc-0000-0000-0000-0000000000a9';
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b1"}', true);
+do $$
+declare idb uuid;
+begin
+  select id into idb from public.ledger_entries where user_id = '00000000-0000-0000-0000-0000000000b1' and status = 'pending';
+  perform public.respond_entry(idb, true, null, 'cash', null, null);
+  reset role;
+  if (select status from public.ledger_entries where id = idb) <> 'confirmed' then
+    raise exception 'aceitar devia funcionar mesmo sem a conta do criador';
+  end if;
+  if (select count(*) from public.transactions where user_id = '00000000-0000-0000-0000-0000000000a1') <> 0 then
+    raise exception 'sem conta não há transação do criador';
+  end if;
+end $$;
+
+-- (j) o outro utilizador é apagado: o contacto volta a local, pendentes ficam cancelados e
+--     anulações pedidas voltam a confirmed
+reset role;
+do $$
+declare ida uuid;
+begin
+  perform set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a1"}', true);
+  set local role authenticated;
+  select id into ida from public.ledger_entries
+   where user_id = '00000000-0000-0000-0000-0000000000a1' and kind = 'paid_for_them' and amount = 10 and status = 'confirmed';
+  perform public.request_cancel(ida);
+  perform public.create_shared_entry('aaaaaaaa-0000-0000-0000-0000000000f1', 'paid_for_them', 2, 'pendente', null, null, null, null, null);
+  reset role;
+  delete from auth.users where id = '00000000-0000-0000-0000-0000000000b1';
+  if (select status from public.friends where id = 'aaaaaaaa-0000-0000-0000-0000000000f1') <> 'local' then
+    raise exception 'o contacto devia voltar a local';
+  end if;
+  if (select status from public.ledger_entries where id = ida) <> 'confirmed' then
+    raise exception 'a anulação pedida devia voltar a confirmed';
+  end if;
+  if (select count(*) from public.ledger_entries
+       where user_id = '00000000-0000-0000-0000-0000000000a1' and note = 'pendente' and status = 'cancelled') <> 1 then
+    raise exception 'o movimento pendente devia ficar cancelled';
+  end if;
+  -- e o contacto volta a aceitar movimentos locais
+  perform set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a1"}', true);
+  set local role authenticated;
+  insert into public.ledger_entries (user_id, friend_id, kind, amount)
+  values ('00000000-0000-0000-0000-0000000000a1', 'aaaaaaaa-0000-0000-0000-0000000000f1', 'paid_for_them', 1);
+  perform public.cancel_pending_entry(ida);
+exception when raise_exception then
+  if sqlerrm not like 'Movimento não encontrado%' then raise; end if;
+end $$;
+
 rollback;

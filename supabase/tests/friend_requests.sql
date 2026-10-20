@@ -197,4 +197,32 @@ begin
   end if;
 end $$;
 
+-- (i) colisão de nomes ao aceitar: o novo contacto ganha um sufixo livre
+insert into auth.users (id, email, email_confirmed_at) values
+  ('00000000-0000-0000-0000-0000000000e1', 'e@x.com', now()),
+  ('00000000-0000-0000-0000-0000000000f1', 'f@x.com', now());
+update public.profiles set full_name = 'Zé' where id = '00000000-0000-0000-0000-0000000000e1';
+insert into public.friends (id, owner_id, name) values
+  ('aaaaaaaa-0000-0000-0000-0000000000e1', '00000000-0000-0000-0000-0000000000e1', 'Colega'),
+  ('aaaaaaaa-0000-0000-0000-0000000000e2', '00000000-0000-0000-0000-0000000000f1', 'Zé'),
+  ('aaaaaaaa-0000-0000-0000-0000000000e3', '00000000-0000-0000-0000-0000000000f1', 'Zé (app)');
+do $$
+declare rid uuid;
+begin
+  perform set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000e1"}', true);
+  set local role authenticated;
+  perform public.send_friend_request('aaaaaaaa-0000-0000-0000-0000000000e1', 'f@x.com');
+  reset role;
+  select id into rid from public.friend_requests where to_email = 'f@x.com';
+  perform set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000f1"}', true);
+  set local role authenticated;
+  perform public.respond_friend_request(rid, true);
+  reset role;
+  if not exists (select 1 from public.friends
+                  where owner_id = '00000000-0000-0000-0000-0000000000f1' and name = 'Zé (app 2)'
+                    and linked_user_id = '00000000-0000-0000-0000-0000000000e1') then
+    raise exception 'devia criar o contacto "Zé (app 2)"';
+  end if;
+end $$;
+
 rollback;

@@ -103,6 +103,8 @@ declare
   v_me auth.users%rowtype;
   v_req public.friend_requests%rowtype;
   v_name text;
+  v_base text;
+  v_n int := 0;
 begin
   if uid is null then raise exception 'Inicia sessão para continuar.'; end if;
   select * into v_me from auth.users where id = uid;
@@ -127,9 +129,12 @@ begin
 
   select coalesce(nullif(btrim(p.full_name), ''), su.email, 'Amigo') into v_name
     from auth.users su left join public.profiles p on p.id = su.id where su.id = v_req.from_user_id;
-  if exists (select 1 from public.friends where owner_id = uid and lower(btrim(name)) = lower(btrim(v_name))) then
-    v_name := v_name || ' (app)';
-  end if;
+  -- Já tens um contacto com este nome? Acrescenta-se " (app)", " (app 2)", ... até ficar livre.
+  v_base := v_name;
+  while exists (select 1 from public.friends where owner_id = uid and lower(btrim(name)) = lower(btrim(v_name))) loop
+    v_n := v_n + 1;
+    v_name := v_base || case when v_n = 1 then ' (app)' else ' (app ' || v_n || ')' end;
+  end loop;
 
   begin
     insert into public.friends (owner_id, name, status, linked_user_id)

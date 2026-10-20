@@ -147,6 +147,12 @@ declare
 begin
   select * into r from public.ledger_entries where id = p_entry_id;
   if r.settlement is distinct from 'bank' or r.transaction_id is not null then return; end if;
+  -- A conta ou a categoria escolhida pode ter sido apagada entretanto: confirma-se na mesma o
+  -- movimento, só não há transação (a conta-corrente não depende dela).
+  if not exists (select 1 from public.accounts where id = r.bank_account_id and user_id = r.user_id)
+     or not exists (select 1 from public.categories where id = r.bank_category_id and user_id = r.user_id) then
+    return;
+  end if;
   select name into v_name from public.friends where id = r.friend_id;
   insert into public.transactions (user_id, account_id, category_id, amount, type, occurred_on, note)
   values (r.user_id, r.bank_account_id, r.bank_category_id, r.amount,
@@ -359,3 +365,31 @@ grant execute on function public.respond_entry(uuid, boolean, text, text, uuid, 
 grant execute on function public.cancel_pending_entry(uuid) to authenticated;
 grant execute on function public.request_cancel(uuid) to authenticated;
 grant execute on function public.respond_cancel(uuid, boolean) to authenticated;
+
+-- Se a conta ligada desaparece (utilizador apagado: linked_user_id passa a nulo), o contacto volta
+-- a local e os movimentos que dependiam da outra pessoa ficam resolvidos:
+-- pendentes cancelados (com o saldo anterior a voltar a contar) e anulações pedidas a confirmed.
+create function public.friends_unlinked() returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if exists (select 1 from public.ledger_entries
+              where user_id = new.owner_id and friend_id = new.id and status = 'pending' and is_opening) then
+    update public.ledger_entries set status = 'confirmed'
+     where user_id = new.owner_id and friend_id = new.id and status = 'archived';
+  end if;
+  -- mirror_id = null: a linha do outro lado pode já estar a ser apagada em cascata.
+  update public.ledger_entries set status = 'cancelled', mirror_id = null
+   where user_id = new.owner_id and friend_id = new.id and status = 'pending';
+  update public.ledger_entries set status = 'confirmed', cancel_requested_by = null, mirror_id = null
+   where user_id = new.owner_id and friend_id = new.id and status = 'cancel_requested';
+  update public.friends set status = 'local' where id = new.id and status <> 'local';
+  return null;
+end $$;
+
+create trigger friends_unlinked
+  after update of linked_user_id on public.friends
+  for each row
+  when (old.linked_user_id is not null and new.linked_user_id is null)
+  execute function public.friends_unlinked();
