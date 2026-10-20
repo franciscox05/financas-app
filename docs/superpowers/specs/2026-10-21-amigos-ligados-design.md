@@ -74,6 +74,15 @@ Hoje cada pessoa tem o seu livro isolado. O utilizador quer adicionar o Francisc
 - **3a (este desenho):** pedidos de amizade, movimentos partilhados com confirmação, anulação, saldo anterior, ecrãs.
 - **3b:** notificações push (pedido recebido, movimento por confirmar, aceite, contestado, anulado).
 
+## Decisões do construtor após a leitura crítica (minhas, a confirmar)
+
+- **Saldo anterior.** Só se oferece ao remetente depois de ligar, e só se o saldo não for zero. Ao enviar, as entradas antigas confirmadas desse contacto passam a `archived` (continuam no histórico, saem do saldo) e cria-se **uma** entrada "Saldo anterior" (`paid_for_them` se o saldo era positivo, `paid_for_me` se negativo) pelo valor absoluto, pendente do outro lado. Se ele contestar, as antigas voltam a `confirmed`. Os `transaction_id` das antigas não mudam. Novo estado `archived` em `ledger_entries.status`.
+- **Anulação.** Ver pergunta ao utilizador: estado `cancel_requested`.
+- **Transações bancárias.** Entre ligados a transação de cada lado só é criada quando o movimento fica `confirmed` (nunca com o movimento pendente), para que pendentes não apareçam nas contas nem nos relatórios. A conta e a categoria escolhidas guardam-se na entrada e a função cria a transação ao confirmar. Contestar ou anular remove só a transação própria de cada lado.
+- **Contestação.** A linha de quem criou fica `declined` com a nota visível; a espelho fica `cancelled` e escondida de quem contestou. Corrigir é criar uma entrada nova ("Corrigir e reenviar" pré-preenche). A antiga fica no histórico.
+- **Pedidos e email.** Só se listam e aceitam pedidos com o email **confirmado** (`email_confirmed_at` não nulo). Se o email de login mudar, o pedido deixa de aparecer. Se o contacto do remetente já foi ligado entretanto, aceitar devolve "Já estão ligados." e não altera nada.
+- **Partilha automática.** Com amigo ligado, todo movimento novo é partilhado (a criação chama `share_entry`); não há movimentos privados com um amigo ligado. Os movimentos locais antigos só passam ao outro lado pelo "Saldo anterior".
+
 ## Deixado ao construtor
 
 Nomes exatos de colunas, funções e mensagens; detalhe visual; estratégia de testes SQL com dois utilizadores (como `ledger_schema.sql`); como o contador de pendentes é obtido.
