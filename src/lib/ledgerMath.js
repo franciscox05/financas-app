@@ -35,7 +35,7 @@ export function describeBalance(balance) {
   return { state: 'even', amount: 0 }
 }
 
-// Movimento que zera o saldo; null se já estiver tudo acertado.
+// Movimento que zera o saldo; null se já estiverem quites.
 export function suggestedRepayment(balance) {
   const { state, amount } = describeBalance(balance)
   if (state === 'owes_me') return { kind: 'repaid_to_me', amount }

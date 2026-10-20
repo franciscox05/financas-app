@@ -70,7 +70,7 @@ export async function deleteFriend(id) {
     .maybeSingle()
   if (balanceError) throw balanceError
   if (hasOpenBalance(data?.balance)) {
-    throw new Error('Ainda há saldo por acertar com esta pessoa.')
+    throw new Error('Só podes apagar quando estiverem quites.')
   }
 
   const { error } = await supabase.from('friends').delete().eq('id', id)

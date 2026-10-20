@@ -41,6 +41,7 @@ export default function FriendLedger() {
   const [panel, setPanel] = useState(null) // 'expense' | 'repayment' | null
   const [editing, setEditing] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
+  const [phoneDraft, setPhoneDraft] = useState('')
   const [nameError, setNameError] = useState('')
   const [savingName, setSavingName] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
@@ -75,12 +76,12 @@ export default function FriendLedger() {
     setSavingName(true)
     setNameError('')
     try {
-      const updated = await updateFriend({ id: friend.id, name: nameDraft, phone: friend.phone })
-      setFriend((f) => ({ ...f, name: updated.name }))
+      const updated = await updateFriend({ id: friend.id, name: nameDraft, phone: phoneDraft })
+      setFriend((f) => ({ ...f, name: updated.name, phone: updated.phone }))
       setEditing(false)
-      toast.success('Nome atualizado.')
+      toast.success('Dados atualizados.')
     } catch (err) {
-      setNameError(err.message || 'Não foi possível guardar o nome. Tenta outra vez.')
+      setNameError(err.message || 'Não foi possível guardar os dados. Tenta outra vez.')
     } finally {
       setSavingName(false)
     }
@@ -155,6 +156,19 @@ export default function FriendLedger() {
               onChange={(e) => setNameDraft(e.target.value)}
               className={inputClass}
             />
+            <label htmlFor="friend-edit-phone" className="block text-xs font-medium text-neutral-500">
+              Telemóvel (opcional)
+            </label>
+            <input
+              id="friend-edit-phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="off"
+              placeholder="Ex: 912 345 678"
+              value={phoneDraft}
+              onChange={(e) => setPhoneDraft(e.target.value)}
+              className={inputClass}
+            />
             {nameError && (
               <p role="alert" className="text-sm text-red-600 dark:text-red-400">
                 {nameError}
@@ -176,17 +190,34 @@ export default function FriendLedger() {
               type="button"
               onClick={() => {
                 setNameDraft(friend.name)
+                setPhoneDraft(friend.phone ?? '')
                 setNameError('')
                 setEditing(true)
               }}
-              aria-label="Editar nome"
+              aria-label="Editar nome e telemóvel"
               className={`flex size-11 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors duration-150 ease-out hover:text-neutral-900 motion-reduce:transition-none dark:hover:text-neutral-100 ${focusRing}`}
             >
               <Pencil size={16} aria-hidden="true" />
             </button>
           </div>
         )}
-        {friend.phone && !editing && <p className="text-sm text-neutral-500">{friend.phone}</p>}
+        {!editing &&
+          (friend.phone ? (
+            <p className="text-sm text-neutral-500">{friend.phone}</p>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setNameDraft(friend.name)
+                setPhoneDraft('')
+                setNameError('')
+                setEditing(true)
+              }}
+              className={`-ml-2 min-h-11 rounded-lg px-2 text-sm text-neutral-500 underline transition-colors duration-150 ease-out hover:text-neutral-900 motion-reduce:transition-none dark:hover:text-neutral-100 ${focusRing}`}
+            >
+              Adicionar telefone
+            </button>
+          ))}
       </header>
 
       <div className="rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
@@ -266,7 +297,7 @@ export default function FriendLedger() {
             Apagar amigo
           </button>
         ) : (
-          <p className="text-sm text-neutral-500">Ainda há saldo por acertar com esta pessoa.</p>
+          <p className="text-sm text-neutral-500">Só podes apagar quando estiverem quites.</p>
         )}
       </section>
 
