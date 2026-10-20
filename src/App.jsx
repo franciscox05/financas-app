@@ -6,7 +6,7 @@ import { AuthProvider } from './context/AuthContext'
 import AccountHistory from './pages/AccountHistory'
 import Balance from './pages/Balance'
 import Dashboard from './pages/Dashboard'
-import Debts from './pages/Debts'
+import Friends from './pages/Friends'
 import Login from './pages/Login'
 import Manage from './pages/Manage'
 import NetWorth from './pages/NetWorth'
@@ -26,7 +26,7 @@ function App() {
               <Route path="/balanco" element={<Balance />} />
               <Route path="/patrimonio" element={<NetWorth />} />
               <Route path="/patrimonio/conta/:accountId" element={<AccountHistory />} />
-              <Route path="/dividas" element={<Debts />} />
+              <Route path="/dividas" element={<Friends />} />
               <Route path="/gestao" element={<Manage />} />
             </Route>
           </Route>
