@@ -22,6 +22,7 @@ export async function listFriendsWithBalance() {
   if (friendsRes.error) throw friendsRes.error
   if (balancesRes.error) throw balancesRes.error
 
+  // friends.* inclui status e linked_user_id.
   const balances = new Map(balancesRes.data.map((b) => [b.friend_id, Number(b.balance)]))
   return friendsRes.data.map((f) => ({ ...f, balance: balances.get(f.id) ?? 0 }))
 }
@@ -79,6 +80,8 @@ export async function deleteFriend(id) {
   if (error) throw error
 }
 
+// select('*') inclui status, mirror_id, created_by, decline_note,
+// cancel_requested_by e is_opening dos movimentos ligados.
 export async function listEntries(friendId) {
   const { data, error } = await supabase
     .from('ledger_entries')

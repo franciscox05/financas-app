@@ -1,3 +1,5 @@
+import { COUNTING_STATUSES } from './linkedLogic.js'
+
 // Valores em cêntimos para evitar erros de vírgula flutuante (0.1 + 0.2 = 0.3).
 // Saldo positivo = o amigo deve-me; negativo = eu devo-lhe.
 const cents = (value) => Math.round(Number(value) * 100)
@@ -25,7 +27,12 @@ export function signedCents(kind, amount) {
 }
 
 export function balanceOf(entries) {
-  return entries.reduce((sum, e) => sum + signedCents(e.kind, e.amount), 0) / 100
+  // Movimentos sem estado (antigos/locais) contam como confirmados.
+  return (
+    entries
+      .filter((e) => COUNTING_STATUSES.includes(e.status ?? 'confirmed'))
+      .reduce((sum, e) => sum + signedCents(e.kind, e.amount), 0) / 100
+  )
 }
 
 export function describeBalance(balance) {

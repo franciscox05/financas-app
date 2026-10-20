@@ -3,6 +3,9 @@ import { useToast } from '../context/toastContext'
 import { today } from '../lib/dates'
 import { parseExpenseAmount } from '../lib/expenseInput'
 import { createExpense } from '../lib/friendsDb'
+import { createSharedEntry } from '../lib/linkedDb'
+import { isSharedGuardError } from '../lib/linkedLogic'
+import { notifyPendingChanged } from '../lib/pendingEvents'
 
 const inputClass =
   'min-h-11 w-full rounded-lg border border-neutral-300 px-3 py-2 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 motion-reduce:transition-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus-visible:outline-neutral-100'
@@ -17,18 +20,20 @@ const OPTIONS = [
   { kind: 'paid_for_me', title: 'Ele pagou por mim', hint: 'Fico a dever-lhe (ex.: creatina)' },
 ]
 
-export default function NewExpenseSheet({ friend, onDone, onCancel }) {
+// `prefill` (opcional) repete os valores de um movimento contestado.
+export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onStale }) {
   const toast = useToast()
-  const [kind, setKind] = useState('paid_for_them')
-  const [amount, setAmount] = useState('')
-  const [note, setNote] = useState('')
-  const [occurredOn, setOccurredOn] = useState(today())
-  const [dueOn, setDueOn] = useState('')
+  const [kind, setKind] = useState(prefill?.kind ?? 'paid_for_them')
+  const [amount, setAmount] = useState(prefill ? String(prefill.amount).replace('.', ',') : '')
+  const [note, setNote] = useState(prefill?.note ?? '')
+  const [occurredOn, setOccurredOn] = useState(prefill?.occurredOn || today())
+  const [dueOn, setDueOn] = useState(prefill?.dueOn ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
   async function handleSubmit(e) {
     e.preventDefault()
+    if (saving) return
     const value = parseExpenseAmount(amount)
     if (value === null) {
       setError('Indica um valor válido.')
@@ -37,17 +42,25 @@ export default function NewExpenseSheet({ friend, onDone, onCancel }) {
     setSaving(true)
     setError('')
     try {
-      await createExpense({
+      const fields = {
         friendId: friend.id,
         kind,
         amount: value,
         note: note.trim(),
         occurredOn: occurredOn || today(),
         dueOn,
-      })
-      toast.success('Gasto guardado.')
+      }
+      if (friend.status === 'connected') {
+        await createSharedEntry(fields)
+        notifyPendingChanged()
+        toast.success(`Enviado a ${friend.name} para confirmar.`)
+      } else {
+        await createExpense(fields)
+        toast.success('Gasto guardado.')
+      }
       onDone()
     } catch (err) {
+      if (isSharedGuardError(err)) onStale?.()
       setError(err.message)
       setSaving(false)
     }
@@ -164,7 +177,7 @@ export default function NewExpenseSheet({ friend, onDone, onCancel }) {
           disabled={saving}
           className={`min-h-11 flex-1 rounded-lg bg-neutral-900 font-medium text-white transition duration-150 ease-out hover:bg-neutral-700 active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300 ${focusRing}`}
         >
-          {saving ? 'A guardar...' : 'Guardar'}
+          {saving ? 'A guardar...' : friend.status === 'connected' ? 'Enviar para confirmar' : 'Guardar'}
         </button>
       </div>
     </form>

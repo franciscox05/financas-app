@@ -4,6 +4,9 @@ import { today } from '../lib/dates'
 import { listAccounts, listCategories } from '../lib/db'
 import { parseExpenseAmount } from '../lib/expenseInput'
 import { createRepayment } from '../lib/friendsDb'
+import { createSharedEntry } from '../lib/linkedDb'
+import { isSharedGuardError } from '../lib/linkedLogic'
+import { notifyPendingChanged } from '../lib/pendingEvents'
 import { suggestedRepayment } from '../lib/ledgerMath'
 import { defaultCategoryId, overshootNote } from '../lib/repaymentInput'
 
@@ -21,14 +24,21 @@ const OPTIONS = [
   { value: 'offset', title: 'Descontado noutra coisa', hint: 'Abate noutra coisa que fizeste por ele' },
 ]
 
-export default function RepaymentSheet({ friend, balance, onDone, onCancel }) {
+// `prefill` (opcional) repete os valores de uma devolução contestada.
+export default function RepaymentSheet({ friend, balance, prefill, onDone, onCancel, onStale }) {
   const toast = useToast()
   const suggestion = suggestedRepayment(balance)
-  const kind = suggestion?.kind
-  const [amount, setAmount] = useState(suggestion ? String(suggestion.amount).replace('.', ',') : '')
-  const [settlement, setSettlement] = useState('bank')
-  const [note, setNote] = useState('')
-  const [occurredOn, setOccurredOn] = useState(today())
+  const kind = prefill?.kind ?? suggestion?.kind
+  const [amount, setAmount] = useState(
+    prefill
+      ? String(prefill.amount).replace('.', ',')
+      : suggestion
+        ? String(suggestion.amount).replace('.', ',')
+        : '',
+  )
+  const [settlement, setSettlement] = useState(prefill?.settlement ?? 'bank')
+  const [note, setNote] = useState(prefill?.note ?? '')
+  const [occurredOn, setOccurredOn] = useState(prefill?.occurredOn || today())
   const [accounts, setAccounts] = useState([])
   const [categories, setCategories] = useState([])
   const [loadingLists, setLoadingLists] = useState(true)
@@ -45,8 +55,10 @@ export default function RepaymentSheet({ friend, balance, onDone, onCancel }) {
         if (cancelled) return
         setAccounts(accs)
         setCategories(cats)
-        setAccountId(accs[0]?.id ?? '')
-        setCategoryId(kind ? defaultCategoryId(cats, kind) : '')
+        setAccountId(accs.find((a) => a.id === prefill?.accountId)?.id ?? accs[0]?.id ?? '')
+        setCategoryId(
+          cats.find((c) => c.id === prefill?.categoryId)?.id ?? (kind ? defaultCategoryId(cats, kind) : ''),
+        )
       })
       .catch(() => {
         if (!cancelled) setListsFailed(true)
@@ -57,13 +69,14 @@ export default function RepaymentSheet({ friend, balance, onDone, onCancel }) {
     return () => {
       cancelled = true
     }
-  }, [kind])
+  }, [kind, prefill])
 
   const type = kind === 'repaid_to_me' ? 'income' : 'expense'
   const categoryOptions = useMemo(() => categories.filter((c) => c.type === type), [categories, type])
 
-  if (!suggestion) return null
+  if (!kind) return null
 
+  const shared = friend.status === 'connected'
   const parsed = parseExpenseAmount(amount)
   const overshoot = parsed === null ? null : overshootNote(kind, balance, parsed)
 
@@ -79,6 +92,7 @@ export default function RepaymentSheet({ friend, balance, onDone, onCancel }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
+    if (saving) return
     if (parsed === null) {
       setError('Indica um valor válido.')
       return
@@ -90,22 +104,32 @@ export default function RepaymentSheet({ friend, balance, onDone, onCancel }) {
     setSaving(true)
     setError('')
     try {
-      await createRepayment({
+      const fields = {
         friendId: friend.id,
         kind,
         amount: parsed,
         note: note.trim(),
-        friendName: friend.name,
         occurredOn: occurredOn || today(),
         settlement,
         accountId: settlement === 'bank' ? accountId : null,
         categoryId: settlement === 'bank' ? categoryId : null,
-      })
-      toast.success('Devolução guardada.')
+      }
+      if (shared) {
+        await createSharedEntry(fields)
+        notifyPendingChanged()
+        toast.success(`Enviado a ${friend.name} para confirmar.`)
+      } else {
+        await createRepayment({ ...fields, friendName: friend.name })
+        toast.success('Devolução guardada.')
+      }
       onDone()
     } catch (err) {
+      // Os erros do servidor já vêm em português e prontos para mostrar.
+      if (isSharedGuardError(err)) onStale?.()
       setError(
-        err.message === 'Escolhe a conta e a categoria.' ? err.message : 'Não foi possível guardar. Tenta outra vez.',
+        shared || isSharedGuardError(err) || err.message === 'Escolhe a conta e a categoria.'
+          ? err.message
+          : 'Não foi possível guardar. Tenta outra vez.',
       )
       setSaving(false)
     }
@@ -258,7 +282,7 @@ export default function RepaymentSheet({ friend, balance, onDone, onCancel }) {
           disabled={saving || bankBlocked}
           className={`min-h-11 flex-1 rounded-lg bg-neutral-900 font-medium text-white transition duration-150 ease-out hover:bg-neutral-700 active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300 ${focusRing}`}
         >
-          {saving ? 'A guardar...' : 'Guardar'}
+          {saving ? 'A guardar...' : shared ? 'Enviar para confirmar' : 'Guardar'}
         </button>
       </div>
     </form>
