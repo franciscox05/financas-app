@@ -1,6 +1,6 @@
 // Edge Function invocada diariamente (via pg_cron + pg_net) para avisar por push
-// quem tem dívidas pendentes com a data limite ultrapassada ("Tens N dívidas
-// atrasadas"). Só olha para as dívidas do próprio utilizador (debts.user_id).
+// quem tem amigos a dever-lhe com a data limite ultrapassada e o saldo ainda a
+// favor (ledger_entries + friend_balances). Só olha para os dados do próprio utilizador.
 //
 // Protegida pelo mesmo segredo partilhado (CRON_SECRET) das outras funções.
 
@@ -32,22 +32,35 @@ Deno.serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
   const today = todayLisbon()
 
-  const { data: debts, error: debtError } = await supabase
-    .from('debts')
-    .select('user_id, direction')
-    .eq('status', 'pending')
+  // Movimentos "paguei por ele" com a data limite passada...
+  const { data: overdue, error: overdueError } = await supabase
+    .from('ledger_entries')
+    .select('user_id, friend_id')
+    .eq('kind', 'paid_for_them')
     .lt('due_on', today)
-  if (debtError) {
-    return new Response(JSON.stringify({ error: debtError.message }), { status: 500 })
+  if (overdueError) {
+    return new Response(JSON.stringify({ error: overdueError.message }), { status: 500 })
   }
 
-  // Contagem por utilizador: a receber (alguém me deve) e a pagar (eu devo).
-  const byUser = new Map<string, { owedToMe: number; iOwe: number }>()
-  for (const d of debts ?? []) {
-    const entry = byUser.get(d.user_id) ?? { owedToMe: 0, iOwe: 0 }
-    if (d.direction === 'owed_to_me') entry.owedToMe += 1
-    else entry.iOwe += 1
-    byUser.set(d.user_id, entry)
+  // ...só contam se o saldo com esse amigo continua a favor do utilizador.
+  const friendIds = [...new Set((overdue ?? []).map((e) => e.friend_id))]
+  const { data: balances, error: balanceError } = friendIds.length
+    ? await supabase.from('friend_balances').select('friend_id, balance').in('friend_id', friendIds)
+    : { data: [], error: null }
+  if (balanceError) {
+    return new Response(JSON.stringify({ error: balanceError.message }), { status: 500 })
+  }
+  const owedFriends = new Set(
+    (balances ?? []).filter((b) => Number(b.balance) > 0).map((b) => b.friend_id),
+  )
+
+  // Amigos distintos em atraso por utilizador.
+  const byUser = new Map<string, Set<string>>()
+  for (const e of overdue ?? []) {
+    if (!owedFriends.has(e.friend_id)) continue
+    const friends = byUser.get(e.user_id) ?? new Set<string>()
+    friends.add(e.friend_id)
+    byUser.set(e.user_id, friends)
   }
   if (byUser.size === 0) {
     return new Response(JSON.stringify({ notified: 0 }), {
@@ -65,15 +78,12 @@ Deno.serve(async (req) => {
 
   const results = await Promise.allSettled(
     (subscriptions ?? []).map((sub) => {
-      const counts = byUser.get(sub.user_id)!
-      const parts: string[] = []
-      if (counts.owedToMe > 0) parts.push(`${counts.owedToMe} a receber`)
-      if (counts.iOwe > 0) parts.push(`${counts.iOwe} a pagar`)
+      const count = byUser.get(sub.user_id)!.size
       return webpush.sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
         JSON.stringify({
           title: 'FinancasApp',
-          body: `Tens dívidas atrasadas (${parts.join(', ')}). Toca para ver.`,
+          body: `Tens ${count} ${count === 1 ? 'amigo' : 'amigos'} com valores por receber em atraso. Toca para ver.`,
           url: '/dividas',
         }),
       )
