@@ -1,5 +1,5 @@
 import { ArrowLeft, Pencil, Plus } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { EmptyState, ErrorNotice, PageSkeleton } from '../components/Feedback'
@@ -10,6 +10,7 @@ import NewExpenseSheet from '../components/NewExpenseSheet'
 import ReminderButtons from '../components/ReminderButtons'
 import RepaymentSheet from '../components/RepaymentSheet'
 import { useToast } from '../context/toastContext'
+import { getCurrentUserId } from '../lib/db'
 import { deleteEntry, deleteFriend, listEntries, listFriendsWithBalance, updateFriend } from '../lib/friendsDb'
 import { formatPhoneDisplay } from '../lib/contactMessage'
 import { hasOpenBalance } from '../lib/friendsLogic'
@@ -38,10 +39,12 @@ export default function FriendLedger() {
 
   const [friend, setFriend] = useState(null)
   const [entries, setEntries] = useState([])
+  const [viewerId, setViewerId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   const [panel, setPanel] = useState(null) // 'expense' | 'repayment' | null
+  const [prefill, setPrefill] = useState(null) // valores de um movimento contestado a reenviar
   const [editing, setEditing] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
   const [phoneDraft, setPhoneDraft] = useState('')
@@ -50,19 +53,41 @@ export default function FriendLedger() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [confirmFriendDelete, setConfirmFriendDelete] = useState(false)
 
-  const load = useCallback(async ({ silent = false } = {}) => {
-    if (!silent) setLoading(true)
-    setError('')
-    try {
-      const [friends, list] = await Promise.all([listFriendsWithBalance(), listEntries(friendId)])
-      setFriend(friends.find((f) => f.id === friendId) ?? null)
-      setEntries(list)
-    } catch (err) {
-      setError(err.message || 'Não foi possível carregar este amigo. Tenta outra vez.')
-    } finally {
-      setLoading(false)
+  // Só a carga mais recente (e só enquanto o ecrã existe) escreve no estado.
+  const loadSeq = useRef(0)
+  const mounted = useRef(true)
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
     }
-  }, [friendId])
+  }, [])
+
+  const load = useCallback(
+    async ({ silent = false } = {}) => {
+      const seq = ++loadSeq.current
+      if (!silent) setLoading(true)
+      setError('')
+      try {
+        const [friends, list, me] = await Promise.all([
+          listFriendsWithBalance(),
+          listEntries(friendId),
+          getCurrentUserId(),
+        ])
+        if (seq !== loadSeq.current || !mounted.current) return
+        setFriend(friends.find((f) => f.id === friendId) ?? null)
+        setEntries(list)
+        setViewerId(me)
+      } catch (err) {
+        if (seq === loadSeq.current && mounted.current) {
+          setError(err.message || 'Não foi possível carregar este amigo. Tenta outra vez.')
+        }
+      } finally {
+        if (seq === loadSeq.current && mounted.current) setLoading(false)
+      }
+    },
+    [friendId],
+  )
 
   useEffect(() => {
     load()
@@ -71,7 +96,29 @@ export default function FriendLedger() {
   // O toast de sucesso já é mostrado pela própria folha ao guardar.
   async function afterChange() {
     setPanel(null)
+    setPrefill(null)
     await load()
+  }
+
+  function togglePanel(name) {
+    setPrefill(null)
+    setPanel(panel === name ? null : name)
+  }
+
+  // "Corrigir e reenviar": abre a folha certa com os valores do movimento contestado.
+  function handleResend(entry) {
+    setPrefill({
+      id: entry.id,
+      kind: entry.kind,
+      amount: entry.amount,
+      note: entry.note ?? '',
+      occurredOn: entry.occurred_on,
+      dueOn: entry.due_on ?? '',
+      settlement: entry.settlement ?? undefined,
+      accountId: entry.account_id ?? undefined,
+      categoryId: entry.category_id ?? undefined,
+    })
+    setPanel(entry.kind === 'repaid_to_me' || entry.kind === 'repaid_to_them' ? 'repayment' : 'expense')
   }
 
   async function handleSaveName(e) {
@@ -243,7 +290,7 @@ export default function FriendLedger() {
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <button
           type="button"
-          onClick={() => setPanel(panel === 'expense' ? null : 'expense')}
+          onClick={() => togglePanel('expense')}
           aria-expanded={panel === 'expense'}
           className={`${primaryButton} flex items-center justify-center gap-1`}
         >
@@ -252,7 +299,7 @@ export default function FriendLedger() {
         {repayment && (
           <button
             type="button"
-            onClick={() => setPanel(panel === 'repayment' ? null : 'repayment')}
+            onClick={() => togglePanel('repayment')}
             aria-expanded={panel === 'repayment'}
             className={secondaryButton}
           >
@@ -264,17 +311,27 @@ export default function FriendLedger() {
 
       {panel === 'expense' && (
         <NewExpenseSheet
+          key={prefill?.id ?? 'new'}
           friend={friend}
+          prefill={prefill}
           onDone={() => afterChange()}
-          onCancel={() => setPanel(null)}
+          onCancel={() => {
+            setPanel(null)
+            setPrefill(null)
+          }}
         />
       )}
-      {panel === 'repayment' && repayment && (
+      {panel === 'repayment' && (repayment || prefill) && (
         <RepaymentSheet
+          key={prefill?.id ?? 'new'}
           friend={friend}
           balance={balance}
+          prefill={prefill}
           onDone={() => afterChange()}
-          onCancel={() => setPanel(null)}
+          onCancel={() => {
+            setPanel(null)
+            setPrefill(null)
+          }}
         />
       )}
 
@@ -288,7 +345,15 @@ export default function FriendLedger() {
         ) : (
           <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
             {entries.map((entry) => (
-              <LedgerEntryRow key={entry.id} entry={entry} onDelete={setDeleteTarget} />
+              <LedgerEntryRow
+                key={entry.id}
+                entry={entry}
+                friend={friend}
+                viewerId={viewerId}
+                onDelete={setDeleteTarget}
+                onChanged={() => load({ silent: true })}
+                onResend={handleResend}
+              />
             ))}
           </ul>
         )}

@@ -51,3 +51,33 @@ export function normalizeEmail(raw) {
   const email = String(raw ?? '').trim().toLowerCase()
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null
 }
+
+// Como entryStatusLabel, mas com o nome do amigo no lugar de "ele".
+export function entryStatusText(entry, viewerId, friendName) {
+  const label = entryStatusLabel(entry, viewerId)
+  const name = friendName || 'ele'
+  if (entry.status === 'pending' && entry.created_by === viewerId) {
+    return { ...label, text: `À espera que ${name} confirme` }
+  }
+  if (entry.status === 'cancel_requested') {
+    return entry.cancel_requested_by === viewerId
+      ? { ...label, text: `Anulação pedida. À espera de ${name}.` }
+      : { text: `${name} quer anular este movimento`, tone: 'action' }
+  }
+  return label
+}
+
+// Movimentos privados (sem espelho) ainda confirmados: base do "saldo anterior".
+export function privateConfirmedEntries(entries) {
+  return entries.filter((e) => !e.mirror_id && (e.status ?? 'confirmed') === 'confirmed' && !e.is_opening)
+}
+
+// Já há um saldo anterior à espera de resposta?
+export function hasPendingOpening(entries) {
+  return entries.some((e) => e.is_opening && e.status === 'pending')
+}
+
+// Quem pediu a anulação foi o outro? (a resposta é minha)
+export function isCancelRequestForMe(entry, viewerId) {
+  return entry.status === 'cancel_requested' && Boolean(entry.mirror_id) && entry.cancel_requested_by !== viewerId
+}

@@ -7,6 +7,10 @@ import {
   canRequestCancel,
   friendStateLabel,
   normalizeEmail,
+  entryStatusText,
+  privateConfirmedEntries,
+  hasPendingOpening,
+  isCancelRequestForMe,
 } from './linkedLogic.js'
 import { balanceOf } from './ledgerMath.js'
 
@@ -63,4 +67,33 @@ test('friendStateLabel', () => {
   assert.equal(friendStateLabel({ status: 'invited' }, { status: 'pending' }), 'Pedido enviado')
   assert.equal(friendStateLabel({ status: 'local' }, { status: 'declined' }), 'Recusado')
   assert.equal(friendStateLabel({ status: 'connected' }, { status: 'accepted' }), 'Ligado')
+})
+test('entryStatusText usa o nome do amigo', () => {
+  assert.equal(entryStatusText({ status: 'pending', created_by: ME }, ME, 'Rui').text, 'À espera que Rui confirme')
+  assert.equal(entryStatusText({ status: 'pending', created_by: HIM }, ME, 'Rui').text, 'Pendente de confirmação')
+  assert.equal(
+    entryStatusText({ status: 'cancel_requested', cancel_requested_by: ME }, ME, 'Rui').text,
+    'Anulação pedida. À espera de Rui.',
+  )
+  assert.deepEqual(entryStatusText({ status: 'cancel_requested', cancel_requested_by: HIM }, ME, 'Rui'), {
+    text: 'Rui quer anular este movimento',
+    tone: 'action',
+  })
+  assert.equal(entryStatusText({ status: 'archived' }, ME, 'Rui').text, 'Arquivado')
+})
+test('privateConfirmedEntries e hasPendingOpening', () => {
+  const list = [
+    { id: 1, kind: 'paid_for_them', amount: 5, status: 'confirmed', mirror_id: null },
+    { id: 2, kind: 'paid_for_them', amount: 5, mirror_id: null },
+    { id: 3, kind: 'paid_for_them', amount: 5, status: 'confirmed', mirror_id: 'x' },
+    { id: 4, kind: 'paid_for_them', amount: 5, status: 'archived', mirror_id: null },
+  ]
+  assert.deepEqual(privateConfirmedEntries(list).map((e) => e.id), [1, 2])
+  assert.equal(hasPendingOpening(list), false)
+  assert.equal(hasPendingOpening([{ is_opening: true, status: 'pending' }]), true)
+})
+test('isCancelRequestForMe', () => {
+  assert.equal(isCancelRequestForMe({ status: 'cancel_requested', mirror_id: 'x', cancel_requested_by: HIM }, ME), true)
+  assert.equal(isCancelRequestForMe({ status: 'cancel_requested', mirror_id: 'x', cancel_requested_by: ME }, ME), false)
+  assert.equal(isCancelRequestForMe({ status: 'confirmed', mirror_id: 'x' }, ME), false)
 })
