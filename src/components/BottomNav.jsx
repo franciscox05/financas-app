@@ -65,7 +65,7 @@ export default function BottomNav() {
                   <Icon size={20} strokeWidth={isActive ? 2.25 : 1.75} />
                   {to === '/dividas' && pending > 0 && (
                     <span
-                      aria-label={`${pending} por responder`}
+                      aria-hidden="true"
                       className="absolute -right-2.5 -top-1.5 flex min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-medium leading-4 text-white"
                     >
                       {pending > 9 ? '9+' : pending}
@@ -73,6 +73,7 @@ export default function BottomNav() {
                   )}
                 </span>
                 {label}
+                {to === '/dividas' && pending > 0 && <span className="sr-only">, {pending} por responder</span>}
               </>
             )}
           </NavLink>

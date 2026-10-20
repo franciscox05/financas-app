@@ -5,6 +5,7 @@ import { listAccounts, listCategories } from '../lib/db'
 import { parseExpenseAmount } from '../lib/expenseInput'
 import { createRepayment } from '../lib/friendsDb'
 import { createSharedEntry } from '../lib/linkedDb'
+import { isSharedGuardError } from '../lib/linkedLogic'
 import { notifyPendingChanged } from '../lib/pendingEvents'
 import { suggestedRepayment } from '../lib/ledgerMath'
 import { defaultCategoryId, overshootNote } from '../lib/repaymentInput'
@@ -24,7 +25,7 @@ const OPTIONS = [
 ]
 
 // `prefill` (opcional) repete os valores de uma devolução contestada.
-export default function RepaymentSheet({ friend, balance, prefill, onDone, onCancel }) {
+export default function RepaymentSheet({ friend, balance, prefill, onDone, onCancel, onStale }) {
   const toast = useToast()
   const suggestion = suggestedRepayment(balance)
   const kind = prefill?.kind ?? suggestion?.kind
@@ -124,8 +125,9 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
       onDone()
     } catch (err) {
       // Os erros do servidor já vêm em português e prontos para mostrar.
+      if (isSharedGuardError(err)) onStale?.()
       setError(
-        shared || err.message === 'Escolhe a conta e a categoria.'
+        shared || isSharedGuardError(err) || err.message === 'Escolhe a conta e a categoria.'
           ? err.message
           : 'Não foi possível guardar. Tenta outra vez.',
       )

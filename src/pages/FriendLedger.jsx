@@ -117,8 +117,8 @@ export default function FriendLedger() {
       occurredOn: entry.occurred_on,
       dueOn: entry.due_on ?? '',
       settlement: entry.settlement ?? undefined,
-      accountId: entry.account_id ?? undefined,
-      categoryId: entry.category_id ?? undefined,
+      accountId: entry.bank_account_id ?? undefined,
+      categoryId: entry.bank_category_id ?? undefined,
     })
     setPanel(entry.kind === 'repaid_to_me' || entry.kind === 'repaid_to_them' ? 'repayment' : 'expense')
   }
@@ -179,7 +179,7 @@ export default function FriendLedger() {
   const balance = balanceOf(entries)
   const { state, amount } = describeBalance(balance)
   const repayment = suggestedRepayment(balance)
-  const canDeleteFriend = !hasOpenBalance(balance)
+  const canDeleteFriend = friend.status === 'local' && !hasOpenBalance(balance)
   const connected = friend.status === 'connected'
   const privateOnly = privateConfirmedEntries(entries)
   const privateBalance = balanceOf(privateOnly)
@@ -324,6 +324,7 @@ export default function FriendLedger() {
           key={prefill?.id ?? 'new'}
           friend={friend}
           prefill={prefill}
+          onStale={() => load({ silent: true })}
           onDone={() => afterChange()}
           onCancel={() => {
             setPanel(null)
@@ -337,6 +338,7 @@ export default function FriendLedger() {
           friend={friend}
           balance={balance}
           prefill={prefill}
+          onStale={() => load({ silent: true })}
           onDone={() => afterChange()}
           onCancel={() => {
             setPanel(null)
@@ -379,7 +381,13 @@ export default function FriendLedger() {
             Apagar amigo
           </button>
         ) : (
-          <p className="text-sm text-neutral-500">Só podes apagar quando estiverem quites.</p>
+          <p className="text-sm text-neutral-500">
+            {friend.status === 'invited'
+              ? 'Cancela o pedido de amizade antes de apagar este amigo.'
+              : friend.status === 'connected'
+                ? 'Amigos ligados não se apagam nesta versão.'
+                : 'Só podes apagar quando estiverem quites.'}
+          </p>
         )}
       </section>
 

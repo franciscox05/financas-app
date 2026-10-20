@@ -4,6 +4,7 @@ import { today } from '../lib/dates'
 import { parseExpenseAmount } from '../lib/expenseInput'
 import { createExpense } from '../lib/friendsDb'
 import { createSharedEntry } from '../lib/linkedDb'
+import { isSharedGuardError } from '../lib/linkedLogic'
 import { notifyPendingChanged } from '../lib/pendingEvents'
 
 const inputClass =
@@ -20,7 +21,7 @@ const OPTIONS = [
 ]
 
 // `prefill` (opcional) repete os valores de um movimento contestado.
-export default function NewExpenseSheet({ friend, prefill, onDone, onCancel }) {
+export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onStale }) {
   const toast = useToast()
   const [kind, setKind] = useState(prefill?.kind ?? 'paid_for_them')
   const [amount, setAmount] = useState(prefill ? String(prefill.amount).replace('.', ',') : '')
@@ -59,6 +60,7 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel }) {
       }
       onDone()
     } catch (err) {
+      if (isSharedGuardError(err)) onStale?.()
       setError(err.message)
       setSaving(false)
     }

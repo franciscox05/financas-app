@@ -5,6 +5,11 @@
 // archived) não contam.
 export const COUNTING_STATUSES = ['confirmed', 'cancel_requested']
 
+// Mensagem do servidor quando o amigo já está ligado e o movimento tem de ser partilhado.
+export function isSharedGuardError(err) {
+  return String(err?.message ?? '').startsWith('Com um amigo ligado')
+}
+
 // Texto e tom do estado de um movimento, do ponto de vista de quem vê.
 // Movimentos confirmados não precisam de rótulo.
 export function entryStatusLabel(entry, viewerId) {
@@ -20,7 +25,9 @@ export function entryStatusLabel(entry, viewerId) {
     case 'cancel_requested':
       return { text: 'Anulação pedida', tone: 'waiting' }
     case 'cancelled':
-      return { text: 'Anulado', tone: 'muted' }
+      // Anulação mútua de um movimento confirmado: cancel_requested_by fica preenchido.
+      if (entry.cancel_requested_by) return { text: 'Anulado', tone: 'muted' }
+      return { text: entry.created_by === viewerId ? 'Cancelado por ti' : 'Cancelado', tone: 'muted' }
     case 'archived':
       return { text: 'Arquivado', tone: 'muted' }
     default:

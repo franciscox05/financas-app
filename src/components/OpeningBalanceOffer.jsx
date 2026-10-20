@@ -55,7 +55,9 @@ export default function OpeningBalanceOffer({ friend, balance, onShared }) {
     <div className="space-y-3 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
       <div className="space-y-1">
         <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200">Partilhar a conta que já tinham?</p>
-        <p className="text-sm text-neutral-500">{friend.name} vai ter de aceitar.</p>
+        <p className="text-sm text-neutral-500">
+          {friend.name} vai ter de aceitar. Os movimentos anteriores ficam arquivados e a conta passa para um só valor, "Saldo anterior". Se {friend.name} recusar, voltam a contar.
+        </p>
       </div>
       {error && (
         <p role="alert" className="text-sm text-red-600 dark:text-red-400">
@@ -68,7 +70,7 @@ export default function OpeningBalanceOffer({ friend, balance, onShared }) {
       <ConfirmDialog
         open={confirming}
         title="Partilhar saldo anterior?"
-        message={`${summary}. ${friend.name} vai ter de confirmar este valor. Até aceitar, os teus movimentos anteriores continuam como estão.`}
+        message={`${summary}. ${friend.name} vai ter de confirmar este valor. Os movimentos anteriores ficam arquivados e a conta passa para um só valor, "Saldo anterior". Se ${friend.name} recusar, voltam a contar.`}
         confirmLabel="Partilhar"
         onCancel={() => setConfirming(false)}
         onConfirm={handleShare}

@@ -214,7 +214,7 @@ export default function PendingEntryActions({ entry, friend, viewerId, onChanged
     )
   }
 
-  if (entry.status === 'declined' && entry.created_by === viewerId && onResend) {
+  if (entry.status === 'declined' && entry.created_by === viewerId && onResend && !entry.is_opening) {
     return (
       <button type="button" onClick={() => onResend(entry)} className={secondaryButton}>
         Corrigir e reenviar

@@ -2,6 +2,7 @@ import { MessageCircle } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { normalizePhone, reminderText, smsUrl, whatsappUrl } from '../lib/contactMessage'
 import { getMyMbwayPhone } from '../lib/friendsDb'
+import { COUNTING_STATUSES } from '../lib/linkedLogic'
 
 const base =
   'inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium transition duration-150 ease-out active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2'
@@ -28,7 +29,7 @@ export default function ReminderButtons({ friend, balance, entries }) {
 
   const { whatsapp, sms } = useMemo(() => {
     // As movimentos vêm do mais recente para o mais antigo.
-    const note = entries.find((e) => e.kind === 'paid_for_them')?.note
+    const note = entries.find((e) => e.kind === 'paid_for_them' && COUNTING_STATUSES.includes(e.status))?.note
     const text = reminderText({ friendName: friend.name, amount: balance, note, mbwayPhone })
     const phone = normalizePhone(friend.phone)
     return { whatsapp: whatsappUrl(phone, text), sms: smsUrl(phone, text) }
