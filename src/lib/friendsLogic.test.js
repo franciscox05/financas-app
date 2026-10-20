@@ -45,3 +45,16 @@ test('hasOpenBalance', () => {
   assert.equal(hasOpenBalance(0.01), true)
   assert.equal(hasOpenBalance(-5), true)
 })
+
+test('repaymentNote usa a nota escrita, senão o nome do amigo', async () => {
+  const { repaymentNote } = await import('./friendsLogic.js')
+  assert.equal(repaymentNote('Jantar', 'Rita'), 'Jantar')
+  assert.equal(repaymentNote('  ', 'Rita'), 'Conta-corrente: Rita')
+  assert.equal(repaymentNote('', ''), 'Conta-corrente com amigo')
+})
+
+test('friendNameError troca "item" por "amigo" só no nome repetido', async () => {
+  const { friendNameError } = await import('./friendsLogic.js')
+  assert.equal(friendNameError('Já existe um item com este nome.'), 'Já tens um amigo com este nome.')
+  assert.equal(friendNameError('Indica um nome.'), 'Indica um nome.')
+})

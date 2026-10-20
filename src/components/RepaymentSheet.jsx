@@ -95,6 +95,7 @@ export default function RepaymentSheet({ friend, balance, onDone, onCancel }) {
         kind,
         amount: parsed,
         note: note.trim(),
+        friendName: friend.name,
         occurredOn: occurredOn || today(),
         settlement,
         accountId: settlement === 'bank' ? accountId : null,

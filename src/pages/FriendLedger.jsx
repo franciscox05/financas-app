@@ -10,6 +10,7 @@ import ReminderButtons from '../components/ReminderButtons'
 import RepaymentSheet from '../components/RepaymentSheet'
 import { useToast } from '../context/toastContext'
 import { deleteEntry, deleteFriend, listEntries, listFriendsWithBalance, updateFriend } from '../lib/friendsDb'
+import { formatPhoneDisplay } from '../lib/contactMessage'
 import { hasOpenBalance } from '../lib/friendsLogic'
 import { balanceOf, describeBalance, suggestedRepayment } from '../lib/ledgerMath'
 
@@ -66,10 +67,10 @@ export default function FriendLedger() {
     load()
   }, [load])
 
-  async function afterChange(message) {
+  // O toast de sucesso já é mostrado pela própria folha ao guardar.
+  async function afterChange() {
     setPanel(null)
     await load()
-    toast.success(message)
   }
 
   async function handleSaveName(e) {
@@ -119,7 +120,7 @@ export default function FriendLedger() {
       <div className="space-y-3">
         <p className="text-neutral-700 dark:text-neutral-300">Amigo não encontrado.</p>
         <Link to="/dividas" className={`inline-flex min-h-11 items-center text-sm underline ${focusRing}`}>
-          Voltar às dívidas
+          Voltar aos amigos
         </Link>
       </div>
     )
@@ -140,7 +141,7 @@ export default function FriendLedger() {
           to="/dividas"
           className={`-ml-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm text-neutral-600 transition-colors duration-150 ease-out hover:text-neutral-900 motion-reduce:transition-none dark:text-neutral-300 dark:hover:text-neutral-100 ${focusRing}`}
         >
-          <ArrowLeft size={16} aria-hidden="true" /> Dívidas
+          <ArrowLeft size={16} aria-hidden="true" /> Amigos
         </Link>
 
         {editing ? (
@@ -204,7 +205,7 @@ export default function FriendLedger() {
         )}
         {!editing &&
           (friend.phone ? (
-            <p className="text-sm text-neutral-500">{friend.phone}</p>
+            <p className="text-sm text-neutral-500">{formatPhoneDisplay(friend.phone)}</p>
           ) : (
             <button
               type="button"
@@ -261,7 +262,7 @@ export default function FriendLedger() {
       {panel === 'expense' && (
         <NewExpenseSheet
           friend={friend}
-          onDone={() => afterChange('Gasto registado.')}
+          onDone={() => afterChange()}
           onCancel={() => setPanel(null)}
         />
       )}
@@ -269,7 +270,7 @@ export default function FriendLedger() {
         <RepaymentSheet
           friend={friend}
           balance={balance}
-          onDone={() => afterChange('Devolução registada.')}
+          onDone={() => afterChange()}
           onCancel={() => setPanel(null)}
         />
       )}
@@ -319,7 +320,7 @@ export default function FriendLedger() {
       <ConfirmDialog
         open={confirmFriendDelete}
         title={`Apagar ${friend.name}?`}
-        message="Os movimentos antigos desta pessoa também são apagados."
+        message="Também apaga o histórico de movimentos com esta pessoa. As transações já criadas nas tuas contas ficam como estão."
         confirmLabel="Apagar amigo"
         onCancel={() => setConfirmFriendDelete(false)}
         onConfirm={handleDeleteFriend}

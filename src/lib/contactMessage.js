@@ -21,6 +21,17 @@ function formatMbway(raw) {
   return String(raw ?? '').trim()
 }
 
+// "351912345678" -> "912 345 678"; números estrangeiros ficam como
+// guardados, com "+" à frente.
+export function formatPhoneDisplay(raw) {
+  const digits = String(raw ?? '').replace(/\D/g, '')
+  if (!digits) return ''
+  if (digits.length === 12 && digits.startsWith('351')) {
+    return digits.slice(3).replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3')
+  }
+  return `+${digits}`
+}
+
 export function reminderText({ friendName, amount, note, mbwayPhone }) {
   const detail = note ? ` (${note})` : ''
   const ask = mbwayPhone

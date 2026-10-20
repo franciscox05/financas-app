@@ -35,6 +35,21 @@ export function checkRepaymentInput({ settlement, accountId, categoryId }) {
   }
 }
 
+// Nota da transação bancária de uma devolução: a que o utilizador escreveu ou,
+// em falta dela, o nome do amigo.
+export function repaymentNote(note, friendName) {
+  const written = String(note ?? '').trim()
+  if (written) return written
+  const name = String(friendName ?? '').trim()
+  return name ? `Conta-corrente: ${name}` : 'Conta-corrente com amigo'
+}
+
+// names.js é partilhado com contas/categorias e fala em "item"; para amigos
+// a mensagem de nome repetido é mais clara.
+export function friendNameError(message) {
+  return message === 'Já existe um item com este nome.' ? 'Já tens um amigo com este nome.' : message
+}
+
 // Saldo ≠ 0 em cêntimos (evita falsos positivos de vírgula flutuante).
 export function hasOpenBalance(balance) {
   return Math.round(Number(balance ?? 0) * 100) !== 0

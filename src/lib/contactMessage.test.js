@@ -55,3 +55,10 @@ test('smsUrl', () => {
   assert.equal(smsUrl('351912345678', 'Olá'), 'sms:+351912345678?&body=Ol%C3%A1')
   assert.equal(smsUrl(null, 'Olá'), 'sms:?&body=Ol%C3%A1')
 })
+
+test('formatPhoneDisplay mostra números portugueses legíveis e estrangeiros com +', async () => {
+  const { formatPhoneDisplay } = await import('./contactMessage.js')
+  assert.equal(formatPhoneDisplay('351912345678'), '912 345 678')
+  assert.equal(formatPhoneDisplay('447911123456'), '+447911123456')
+  assert.equal(formatPhoneDisplay(''), '')
+})

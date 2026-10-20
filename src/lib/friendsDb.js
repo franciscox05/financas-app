@@ -7,6 +7,8 @@ import {
   repaymentTransactionType,
   checkRepaymentInput,
   hasOpenBalance,
+  repaymentNote,
+  friendNameError,
 } from './friendsLogic'
 
 // Amigos + saldo. A view `friend_balances` não tem linha para amigos sem
@@ -30,7 +32,7 @@ async function validateFriendName(rawName, selfId = null) {
   const { data, error } = await supabase.from('friends').select('id, name')
   if (error) throw error
   const { name, error: nameError } = validateName(rawName, data, selfId)
-  if (nameError) throw new Error(nameError)
+  if (nameError) throw new Error(friendNameError(nameError))
   return name
 }
 
@@ -120,6 +122,7 @@ export async function createRepayment({
   kind,
   amount,
   note,
+  friendName,
   occurredOn,
   settlement,
   accountId,
@@ -135,7 +138,7 @@ export async function createRepayment({
       accountId,
       categoryId,
       occurredOn,
-      note: note || 'Conta-corrente com amigo',
+      note: repaymentNote(note, friendName),
     })
   }
 
