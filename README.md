@@ -34,6 +34,14 @@ A aba **Amigos** (`/dividas`) guarda uma conta-corrente por pessoa: "paguei por 
 - Função `send-overdue-debts`: lê o novo modelo (data limite passada e saldo ainda a favor).
 - Testes: `npm test` (lógica em `src/lib/`). SQL em `supabase/tests/`, a correr numa base de dados descartável (ver cabeçalho de cada ficheiro).
 
+### Amigos ligados (pedido de amizade)
+
+Num contacto da aba **Amigos**, "Pedir amizade" envia um pedido ao email com que a pessoa faz login; ela vê-o em "Pedidos de amizade" e aceita ou recusa. Depois de ligados, cada movimento fica pendente do outro lado até ser aceite ou contestado, e anular um movimento já aceite precisa dos dois ("Pedir anulação"). O histórico antigo pode ser partilhado como um "Saldo anterior". Notificações push são a fase seguinte. Desenho em `docs/superpowers/specs/2026-10-21-amigos-ligados-design.md`.
+
+- Migrations (por esta ordem): `20261022000000_friend_requests.sql`, `20261022010000_shared_entries.sql`, `20261022020000_opening_balance.sql`. Aplicar uma a uma **antes** do deploy do frontend.
+- Toda a escrita entre utilizadores passa por funções SQL (`security definer`); o cliente não escreve nos pedidos nem nos movimentos partilhados.
+- Testes SQL em `supabase/tests/` (`friend_requests.sql`, `shared_entries.sql`, `opening_balance.sql`) contra uma base de dados descartável.
+
 ## Fluxo de trabalho e deploy
 
 1. Criar uma branch a partir da `main`, fazer as alterações e abrir um Pull Request.
