@@ -1,11 +1,11 @@
-import { BarChart3, HandCoins, PiggyBank, Settings2, Wallet } from 'lucide-react'
+import { BarChart3, PiggyBank, Settings2, Users, Wallet } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
 const TABS = [
   { to: '/', end: true, label: 'Registo', Icon: Wallet },
   { to: '/balanco', label: 'Balanço', Icon: BarChart3 },
   { to: '/patrimonio', label: 'Património', Icon: PiggyBank },
-  { to: '/dividas', label: 'Dívidas', Icon: HandCoins },
+  { to: '/dividas', label: 'Amigos', Icon: Users },
   { to: '/gestao', label: 'Gestão', Icon: Settings2 },
 ]
 

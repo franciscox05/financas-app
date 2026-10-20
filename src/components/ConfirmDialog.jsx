@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef } from 'react'
 
 // Diálogo de confirmação modal (usa <dialog> nativo: foco preso, Esc fecha,
 // aria-modal implícito). Ação destrutiva destacada a vermelho.
@@ -12,6 +12,7 @@ export default function ConfirmDialog({
   onCancel,
 }) {
   const ref = useRef(null)
+  const titleId = useId()
 
   useEffect(() => {
     const dialog = ref.current
@@ -30,10 +31,10 @@ export default function ConfirmDialog({
       onClick={(e) => {
         if (e.target === ref.current) onCancel()
       }}
-      aria-labelledby="confirm-dialog-title"
+      aria-labelledby={titleId}
       className="confirm-dialog m-auto w-[calc(100%-2rem)] max-w-xs rounded-2xl bg-white p-5 text-neutral-900 shadow-xl backdrop:bg-black/50 dark:bg-neutral-800 dark:text-neutral-100"
     >
-      <h2 id="confirm-dialog-title" className="text-base font-semibold tracking-tight">
+      <h2 id={titleId} className="text-base font-semibold tracking-tight">
         {title}
       </h2>
       {message && (
