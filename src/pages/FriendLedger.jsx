@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { EmptyState, ErrorNotice, PageSkeleton } from '../components/Feedback'
+import FriendRequestPanel from '../components/FriendRequestPanel'
 import LedgerEntryRow from '../components/LedgerEntryRow'
 import Money from '../components/Money'
 import NewExpenseSheet from '../components/NewExpenseSheet'
@@ -49,8 +50,8 @@ export default function FriendLedger() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [confirmFriendDelete, setConfirmFriendDelete] = useState(false)
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  const load = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true)
     setError('')
     try {
       const [friends, list] = await Promise.all([listFriendsWithBalance(), listEntries(friendId)])
@@ -221,6 +222,8 @@ export default function FriendLedger() {
             </button>
           ))}
       </header>
+
+      <FriendRequestPanel friend={friend} onChanged={() => load({ silent: true })} />
 
       <div className="rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
         <p className="text-xs text-neutral-500">Neste momento</p>

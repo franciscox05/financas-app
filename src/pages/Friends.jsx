@@ -2,10 +2,12 @@ import { ChevronRight, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState, ErrorNotice, PageSkeleton } from '../components/Feedback'
+import IncomingRequests from '../components/IncomingRequests'
 import Money from '../components/Money'
 import { useToast } from '../context/toastContext'
 import { createFriend, listFriendsWithBalance } from '../lib/friendsDb'
 import { describeBalance } from '../lib/ledgerMath'
+import { friendStateLabel } from '../lib/linkedLogic'
 
 const inputClass =
   'min-h-11 w-full rounded-lg border border-neutral-300 px-3 py-2 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 motion-reduce:transition-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus-visible:outline-neutral-100'
@@ -37,8 +39,8 @@ export default function Friends() {
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
 
-  async function load() {
-    setLoading(true)
+  async function load({ silent = false } = {}) {
+    if (!silent) setLoading(true)
     setError('')
     try {
       setFriends(await listFriendsWithBalance())
@@ -96,6 +98,8 @@ export default function Friends() {
   return (
     <div className="space-y-6">
       {error && <ErrorNotice message={error} onRetry={load} />}
+
+      <IncomingRequests onChanged={() => load({ silent: true })} />
 
       <div className="rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
         <p className="text-xs text-neutral-500">No total</p>
@@ -192,6 +196,7 @@ export default function Friends() {
             {sorted.map((friend) => {
               const { state, amount } = describeBalance(friend.balance)
               const style = STATE_STYLES[state]
+              const link = friendStateLabel(friend, null)
               return (
                 <li key={friend.id}>
                   <Link
@@ -200,6 +205,9 @@ export default function Friends() {
                   >
                     <span className="min-w-0 truncate font-medium text-neutral-800 dark:text-neutral-200">
                       {friend.name}
+                      {link !== 'Local' && (
+                        <span className="ml-2 text-xs font-normal text-neutral-500">{link}</span>
+                      )}
                     </span>
                     <span className="flex shrink-0 items-center gap-1.5 text-sm">
                       <span className="text-right">

@@ -1,5 +1,8 @@
 import { BarChart3, PiggyBank, Settings2, Users, Wallet } from 'lucide-react'
-import { NavLink } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
+import { countPendingForMe } from '../lib/linkedDb'
+import { onPendingChanged } from '../lib/pendingEvents'
 
 const TABS = [
   { to: '/', end: true, label: 'Registo', Icon: Wallet },
@@ -16,7 +19,33 @@ const linkClass = ({ isActive }) =>
       : 'text-neutral-400 dark:text-neutral-500'
   }`
 
+// Número de pedidos/movimentos por responder; qualquer falha = sem emblema.
+function usePendingCount() {
+  const { pathname } = useLocation()
+  const [count, setCount] = useState(0)
+  const [tick, setTick] = useState(0)
+
+  useEffect(() => onPendingChanged(() => setTick((t) => t + 1)), [])
+
+  useEffect(() => {
+    let active = true
+    countPendingForMe()
+      .then((n) => {
+        if (active) setCount(n)
+      })
+      .catch(() => {
+        if (active) setCount(0)
+      })
+    return () => {
+      active = false
+    }
+  }, [pathname, tick])
+
+  return count
+}
+
 export default function BottomNav() {
+  const pending = usePendingCount()
   return (
     <nav
       // Sem backdrop-blur de propósito: um filtro de blur num elemento fixed
@@ -32,7 +61,17 @@ export default function BottomNav() {
           <NavLink key={to} to={to} end={end} className={linkClass}>
             {({ isActive }) => (
               <>
-                <Icon size={20} strokeWidth={isActive ? 2.25 : 1.75} />
+                <span className="relative">
+                  <Icon size={20} strokeWidth={isActive ? 2.25 : 1.75} />
+                  {to === '/dividas' && pending > 0 && (
+                    <span
+                      aria-label={`${pending} por responder`}
+                      className="absolute -right-2.5 -top-1.5 flex min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-medium leading-4 text-white"
+                    >
+                      {pending > 9 ? '9+' : pending}
+                    </span>
+                  )}
+                </span>
                 {label}
               </>
             )}
