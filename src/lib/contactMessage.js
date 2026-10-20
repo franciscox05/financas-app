@@ -15,7 +15,8 @@ export function normalizePhone(raw) {
 
 // "912345678" -> "912 345 678" para ler bem na mensagem; outros formatos ficam como vieram.
 function formatMbway(raw) {
-  const digits = String(raw ?? '').replace(/\D/g, '')
+  let digits = String(raw ?? '').replace(/\D/g, '')
+  if (digits.length === 12 && digits.startsWith('351')) digits = digits.slice(3)
   if (digits.length === 9) return digits.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3')
   return String(raw ?? '').trim()
 }

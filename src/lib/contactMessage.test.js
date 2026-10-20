@@ -40,6 +40,12 @@ test('reminderText: sem MB Way troca a frase', () => {
   )
 })
 
+test('reminderText: MB Way com 351 à frente mostra só os 9 dígitos agrupados', () => {
+  const text = reminderText({ friendName: 'Miguel', amount: 8.8, mbwayPhone: '351912345678' })
+  assert.ok(text.includes('para 912 345 678 quando'), text)
+  assert.ok(!text.includes('351'), text)
+})
+
 test('whatsappUrl', () => {
   assert.equal(whatsappUrl('351912345678', 'Olá'), 'https://wa.me/351912345678?text=Ol%C3%A1')
   assert.equal(whatsappUrl(null, 'Olá'), 'https://wa.me/?text=Ol%C3%A1')

@@ -6,6 +6,7 @@ import { EmptyState, ErrorNotice, PageSkeleton } from '../components/Feedback'
 import LedgerEntryRow from '../components/LedgerEntryRow'
 import Money from '../components/Money'
 import NewExpenseSheet from '../components/NewExpenseSheet'
+import ReminderButtons from '../components/ReminderButtons'
 import RepaymentSheet from '../components/RepaymentSheet'
 import { useToast } from '../context/toastContext'
 import { deleteEntry, deleteFriend, listEntries, listFriendsWithBalance, updateFriend } from '../lib/friendsDb'
@@ -232,6 +233,8 @@ export default function FriendLedger() {
           )}
         </p>
       </div>
+
+      {balance > 0 && <ReminderButtons friend={friend} balance={balance} entries={entries} />}
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <button
