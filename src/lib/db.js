@@ -1,5 +1,12 @@
 import { supabase } from './supabase'
 
+// Id do utilizador autenticado, para as tabelas que guardam user_id/owner_id.
+export async function getCurrentUserId() {
+  const { data, error } = await supabase.auth.getUser()
+  if (error) throw error
+  return data.user.id
+}
+
 export async function listAccounts() {
   const { data, error } = await supabase.from('accounts').select('*').order('name')
   if (error) throw error
