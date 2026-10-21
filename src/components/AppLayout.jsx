@@ -1,7 +1,9 @@
 import { Wallet } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { subscribeLiveUpdates } from '../lib/liveUpdates'
+import { notifyPendingChanged } from '../lib/pendingEvents'
 import BottomNav from './BottomNav'
 import ConfirmDialog from './ConfirmDialog'
 import NotificationToggle from './NotificationToggle'
@@ -10,6 +12,23 @@ import PrivacyToggle from './PrivacyToggle'
 export default function AppLayout() {
   const { user, signOut } = useAuth()
   const [confirmLogout, setConfirmLogout] = useState(false)
+
+  // Pedidos e movimentos chegam ao vivo; ao voltar à app (iOS suspende o websocket em segundo
+  // plano) volta-se a ligar e recarrega-se o que se perdeu.
+  useEffect(() => {
+    let off = subscribeLiveUpdates(user.id)
+    function onVisible() {
+      if (document.visibilityState !== 'visible') return
+      off()
+      off = subscribeLiveUpdates(user.id)
+      notifyPendingChanged()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      off()
+    }
+  }, [user.id])
 
   return (
     // O +1px torna o documento sempre ligeiramente "scrollável". No iOS (PWA),

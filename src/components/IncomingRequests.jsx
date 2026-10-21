@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { listIncomingRequests, respondFriendRequest } from '../lib/linkedDb'
-import { notifyPendingChanged } from '../lib/pendingEvents'
+import { notifyPendingChanged, onPendingChanged } from '../lib/pendingEvents'
 
 const focusRing =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
@@ -38,6 +38,7 @@ export default function IncomingRequests({ onChanged }) {
 
   useEffect(() => {
     load()
+    return onPendingChanged(load)
   }, [load])
 
   async function respond(request, accept) {
