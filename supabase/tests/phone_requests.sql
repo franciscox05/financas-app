@@ -115,7 +115,7 @@ begin
   if r.name <> 'Impostor' or r.email_hint <> 'd***@x.com' then
     raise exception 'accepter errado: % %', r.name, r.email_hint;
   end if;
-  perform public.confirm_friend_request(rid, false);
+  perform public.confirm_friend_request(rid, false, r.accepter_id);
   reset role;
   if (select status from public.friend_requests where id = rid) <> 'pending' then
     raise exception 'recusar a confirmação devolve o pedido a pending';
@@ -138,7 +138,7 @@ begin
   select id into rid from public.list_incoming_requests();
   perform public.respond_friend_request(rid, true);
   begin
-    perform public.confirm_friend_request(rid, true);
+    perform public.confirm_friend_request(rid, true, null);
     raise exception 'só o remetente confirma';
   exception when raise_exception then
     if sqlerrm not like 'Pedido não encontrado%' then raise; end if;
@@ -151,7 +151,7 @@ begin
   reset role;
   select id into rid from public.friend_requests where to_phone = '912345678';
   set local role authenticated;
-  perform public.confirm_friend_request(rid, true);
+  perform public.confirm_friend_request(rid, true, (select accepter_id from public.get_request_accepter(rid)));
   reset role;
   if (select status from public.friend_requests where id = rid) <> 'accepted' then raise exception 'pedido devia ficar accepted'; end if;
   if not exists (select 1 from public.friends where id = 'aaaaaaaa-0000-0000-0000-0000000000f1'
@@ -208,6 +208,130 @@ begin
   if (select status from public.friends where id = 'aaaaaaaa-0000-0000-0000-0000000000f5') <> 'connected' then
     raise exception 'por email liga logo';
   end if;
+end $$;
+
+-- (h..m) cenários de segurança: M pede ao número 955555555, que W1 e W2 têm no perfil
+reset role;
+insert into auth.users (id, email, email_confirmed_at) values
+  ('00000000-0000-0000-0000-0000000000a2', 'mallory.sender@x.com', now()),
+  ('00000000-0000-0000-0000-0000000000b2', 'w1@x.com', now()),
+  ('00000000-0000-0000-0000-0000000000b3', 'w2@x.com', now());
+update public.profiles set phone = '955555555' where id in
+  ('00000000-0000-0000-0000-0000000000b2', '00000000-0000-0000-0000-0000000000b3');
+update public.profiles set full_name = 'W Um' where id = '00000000-0000-0000-0000-0000000000b2';
+update public.profiles set full_name = 'W Dois' where id = '00000000-0000-0000-0000-0000000000b3';
+insert into public.friends (id, owner_id, name, phone) values
+  ('aaaaaaaa-0000-0000-0000-0000000000f6', '00000000-0000-0000-0000-0000000000a2', 'Alvo', '955555555');
+
+do $$
+declare rid uuid; w1 uuid := '00000000-0000-0000-0000-0000000000b2'; w2 uuid := '00000000-0000-0000-0000-0000000000b3';
+        m uuid := '00000000-0000-0000-0000-0000000000a2'; v_hint text;
+begin
+  perform set_config('request.jwt.claims', '{"sub":"' || m || '"}', true);
+  set local role authenticated;
+  perform public.send_friend_request_phone('aaaaaaaa-0000-0000-0000-0000000000f6');
+
+  -- (h) o email do remetente nunca aparece a quem só tem o número
+  perform set_config('request.jwt.claims', '{"sub":"' || w1 || '"}', true);
+  if (select from_name from public.list_incoming_requests() where via = 'phone') <> 'Alguém' then
+    raise exception 'from_name não pode expor o email do remetente: %', (select from_name from public.list_incoming_requests());
+  end if;
+  select id into rid from public.list_incoming_requests();
+
+  -- (j) W1 aceita; W2 já não pode aceitar ("já foi respondido")
+  perform public.respond_friend_request(rid, true);
+  perform set_config('request.jwt.claims', '{"sub":"' || w2 || '"}', true);
+  begin
+    perform public.respond_friend_request(rid, true);
+    raise exception 'segundo a aceitar devia falhar';
+  exception when raise_exception then
+    if sqlerrm not like 'Este pedido já foi respondido%' then raise; end if;
+  end;
+
+  -- (i) W1 retira-se, W2 aceita; M confirma com o id de W1 -> falha; com o de W2 -> liga a W2
+  perform set_config('request.jwt.claims', '{"sub":"' || w1 || '"}', true);
+  perform public.respond_friend_request(rid, false);
+  perform set_config('request.jwt.claims', '{"sub":"' || w2 || '"}', true);
+  perform public.respond_friend_request(rid, true);
+  perform set_config('request.jwt.claims', '{"sub":"' || m || '"}', true);
+  begin
+    perform public.confirm_friend_request(rid, true, w1);
+    raise exception 'confirmar a conta antiga devia falhar';
+  exception when raise_exception then
+    if sqlerrm not like 'O pedido mudou%' then raise; end if;
+  end;
+
+  -- (k) o remetente não lê accepted_by/rejected_by, mas lê o estado
+  begin
+    perform accepted_by from public.friend_requests;
+    raise exception 'accepted_by não devia ser legível';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    perform rejected_by from public.friend_requests;
+    raise exception 'rejected_by não devia ser legível';
+  exception when insufficient_privilege then null;
+  end;
+  perform status from public.friend_requests;
+
+  -- o email parcial mostra mais do que a inicial
+  select email_hint into v_hint from public.get_request_accepter(rid);
+  if v_hint <> 'w***@x.com' then raise exception 'hint inesperado: %', v_hint; end if;
+
+  perform public.confirm_friend_request(rid, true, w2);
+  reset role;
+  if not exists (select 1 from public.friends where id = 'aaaaaaaa-0000-0000-0000-0000000000f6'
+                    and linked_user_id = w2 and status = 'connected') then
+    raise exception 'devia ficar ligado a W2';
+  end if;
+end $$;
+
+-- (m) conta de quem aceitou apagada: confirmar devolve o pedido a pending
+reset role;
+insert into public.friends (id, owner_id, name, phone) values
+  ('aaaaaaaa-0000-0000-0000-0000000000f7', '00000000-0000-0000-0000-0000000000a2', 'Outro alvo', '966666666');
+update public.profiles set phone = '966666666' where id = '00000000-0000-0000-0000-0000000000b2';
+do $$
+declare rid uuid; w1 uuid := '00000000-0000-0000-0000-0000000000b2'; m uuid := '00000000-0000-0000-0000-0000000000a2';
+begin
+  perform set_config('request.jwt.claims', '{"sub":"' || m || '"}', true);
+  set local role authenticated;
+  perform public.send_friend_request_phone('aaaaaaaa-0000-0000-0000-0000000000f7');
+  perform set_config('request.jwt.claims', '{"sub":"' || w1 || '"}', true);
+  select id into rid from public.list_incoming_requests();
+  perform public.respond_friend_request(rid, true);
+  reset role;
+  delete from auth.users where id = w1;
+  perform set_config('request.jwt.claims', '{"sub":"' || m || '"}', true);
+  set local role authenticated;
+  perform public.confirm_friend_request(rid, true, w1);
+  reset role;
+  if (select status from public.friend_requests where id = rid) <> 'pending' then
+    raise exception 'sem accepter, o pedido volta a pending';
+  end if;
+end $$;
+
+-- (l) limite diário de pedidos por número
+reset role;
+insert into public.friends (owner_id, name, phone)
+select '00000000-0000-0000-0000-0000000000a2', 'Contacto ' || g, '97' || lpad(g::text, 7, '0') from generate_series(1, 21) g;
+do $$
+declare f record; n int := 0; m uuid := '00000000-0000-0000-0000-0000000000a2';
+begin
+  perform set_config('request.jwt.claims', '{"sub":"' || m || '"}', true);
+  set local role authenticated;
+  for f in select id from public.friends where owner_id = m and name like 'Contacto %' order by name loop
+    begin
+      perform public.send_friend_request_phone(f.id);
+      n := n + 1;
+    exception when raise_exception then
+      if sqlerrm not like 'Enviaste muitos pedidos hoje%' then raise; end if;
+      exit;
+    end;
+  end loop;
+  reset role;
+  -- já havia 2 pedidos de M hoje (f6 e f7): o 19.º novo atinge o limite de 20
+  if n <> 18 then raise exception 'o limite devia travar ao fim de 18 novos pedidos, foram %', n; end if;
 end $$;
 
 rollback;

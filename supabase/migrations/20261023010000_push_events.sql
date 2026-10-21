@@ -18,7 +18,7 @@ begin
     body := jsonb_build_object('user_id', p_user, 'title', p_title, 'body', p_body, 'url', p_url)
   );
 exception when others then
-  null; -- o push nunca bloqueia a operação
+  raise warning 'push: %', sqlerrm; -- o push nunca bloqueia a operação, mas deixa rasto nos logs
 end $$;
 revoke all on function public._push(uuid, text, text, text) from public, anon, authenticated;
 
@@ -67,6 +67,7 @@ begin
   end if;
   return null;
 exception when others then
+  raise warning 'push (trigger): %', sqlerrm;
   return null;
 end $$;
 
@@ -112,6 +113,7 @@ begin
   end if;
   return null;
 exception when others then
+  raise warning 'push (trigger): %', sqlerrm;
   return null;
 end $$;
 

@@ -150,6 +150,11 @@ begin
               where friend_id = p_friend_id and status in ('pending', 'awaiting_confirmation')) then
     raise exception 'Já enviaste um pedido a este amigo.';
   end if;
+  -- Limite diário: impede encher de notificações quem tem um número.
+  if (select count(*) from public.friend_requests
+       where from_user_id = uid and to_phone is not null and created_at > now() - interval '1 day') >= 20 then
+    raise exception 'Enviaste muitos pedidos hoje. Tenta amanhã.';
+  end if;
 
   insert into public.friend_requests (from_user_id, friend_id, to_phone) values (uid, p_friend_id, v_phone);
   update public.friends set status = 'invited' where id = p_friend_id;
@@ -183,7 +188,10 @@ security definer
 set search_path = public
 as $$
   select r.id,
-         coalesce(nullif(btrim(p.full_name), ''), su.email, 'Alguém') as from_name,
+         -- Por número o destinatário não está verificado: nunca se mostra o email do remetente.
+         case when r.to_email is not null
+              then coalesce(nullif(btrim(p.full_name), ''), su.email, 'Alguém')
+              else coalesce(nullif(btrim(p.full_name), ''), 'Alguém') end as from_name,
          r.created_at,
          case when r.to_email is not null then 'email' else 'phone' end as via,
          (r.status = 'awaiting_confirmation') as awaiting
@@ -241,18 +249,19 @@ begin
   end if;
 
   -- Por número (não verificado): aceitar fica à espera da confirmação de quem pediu.
-  select phone into v_phone from public.profiles where id = uid;
-  if v_phone is null or v_req.to_phone <> v_phone then raise exception 'Pedido não encontrado.'; end if;
-
-  if v_req.status = 'awaiting_confirmation' then
-    if v_req.accepted_by = uid and not p_accept then
+  -- Quem já aceitou pode sempre retirar-se, mesmo que entretanto tenha mudado o número do perfil.
+  if v_req.status = 'awaiting_confirmation' and v_req.accepted_by = uid then
+    if not p_accept then
       update public.friend_requests
          set status = 'pending', accepted_by = null, rejected_by = array_append(rejected_by, uid)
        where id = p_id;
     end if;
     return;
   end if;
-  if v_req.status <> 'pending' then return; end if;
+
+  select phone into v_phone from public.profiles where id = uid;
+  if v_phone is null or v_req.to_phone <> v_phone then raise exception 'Pedido não encontrado.'; end if;
+  if v_req.status <> 'pending' then raise exception 'Este pedido já foi respondido.'; end if;
   if uid = any (v_req.rejected_by) then raise exception 'Pedido não encontrado.'; end if;
 
   if p_accept then
@@ -266,7 +275,9 @@ begin
   end if;
 end $$;
 
-create function public.confirm_friend_request(p_id uuid, p_confirm boolean)
+-- p_accepter é a conta que o ecrã mostrou a quem pediu: se entretanto outra pessoa aceitou (ou a
+-- primeira se retirou), a confirmação falha em vez de ligar a uma conta que ninguém viu.
+create function public.confirm_friend_request(p_id uuid, p_confirm boolean, p_accepter uuid)
 returns void
 language plpgsql
 security definer
@@ -281,6 +292,15 @@ begin
    where id = p_id and from_user_id = uid and status = 'awaiting_confirmation' for update;
   if not found then raise exception 'Pedido não encontrado.'; end if;
 
+  -- Conta de quem aceitou apagada entretanto: o pedido volta a esperar pela pessoa certa.
+  if v_req.accepted_by is null then
+    update public.friend_requests set status = 'pending' where id = p_id;
+    return;
+  end if;
+  if v_req.accepted_by is distinct from p_accepter then
+    raise exception 'O pedido mudou. Volta a ver quem aceitou.';
+  end if;
+
   if p_confirm then
     perform public._link_friends(p_id, v_req.accepted_by);
   else
@@ -291,23 +311,34 @@ begin
 end $$;
 
 create function public.get_request_accepter(p_id uuid)
-returns table (name text, email_hint text)
+returns table (accepter_id uuid, name text, email_hint text)
 language sql
 stable
 security definer
 set search_path = public
 as $$
-  select coalesce(nullif(btrim(p.full_name), ''), 'Sem nome') as name,
-         left(u.email, 1) || '***@' || split_part(u.email, '@', 2) as email_hint
+  select r.accepted_by as accepter_id,
+         coalesce(nullif(btrim(p.full_name), ''), 'Sem nome') as name,
+         -- Email parcial: o suficiente para distinguir uma pessoa de outra, sem o expor todo.
+         case when length(split_part(u.email, '@', 1)) >= 7
+              then left(split_part(u.email, '@', 1), 3) || '***' || right(split_part(u.email, '@', 1), 2)
+              else left(u.email, 1) || '***'
+         end || '@' || split_part(u.email, '@', 2) as email_hint
     from public.friend_requests r
     join auth.users u on u.id = r.accepted_by
     left join public.profiles p on p.id = r.accepted_by
    where r.id = p_id and r.from_user_id = auth.uid() and r.status = 'awaiting_confirmation'
 $$;
 
+-- O remetente lê os seus pedidos, mas só as colunas que lhe dizem respeito: nunca quem recusou
+-- (rejected_by) nem quem aceitou antes de confirmar (accepted_by).
+revoke select on public.friend_requests from authenticated, anon;
+grant select (id, from_user_id, friend_id, to_email, to_phone, status, created_at, responded_at)
+  on public.friend_requests to authenticated;
+
 revoke all on function public.send_friend_request_phone(uuid) from public, anon;
-revoke all on function public.confirm_friend_request(uuid, boolean) from public, anon;
+revoke all on function public.confirm_friend_request(uuid, boolean, uuid) from public, anon;
 revoke all on function public.get_request_accepter(uuid) from public, anon;
 grant execute on function public.send_friend_request_phone(uuid) to authenticated;
-grant execute on function public.confirm_friend_request(uuid, boolean) to authenticated;
+grant execute on function public.confirm_friend_request(uuid, boolean, uuid) to authenticated;
 grant execute on function public.get_request_accepter(uuid) to authenticated;

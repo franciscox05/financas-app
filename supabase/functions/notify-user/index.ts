@@ -30,11 +30,12 @@ Deno.serve(async (req) => {
     return new Response('Bad request', { status: 400 })
   }
   const { user_id, title, body, url } = payload
-  if (!user_id || !UUID.test(user_id) || !body) {
+  if (!user_id || !UUID.test(user_id) || typeof body !== 'string' || !body || (title !== undefined && typeof title !== 'string')) {
     return new Response('Bad request', { status: 400 })
   }
   // O url só pode ser um caminho dentro da app.
-  const safeUrl = typeof url === 'string' && url.startsWith('/') && !url.startsWith('//') ? url : '/'
+  // Começa por "/" e não por "//" nem "/\" (que os browsers tratam como outro site).
+  const safeUrl = typeof url === 'string' && /^\/(?![/\\])/.test(url) ? url : '/'
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
   const { data: subscriptions, error } = await supabase

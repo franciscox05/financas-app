@@ -184,7 +184,8 @@ begin
   -- A confirma: C recebe "confirmou a ligação"
   perform set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a1"}', true);
   set local role authenticated;
-  perform public.confirm_friend_request((select id from public.friend_requests where to_phone = '933333333'), true);
+  perform public.confirm_friend_request((select id from public.friend_requests where to_phone = '933333333'), true,
+    (select accepter_id from public.get_request_accepter((select id from public.friend_requests where to_phone = '933333333'))));
   reset role;
   select * into l from public.__push_log;
   if (select count(*) from public.__push_log) <> 1 or l.body ->> 'user_id' <> '00000000-0000-0000-0000-0000000000c1'
