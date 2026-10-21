@@ -19,6 +19,7 @@ import {
   updateDebt,
 } from '../lib/db'
 import Money from '../components/Money'
+import OptionalDateField from '../components/OptionalDateField'
 import { eur } from '../lib/format'
 
 const HISTORY_PAGE_SIZE = 10
@@ -586,15 +587,14 @@ export default function Debts() {
               className={inputClass}
             />
             {debt.status !== 'settled' && (
-              <div className="min-w-0">
-                <label className="mb-1 block text-xs text-neutral-500">Data limite (opcional)</label>
-                <input
-                  type="date"
-                  value={editDue}
-                  onChange={(e) => setEditDue(e.target.value)}
-                  className={inputClass}
-                />
-              </div>
+              <OptionalDateField
+                id={`edit-due-${debt.id}`}
+                label="Data limite (opcional)"
+                addLabel="Definir data limite"
+                value={editDue}
+                onChange={setEditDue}
+                inputClass={inputClass}
+              />
             )}
             {partial && debt.status !== 'settled' && (
               <p className="text-xs text-neutral-400">
@@ -878,17 +878,14 @@ export default function Debts() {
                 className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
               />
             </div>
-            <div className="min-w-0">
-              <label className="mb-1 block text-xs font-medium text-neutral-500">
-                Data limite (opcional) — para receberes um lembrete
-              </label>
-              <input
-                type="date"
-                value={dueOn}
-                onChange={(e) => setDueOn(e.target.value)}
-                className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-              />
-            </div>
+            <OptionalDateField
+              id="new-debt-due"
+              label="Data limite (opcional) — para receberes um lembrete"
+              addLabel="Definir data limite"
+              value={dueOn}
+              onChange={setDueOn}
+              inputClass="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            />
 
             {formError && <p className="text-sm text-red-600">{formError}</p>}
 
