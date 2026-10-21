@@ -17,6 +17,7 @@ import { formatPhoneDisplay } from '../lib/contactMessage'
 import { hasOpenBalance } from '../lib/friendsLogic'
 import { balanceOf, describeBalance, suggestedRepayment } from '../lib/ledgerMath'
 import { hasPendingOpening, privateConfirmedEntries } from '../lib/linkedLogic'
+import { onPendingChanged } from '../lib/pendingEvents'
 
 const inputClass =
   'min-h-11 w-full rounded-lg border border-neutral-300 px-3 py-2 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 motion-reduce:transition-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus-visible:outline-neutral-100'
@@ -93,6 +94,8 @@ export default function FriendLedger() {
 
   useEffect(() => {
     load()
+    // Movimentos e respostas do amigo chegam ao vivo (broadcast) sem piscar o ecrã.
+    return onPendingChanged(() => load({ silent: true }))
   }, [load])
 
   // O toast de sucesso já é mostrado pela própria folha ao guardar.
