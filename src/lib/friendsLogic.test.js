@@ -3,6 +3,8 @@ import assert from 'node:assert/strict'
 import {
   phoneForStorage,
   mbwayForStorage,
+  phoneForProfile,
+  requestLinkFailure,
   repaymentTransactionType,
   checkRepaymentInput,
   hasOpenBalance,
@@ -57,4 +59,20 @@ test('friendNameError troca "item" por "amigo" só no nome repetido', async () =
   const { friendNameError } = await import('./friendsLogic.js')
   assert.equal(friendNameError('Já existe um item com este nome.'), 'Já tens um amigo com este nome.')
   assert.equal(friendNameError('Indica um nome.'), 'Indica um nome.')
+})
+
+test('phoneForProfile guarda 9 dígitos locais ou o internacional só com dígitos', () => {
+  assert.equal(phoneForProfile('912 345 678'), '912345678')
+  assert.equal(phoneForProfile('+351 912345678'), '912345678')
+  assert.equal(phoneForProfile('00351912345678'), '912345678')
+  assert.equal(phoneForProfile('+44 7911 123456'), '447911123456')
+  assert.equal(phoneForProfile(''), null)
+  assert.equal(phoneForProfile(null), null)
+  assert.throws(() => phoneForProfile('12'), { message: 'Número de telefone inválido.' })
+  assert.throws(() => phoneForProfile('abc'), { message: 'Número de telefone inválido.' })
+})
+
+test('requestLinkFailure mantém a mensagem do servidor depois do amigo criado', () => {
+  const err = requestLinkFailure(new Error('Já existe um pedido ativo.'))
+  assert.equal(err.message, 'Amigo criado, mas Já existe um pedido ativo.')
 })

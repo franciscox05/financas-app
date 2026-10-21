@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { getCurrentUserId } from './db'
+import { countActionableRequests } from './linkedLogic'
 
 // As funções RPC levantam mensagens em português; mostram-se tal e qual.
 async function rpc(name, params) {
@@ -12,6 +13,21 @@ export async function sendFriendRequest({ friendId, email }) {
   await rpc('send_friend_request', { p_friend_id: friendId, p_email: email })
 }
 
+export async function sendFriendRequestByPhone(friendId) {
+  await rpc('send_friend_request_phone', { p_friend_id: friendId })
+}
+
+export async function confirmFriendRequest(id, confirm) {
+  await rpc('confirm_friend_request', { p_id: id, p_confirm: confirm })
+}
+
+// Quem aceitou o pedido por número: nome e dica do email, para o remetente confirmar.
+export async function getRequestAccepter(id) {
+  const rows = (await rpc('get_request_accepter', { p_id: id })) ?? []
+  const row = rows[0]
+  return row ? { name: row.name, emailHint: row.email_hint } : null
+}
+
 export async function cancelFriendRequest(id) {
   await rpc('cancel_friend_request', { p_id: id })
 }
@@ -20,6 +36,7 @@ export async function respondFriendRequest(id, accept) {
   await rpc('respond_friend_request', { p_id: id, p_accept: accept })
 }
 
+// Linhas {id, from_name, created_at, via: 'email'|'phone', awaiting}.
 export async function listIncomingRequests() {
   return (await rpc('list_incoming_requests')) ?? []
 }
@@ -102,10 +119,11 @@ export async function listPendingForMe() {
   return data
 }
 
-// Número para o emblema da navegação: pedidos de amizade + movimentos por responder.
+// Número para o emblema da navegação: pedidos de amizade por responder
+// (sem os que aguardam o remetente) + movimentos por responder.
 export async function countPendingForMe() {
   const [requests, entries] = await Promise.all([listIncomingRequests(), listPendingForMe()])
-  return requests.length + entries.length
+  return countActionableRequests(requests) + entries.length
 }
 
 export async function shareOpeningBalance(friendId) {

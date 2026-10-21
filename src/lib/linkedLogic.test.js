@@ -11,6 +11,7 @@ import {
   privateConfirmedEntries,
   hasPendingOpening,
   isCancelRequestForMe,
+  countActionableRequests,
 } from './linkedLogic.js'
 import { balanceOf } from './ledgerMath.js'
 
@@ -69,6 +70,7 @@ test('friendStateLabel', () => {
   assert.equal(friendStateLabel({ status: 'invited' }, { status: 'pending' }), 'Pedido enviado')
   assert.equal(friendStateLabel({ status: 'local' }, { status: 'declined' }), 'Recusado')
   assert.equal(friendStateLabel({ status: 'connected' }, { status: 'accepted' }), 'Ligado')
+  assert.equal(friendStateLabel({ status: 'local' }, { status: 'awaiting_confirmation' }), 'À espera de confirmação')
 })
 test('entryStatusText usa o nome do amigo', () => {
   assert.equal(entryStatusText({ status: 'pending', created_by: ME }, ME, 'Rui').text, 'À espera que Rui confirme')
@@ -98,4 +100,10 @@ test('isCancelRequestForMe', () => {
   assert.equal(isCancelRequestForMe({ status: 'cancel_requested', mirror_id: 'x', cancel_requested_by: HIM }, ME), true)
   assert.equal(isCancelRequestForMe({ status: 'cancel_requested', mirror_id: 'x', cancel_requested_by: ME }, ME), false)
   assert.equal(isCancelRequestForMe({ status: 'confirmed', mirror_id: 'x' }, ME), false)
+})
+
+test('countActionableRequests ignora pedidos que aguardam o remetente', () => {
+  const rows = [{ awaiting: false }, { awaiting: true }, {}, { awaiting: false }]
+  assert.equal(countActionableRequests(rows), 3)
+  assert.equal(countActionableRequests([]), 0)
 })

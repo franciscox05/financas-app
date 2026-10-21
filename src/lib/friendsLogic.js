@@ -22,6 +22,22 @@ export function mbwayForStorage(raw) {
   return phone
 }
 
+// Número do perfil (profiles.phone): portugueses guardam-se com os 9 dígitos
+// locais, os outros internacionais só com dígitos (9 a 15).
+export function phoneForProfile(raw) {
+  if (raw == null || String(raw).trim() === '') return null
+  const phone = normalizePhone(raw)
+  if (!phone) throw new Error('Número de telefone inválido.')
+  if (phone.length === 12 && phone.startsWith('351')) return phone.slice(3)
+  return phone
+}
+
+// O amigo ficou criado mas o pedido de ligação falhou: o erro leva a mensagem
+// do servidor para a UI mostrar tal e qual.
+export function requestLinkFailure(err) {
+  return new Error(`Amigo criado, mas ${err?.message ?? 'não foi possível enviar o pedido.'}`)
+}
+
 // Uma devolução em dinheiro que me entra é um ganho; uma que eu faço é um gasto.
 export function repaymentTransactionType(kind) {
   return kind === 'repaid_to_me' ? 'income' : 'expense'
