@@ -52,6 +52,9 @@ Deno.serve(async (req) => {
       webpush.sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
         message,
+        // Urgência alta: o iOS entrega logo em vez de agrupar avisos "normais" quando o ecrã
+        // está bloqueado. Sem TTL, o serviço de push descarta ao fim de 0 s se o aparelho estiver offline.
+        { urgency: 'high', TTL: 3600 },
       ),
     ),
   )
