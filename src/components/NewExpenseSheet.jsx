@@ -6,6 +6,7 @@ import { createExpense } from '../lib/friendsDb'
 import { createSharedEntry } from '../lib/linkedDb'
 import { isSharedGuardError } from '../lib/linkedLogic'
 import { notifyPendingChanged } from '../lib/pendingEvents'
+import OptionalDateField from './OptionalDateField'
 
 const inputClass =
   'min-h-11 w-full rounded-lg border border-neutral-300 px-3 py-2 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 motion-reduce:transition-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus-visible:outline-neutral-100'
@@ -130,7 +131,7 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="space-y-4">
         <div className="min-w-0">
           <label htmlFor="expense-date" className={labelClass}>
             Data
@@ -143,18 +144,14 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
             className={inputClass}
           />
         </div>
-        <div className="min-w-0">
-          <label htmlFor="expense-due" className={labelClass}>
-            Para quando? (opcional)
-          </label>
-          <input
-            id="expense-due"
-            type="date"
-            value={dueOn}
-            onChange={(e) => setDueOn(e.target.value)}
-            className={inputClass}
-          />
-        </div>
+        <OptionalDateField
+          id="expense-due"
+          label="Para quando? (opcional)"
+          addLabel="Definir prazo"
+          value={dueOn}
+          onChange={setDueOn}
+          inputClass={inputClass}
+        />
       </div>
 
       {error && (
@@ -168,14 +165,14 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className={`min-h-11 flex-1 rounded-lg border border-neutral-300 font-medium text-neutral-700 transition duration-150 ease-out hover:bg-neutral-100 active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800 ${focusRing}`}
+          className={`min-h-11 flex-1 rounded-lg border border-neutral-300 px-3 font-medium text-neutral-700 transition duration-150 ease-out hover:bg-neutral-100 active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800 ${focusRing}`}
         >
           Cancelar
         </button>
         <button
           type="submit"
           disabled={saving}
-          className={`min-h-11 flex-1 rounded-lg bg-neutral-900 font-medium text-white transition duration-150 ease-out hover:bg-neutral-700 active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300 ${focusRing}`}
+          className={`min-h-11 flex-[2] rounded-lg bg-neutral-900 px-3 font-medium text-white transition duration-150 ease-out hover:bg-neutral-700 active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300 ${focusRing}`}
         >
           {saving ? 'A guardar...' : friend.status === 'connected' ? 'Enviar para confirmar' : 'Guardar'}
         </button>
