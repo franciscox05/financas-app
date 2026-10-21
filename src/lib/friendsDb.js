@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 import { createTransaction, getCurrentUserId } from './db'
 import { validateName } from './names'
+import { sendFriendRequestByPhone } from './linkedDb'
 import {
   phoneForStorage,
   mbwayForStorage,
@@ -9,6 +10,8 @@ import {
   hasOpenBalance,
   repaymentNote,
   friendNameError,
+  phoneForProfile,
+  requestLinkFailure,
 } from './friendsLogic'
 
 // Amigos + saldo. A view `friend_balances` não tem linha para amigos sem
@@ -37,7 +40,9 @@ async function validateFriendName(rawName, selfId = null) {
   return name
 }
 
-export async function createFriend({ name, phone }) {
+// Com `requestLink` e telefone guardado, envia logo o pedido de ligação. Se o
+// pedido falhar o amigo mantém-se e o erro começa por 'Amigo criado, mas '.
+export async function createFriend({ name, phone, requestLink = false }) {
   const ownerId = await getCurrentUserId()
   const validName = await validateFriendName(name)
 
@@ -47,6 +52,13 @@ export async function createFriend({ name, phone }) {
     .select()
     .single()
   if (error) throw error
+  if (requestLink && data.phone) {
+    try {
+      await sendFriendRequestByPhone(data.id)
+    } catch (err) {
+      throw requestLinkFailure(err)
+    }
+  }
   return data
 }
 
@@ -190,5 +202,24 @@ export async function saveMbwayPhone(phone) {
   const { error } = await supabase
     .from('profiles')
     .upsert({ id: userId, mbway_phone: mbwayForStorage(phone) })
+  if (error) throw error
+}
+
+export async function getMyPhone() {
+  const userId = await getCurrentUserId()
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('phone')
+    .eq('id', userId)
+    .maybeSingle()
+  if (error) throw error
+  return data?.phone ?? null
+}
+
+export async function saveMyPhone(raw) {
+  const userId = await getCurrentUserId()
+  const { error } = await supabase
+    .from('profiles')
+    .upsert({ id: userId, phone: phoneForProfile(raw) })
   if (error) throw error
 }

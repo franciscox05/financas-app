@@ -48,6 +48,7 @@ export function canRequestCancel(entry) {
 export function friendStateLabel(friend, request) {
   if (friend.status === 'connected') return 'Ligado'
   if (request?.status === 'pending') return 'Pedido enviado'
+  if (request?.status === 'awaiting_confirmation') return 'À espera de confirmação'
   if (request?.status === 'declined') return 'Recusado'
   if (friend.status === 'invited') return 'Pedido enviado'
   return 'Local'
@@ -87,4 +88,10 @@ export function hasPendingOpening(entries) {
 // Quem pediu a anulação foi o outro? (a resposta é minha)
 export function isCancelRequestForMe(entry, viewerId) {
   return entry.status === 'cancel_requested' && Boolean(entry.mirror_id) && entry.cancel_requested_by !== viewerId
+}
+
+// Pedidos recebidos que exigem ação minha: os que já aceitei e aguardam a
+// confirmação do remetente (awaiting) não contam.
+export function countActionableRequests(requests) {
+  return requests.filter((r) => !r.awaiting).length
 }

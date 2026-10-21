@@ -44,6 +44,16 @@ Num contacto da aba **Amigos**, "Pedir amizade" envia um pedido ao email com que
 - Toda a escrita entre utilizadores passa por funções SQL (`security definer`); o cliente não escreve nos pedidos nem nos movimentos partilhados.
 - Testes SQL em `supabase/tests/` (`friend_requests.sql`, `shared_entries.sql`, `opening_balance.sql`) contra uma base de dados descartável.
 
+### Amigos por telemóvel e notificações
+
+Cada pessoa guarda o seu número em **Gerir > O teu número**. Ao adicionar um amigo com número, "Pedir amizade" envia o pedido a esse número (o pedido por email continua disponível). Como o número não está verificado, quando alguém aceita, **quem pediu confirma o nome da conta** antes de as contas ficarem ligadas. A app nunca revela se um número tem conta.
+
+Notificações push (pedido recebido/aceite, movimento por confirmar, aceite, contestado, anulação) saem de triggers na base de dados e da função `notify-user`; o texto nunca leva valores. Para as receber, ativar as notificações em **Gerir**.
+
+- Migrations (por esta ordem, depois das da fase 3a): `20261023000000_phone_requests.sql`, `20261023010000_push_events.sql`.
+- Publicar a função `notify-user` **antes** da migration de push (usa os segredos `anon_key` e `cron_secret` do vault e `VAPID_*`).
+- Testes SQL: `phone_requests.sql` e `push_events.sql` (este cria stubs de `net.http_post` e do vault).
+
 ## Fluxo de trabalho e deploy
 
 1. Criar uma branch a partir da `main`, fazer as alterações e abrir um Pull Request.
