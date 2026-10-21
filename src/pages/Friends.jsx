@@ -40,6 +40,7 @@ export default function Friends() {
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  const [requestLink, setRequestLink] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
 
@@ -95,24 +96,42 @@ export default function Friends() {
 
   async function handleCreate(e) {
     e.preventDefault()
+    if (submitting) return
     if (!name.trim()) {
       setFormError('Indica o nome do amigo.')
       return
     }
+    const sendRequest = requestLink && phone.trim() !== ''
     setSubmitting(true)
     setFormError('')
     try {
-      await createFriend({ name, phone })
-      setName('')
-      setPhone('')
-      setShowForm(false)
+      await createFriend({ name, phone, requestLink: sendRequest })
+      resetForm()
       await load()
-      toast.success('Amigo adicionado.')
+      if (mounted.current) {
+        toast.success(sendRequest ? 'Amigo adicionado e pedido enviado.' : 'Amigo adicionado.')
+      }
     } catch (err) {
-      setFormError(err.message)
+      if (!mounted.current) return
+      if (err instanceof Error && err.message.startsWith('Amigo criado, mas ')) {
+        // O amigo existe; só o pedido falhou. Fecha o formulário e mostra o motivo.
+        resetForm()
+        await load()
+        if (mounted.current) toast.error(err.message)
+      } else {
+        setFormError(err.message)
+      }
     } finally {
-      setSubmitting(false)
+      if (mounted.current) setSubmitting(false)
     }
+  }
+
+  function resetForm() {
+    if (!mounted.current) return
+    setName('')
+    setPhone('')
+    setRequestLink(true)
+    setShowForm(false)
   }
 
   if (loading) return <PageSkeleton />
@@ -193,6 +212,25 @@ export default function Friends() {
                 className={inputClass}
               />
             </div>
+
+            {phone.trim() !== '' && (
+              <div>
+                <label className="flex min-h-11 items-center gap-3 text-sm text-neutral-800 dark:text-neutral-200">
+                  <input
+                    type="checkbox"
+                    checked={requestLink}
+                    disabled={submitting}
+                    onChange={(e) => setRequestLink(e.target.checked)}
+                    className={`size-5 shrink-0 accent-neutral-900 dark:accent-neutral-100 ${focusRing}`}
+                    aria-describedby="friend-request-link-hint"
+                  />
+                  Pedir para ligar contas
+                </label>
+                <p id="friend-request-link-hint" className="text-xs text-neutral-500">
+                  Só funciona se a pessoa tiver a app e este número no perfil. Para contactos sem app, desmarca.
+                </p>
+              </div>
+            )}
 
             {formError && (
               <p role="alert" className="text-sm text-red-600 dark:text-red-400">

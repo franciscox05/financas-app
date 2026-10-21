@@ -47,7 +47,15 @@ export default function IncomingRequests({ onChanged }) {
     try {
       await respondFriendRequest(request.id, accept)
       if (mounted.current) {
-        toast.success(accept ? `Ligaste-te a ${request.from_name}.` : 'Pedido recusado.')
+        toast.success(
+          accept
+            ? request.via === 'phone'
+              ? `Aceitaste o pedido de ${request.from_name}.`
+              : `Ligaste-te a ${request.from_name}.`
+            : request.awaiting
+              ? 'Pedido retirado.'
+              : 'Pedido recusado.',
+        )
       }
       notifyPendingChanged()
       await load()
@@ -79,25 +87,34 @@ export default function IncomingRequests({ onChanged }) {
       <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
         {requests.map((request) => (
           <li key={request.id} className="space-y-2 py-3 first:pt-0 last:pb-0">
-            <p className="text-sm text-neutral-800 dark:text-neutral-200">
-              <span className="font-medium">{request.from_name}</span> quer ligar contas
-            </p>
+            {request.awaiting ? (
+              <p className="text-sm text-neutral-800 dark:text-neutral-200">
+                Aceitaste o pedido de <span className="font-medium">{request.from_name}</span>. À espera que
+                confirme.
+              </p>
+            ) : (
+              <p className="text-sm text-neutral-800 dark:text-neutral-200">
+                <span className="font-medium">{request.from_name}</span> quer ligar contas
+              </p>
+            )}
             <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={busyId !== null}
-                onClick={() => respond(request, true)}
-                className={primaryButton}
-              >
-                {busyId === request.id ? 'A responder...' : 'Aceitar'}
-              </button>
+              {!request.awaiting && (
+                <button
+                  type="button"
+                  disabled={busyId !== null}
+                  onClick={() => respond(request, true)}
+                  className={primaryButton}
+                >
+                  {busyId === request.id ? 'A responder...' : 'Aceitar'}
+                </button>
+              )}
               <button
                 type="button"
                 disabled={busyId !== null}
                 onClick={() => respond(request, false)}
                 className={secondaryButton}
               >
-                Recusar
+                {request.awaiting ? (busyId === request.id ? 'A retirar...' : 'Retirar') : 'Recusar'}
               </button>
             </div>
           </li>

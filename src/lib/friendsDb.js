@@ -10,6 +10,8 @@ import {
   hasOpenBalance,
   repaymentNote,
   friendNameError,
+  phoneForProfile,
+  requestLinkFailure,
 } from './friendsLogic'
 
 // Amigos + saldo. A view `friend_balances` não tem linha para amigos sem
@@ -50,6 +52,13 @@ export async function createFriend({ name, phone, requestLink = false }) {
     .select()
     .single()
   if (error) throw error
+  if (requestLink && data.phone) {
+    try {
+      await sendFriendRequestByPhone(data.id)
+    } catch (err) {
+      throw requestLinkFailure(err)
+    }
+  }
   return data
 }
 

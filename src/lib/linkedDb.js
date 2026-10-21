@@ -45,7 +45,7 @@ export async function listIncomingRequests() {
 export async function getOutgoingRequest(friendId) {
   const { data, error } = await supabase
     .from('friend_requests')
-    .select('id, status, to_email, created_at')
+    .select('id, status, to_email, to_phone, created_at')
     .eq('friend_id', friendId)
     .order('created_at', { ascending: false })
     .limit(1)
