@@ -97,6 +97,11 @@ export default function IncomingRequests({ onChanged }) {
                 <span className="font-medium">{request.from_name}</span> quer ligar contas
               </p>
             )}
+            {request.via === 'phone' && !request.awaiting && (
+              <p className="text-xs text-neutral-500">
+                Ao aceitares, {request.from_name} vê o teu nome e o teu email.
+              </p>
+            )}
             <div className="flex gap-2">
               {!request.awaiting && (
                 <button

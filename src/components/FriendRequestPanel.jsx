@@ -21,6 +21,8 @@ const primaryButton = `${buttonBase} bg-neutral-900 text-white hover:bg-neutral-
 const secondaryButton = `${buttonBase} border border-neutral-300 text-neutral-800 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800`
 const textButton = `${buttonBase} text-neutral-600 underline-offset-4 hover:text-neutral-900 hover:underline dark:text-neutral-300 dark:hover:text-neutral-100`
 
+const CHANGED_MESSAGE = 'O pedido mudou. Volta a ver quem aceitou.'
+
 const boxClass = 'space-y-3 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800'
 
 // Esconde o número todo menos os 3 últimos dígitos.
@@ -74,16 +76,16 @@ export default function FriendRequestPanel({ friend, onChanged }) {
   }, [connected, loadRequest])
 
   // Pedido por número aceite: quem aceitou (nome e dica do email), para eu confirmar.
-  const awaitingId = request?.status === 'awaiting_confirmation' ? request.id : null
-  useEffect(() => {
+  // Volta a ver sempre que o pedido recarrega (outra pessoa pode ter aceitado entretanto).
+  const fetchAccepter = useCallback((id) => {
     const seq = ++accepterSeq.current
-    if (!awaitingId) {
+    if (!id) {
       setAccepter(null)
       setAccepterLoading(false)
-      return
+      return Promise.resolve()
     }
     setAccepterLoading(true)
-    getRequestAccepter(awaitingId)
+    return getRequestAccepter(id)
       .then((who) => {
         if (mounted.current && seq === accepterSeq.current) setAccepter(who)
       })
@@ -93,7 +95,11 @@ export default function FriendRequestPanel({ friend, onChanged }) {
       .finally(() => {
         if (mounted.current && seq === accepterSeq.current) setAccepterLoading(false)
       })
-  }, [awaitingId])
+  }, [])
+
+  useEffect(() => {
+    fetchAccepter(request?.status === 'awaiting_confirmation' ? request.id : null)
+  }, [request, fetchAccepter])
 
   async function handleSend(e) {
     e.preventDefault()
@@ -140,18 +146,19 @@ export default function FriendRequestPanel({ friend, onChanged }) {
   }
 
   async function handleConfirm(confirm) {
-    if (busy || !request) return
+    if (busy || !request || !accepter) return
     setBusy(true)
     setError('')
     try {
-      await confirmFriendRequest(request.id, confirm)
+      await confirmFriendRequest(request.id, confirm, accepter.accepterId)
       notifyPendingChanged()
       if (!mounted.current) return
-      toast.success(confirm ? 'Contas ligadas.' : 'Combinado. O pedido ficou à espera de outra pessoa.')
+      toast.success(confirm ? 'Contas ligadas.' : 'Não ligámos. O pedido continua à espera da pessoa certa.')
       await loadRequest()
       onChanged?.()
     } catch (err) {
       if (mounted.current) setError(err.message)
+      if (err.message === CHANGED_MESSAGE) await fetchAccepter(request.id)
     } finally {
       if (mounted.current) setBusy(false)
     }
@@ -331,7 +338,7 @@ export default function FriendRequestPanel({ friend, onChanged }) {
             {busy ? 'A enviar...' : declined ? 'Pedir de novo' : 'Pedir amizade'}
           </button>
           <button type="button" onClick={() => openForm(emailPrefill)} disabled={busy} className={textButton}>
-            Ligar por email
+            Pedir por email
           </button>
         </div>
       ) : (

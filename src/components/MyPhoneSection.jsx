@@ -55,12 +55,13 @@ export default function MyPhoneSection() {
         <label htmlFor="my-phone" className="block text-xs font-medium text-neutral-500">
           O meu número de telemóvel (opcional)
         </label>
-        <p className="text-xs text-neutral-500">
+        <p id="my-phone-hint" className="text-xs text-neutral-500">
           É com este número que os teus amigos te encontram na app. Só tu o vês.
         </p>
         <div className="flex gap-2">
           <input
             id="my-phone"
+            aria-describedby="my-phone-hint"
             type="tel"
             inputMode="tel"
             autoComplete="off"

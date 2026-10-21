@@ -17,15 +17,15 @@ export async function sendFriendRequestByPhone(friendId) {
   await rpc('send_friend_request_phone', { p_friend_id: friendId })
 }
 
-export async function confirmFriendRequest(id, confirm) {
-  await rpc('confirm_friend_request', { p_id: id, p_confirm: confirm })
+export async function confirmFriendRequest(id, confirm, accepterId) {
+  await rpc('confirm_friend_request', { p_id: id, p_confirm: confirm, p_accepter: accepterId })
 }
 
 // Quem aceitou o pedido por número: nome e dica do email, para o remetente confirmar.
 export async function getRequestAccepter(id) {
   const rows = (await rpc('get_request_accepter', { p_id: id })) ?? []
   const row = rows[0]
-  return row ? { name: row.name, emailHint: row.email_hint } : null
+  return row ? { accepterId: row.accepter_id, name: row.name, emailHint: row.email_hint } : null
 }
 
 export async function cancelFriendRequest(id) {

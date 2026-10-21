@@ -35,7 +35,8 @@ export function phoneForProfile(raw) {
 // O amigo ficou criado mas o pedido de ligação falhou: o erro leva a mensagem
 // do servidor para a UI mostrar tal e qual.
 export function requestLinkFailure(err) {
-  return new Error(`Amigo criado, mas ${err?.message ?? 'não foi possível enviar o pedido.'}`)
+  const message = err?.message || 'não foi possível enviar o pedido.'
+  return new Error(`Amigo criado, mas ${message.charAt(0).toLowerCase()}${message.slice(1)}`)
 }
 
 // Uma devolução em dinheiro que me entra é um ganho; uma que eu faço é um gasto.

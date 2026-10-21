@@ -25,14 +25,16 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     (async () => {
       const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
-      const client = windows[0]
+      const client =
+        windows.find((c) => c.focused) ?? windows.find((c) => c.visibilityState === 'visible') ?? windows[0]
       if (client) {
         try {
-          const navigated = await client.navigate(url)
-          await (navigated ?? client).focus()
+          // focus() primeiro: precisa do gesto do utilizador, que navigate() pode consumir.
+          await client.focus()
+          await client.navigate(url)
           return
         } catch {
-          // navigate/focus podem falhar (ex.: janela de outra origem): abre uma nova.
+          // focus/navigate podem falhar (ex.: janela de outra origem): abre uma nova.
         }
       }
       await self.clients.openWindow(url)

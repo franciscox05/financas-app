@@ -73,6 +73,6 @@ test('phoneForProfile guarda 9 dígitos locais ou o internacional só com dígit
 })
 
 test('requestLinkFailure mantém a mensagem do servidor depois do amigo criado', () => {
-  const err = requestLinkFailure(new Error('Já existe um pedido ativo.'))
-  assert.equal(err.message, 'Amigo criado, mas Já existe um pedido ativo.')
+  const err = requestLinkFailure(new Error('Já enviaste um pedido a este amigo.'))
+  assert.equal(err.message, 'Amigo criado, mas já enviaste um pedido a este amigo.')
 })
