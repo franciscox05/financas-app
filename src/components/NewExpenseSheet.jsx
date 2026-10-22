@@ -73,9 +73,16 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
       aria-label={`Novo gasto com ${friend.name}`}
       className="space-y-4 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
     >
-      <h3 className="text-base font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
-        Novo gasto com {friend.name}
-      </h3>
+      <div>
+        <h3 className="text-base font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+          Novo gasto com {friend.name}
+        </h3>
+        <p className="mt-1 text-xs text-neutral-500">
+          Só fica registado aqui no conta-corrente — não mexe em nenhuma das tuas contas nem aparece no
+          Registo. Se o dinheiro passou mesmo por uma conta tua agora, usa antes o Registo rápido e marca "
+          {friend.name}" lá.
+        </p>
+      </div>
 
       <fieldset className="space-y-2">
         <legend className="sr-only">Quem pagou</legend>
