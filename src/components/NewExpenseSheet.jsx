@@ -33,25 +33,18 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  // Só faz sentido ligar a uma conta tua quando FOSTE TU que pagaste (paid_for_them):
-  // se "ele pagou por mim", não saiu dinheiro nenhum da tua conta.
-  const [linkAccount, setLinkAccount] = useState(false)
+  // "Paguei por ele" sempre saiu de uma conta tua (banco ou "Dinheiro"), por isso exige
+  // sempre conta+categoria, tal como o Registo rápido — "ele pagou por mim" não tem
+  // conta nenhuma envolvida do teu lado, por isso nunca mostra estes campos.
   const [accounts, setAccounts] = useState([])
   const [categories, setCategories] = useState([])
-  const [loadingLists, setLoadingLists] = useState(false)
+  const [loadingLists, setLoadingLists] = useState(true)
   const [listsFailed, setListsFailed] = useState(false)
   const [accountId, setAccountId] = useState('')
   const [categoryId, setCategoryId] = useState('')
 
   useEffect(() => {
-    if (kind !== 'paid_for_them') setLinkAccount(false)
-  }, [kind])
-
-  useEffect(() => {
-    if (!linkAccount) return
     let cancelled = false
-    setLoadingLists(true)
-    setListsFailed(false)
     Promise.all([listAccounts(), listCategories()])
       .then(([accs, cats]) => {
         if (cancelled) return
@@ -69,9 +62,9 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
     return () => {
       cancelled = true
     }
-  }, [linkAccount])
+  }, [])
 
-  const wantsAccount = kind === 'paid_for_them' && linkAccount
+  const wantsAccount = kind === 'paid_for_them'
   const accountBlocked = wantsAccount && (loadingLists || listsFailed || accounts.length === 0 || categories.length === 0)
 
   async function handleSubmit(e) {
@@ -199,63 +192,43 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
         />
       </div>
 
-      {kind === 'paid_for_them' && (
+      {wantsAccount && (
         <div>
-          <label className="flex min-h-11 items-center gap-2 text-sm text-neutral-800 dark:text-neutral-200">
-            <input
-              type="checkbox"
-              checked={linkAccount}
-              onChange={(e) => setLinkAccount(e.target.checked)}
-              className="size-5 accent-neutral-900 dark:accent-neutral-100"
-            />
-            Saiu agora de uma conta tua
-          </label>
-          <p className="mt-0.5 text-xs text-neutral-500">
-            {linkAccount
-              ? 'Cria logo o gasto em Registo, ligado a este movimento.'
-              : 'Fica só aqui no conta-corrente, sem mexer nas tuas contas (ex.: pagaste em dinheiro).'}
-          </p>
-
-          {linkAccount && (
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              {listsFailed ? (
-                <p className="col-span-2 text-sm text-red-600 dark:text-red-400">
-                  Não foi possível carregar as contas. Tenta outra vez.
-                </p>
-              ) : !loadingLists && (accounts.length === 0 || categories.length === 0) ? (
-                <p className="col-span-2 text-sm text-red-600 dark:text-red-400">
-                  Precisas de ter pelo menos uma conta e uma categoria de gastos.
-                </p>
-              ) : (
-                <>
-                  <select
-                    value={accountId}
-                    disabled={loadingLists}
-                    onChange={(e) => setAccountId(e.target.value)}
-                    aria-label="Conta"
-                    className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-                  >
-                    {accounts.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={categoryId}
-                    disabled={loadingLists}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    aria-label="Categoria"
-                    className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-                  >
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </>
-              )}
+          <p className={labelClass}>Saiu de que conta?</p>
+          {listsFailed ? (
+            <p className="text-sm text-red-600 dark:text-red-400">Não foi possível carregar as contas. Tenta outra vez.</p>
+          ) : !loadingLists && (accounts.length === 0 || categories.length === 0) ? (
+            <p className="text-sm text-red-600 dark:text-red-400">
+              Precisas de ter pelo menos uma conta e uma categoria de gastos. Cria-as em Gestão primeiro.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <select
+                value={accountId}
+                disabled={loadingLists}
+                onChange={(e) => setAccountId(e.target.value)}
+                aria-label="Conta"
+                className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              >
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={categoryId}
+                disabled={loadingLists}
+                onChange={(e) => setCategoryId(e.target.value)}
+                aria-label="Categoria"
+                className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              >
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
         </div>

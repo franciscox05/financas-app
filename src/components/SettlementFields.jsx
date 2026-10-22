@@ -10,12 +10,7 @@ const OPTIONS = [
   {
     value: 'bank',
     title: 'Entrou numa conta tua',
-    hint: 'Banco, MB Way, ou uma conta de dinheiro físico que já tenhas — escolhes qual a seguir',
-  },
-  {
-    value: 'cash',
-    title: 'Dinheiro, sem conta',
-    hint: 'Não atualiza nenhuma conta tua — só fecha o saldo com ele',
+    hint: 'Banco, MB Way, ou a tua conta de "Dinheiro" — escolhes qual a seguir',
   },
   { value: 'offset', title: 'Descontado noutra coisa', hint: 'Abate noutra coisa que fizeste por ele' },
 ]
@@ -72,9 +67,7 @@ export default function SettlementFields({ kind, idPrefix, disabled, onChange, i
   }
 
   const ready =
-    settlement === 'cash' ||
-    settlement === 'offset' ||
-    (wantsBank && !loadingLists && !problem && Boolean(accountId) && Boolean(categoryId))
+    settlement === 'offset' || (wantsBank && !loadingLists && !problem && Boolean(accountId) && Boolean(categoryId))
 
   // Avisa o pai sempre que a escolha muda.
   useEffect(() => {
