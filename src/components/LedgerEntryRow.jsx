@@ -48,7 +48,7 @@ export default function LedgerEntryRow({ entry, friend, viewerId, onDelete, onCh
     : positive
       ? 'text-green-700 dark:text-green-500'
       : 'text-red-700 dark:text-red-500'
-  const muted = entry.status === 'archived' || entry.status === 'cancelled'
+  const muted = dimmed
 
   return (
     <li className="space-y-2 py-2">

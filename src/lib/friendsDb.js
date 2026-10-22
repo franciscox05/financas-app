@@ -168,21 +168,30 @@ export async function createRepayment({
       transaction_id: transaction?.id ?? null,
     })
   } catch (err) {
-    if (transaction) await supabase.from('transactions').delete().eq('id', transaction.id)
+    if (transaction) {
+      const { error: cleanupError } = await supabase.from('transactions').delete().eq('id', transaction.id)
+      if (cleanupError) {
+        throw new Error(
+          `${err.message} (e a transação ${transaction.id} ficou órfã: ${cleanupError.message})`,
+        )
+      }
+    }
     throw err
   }
 }
 
-// Apaga o movimento e depois, se era uma devolução via banco, a transação que
-// criou (a FK é on delete set null, não em cascata, por isso é explícito).
+// Apaga primeiro a transação (se existir) e só depois o movimento, para que uma falha a meio
+// nunca deixe o movimento desaparecido com a transação ainda na conta (o inverso do que fazia
+// antes: apagar o movimento primeiro arriscava perder a única referência à transação a apagar
+// se o segundo delete falhasse). A FK é on delete set null, não em cascata, por isso é explícito.
 export async function deleteEntry(entry) {
-  const { error } = await supabase.from('ledger_entries').delete().eq('id', entry.id)
-  if (error) throw error
-
   if (entry.settlement === 'bank' && entry.transaction_id) {
     const { error: txError } = await supabase.from('transactions').delete().eq('id', entry.transaction_id)
     if (txError) throw txError
   }
+
+  const { error } = await supabase.from('ledger_entries').delete().eq('id', entry.id)
+  if (error) throw error
 }
 
 export async function getMyMbwayPhone() {

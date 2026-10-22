@@ -277,9 +277,15 @@ export default function FriendRequestPanel({ friend, onChanged }) {
         </p>
         <p className="text-xs text-neutral-500">Fica a aguardar que a pessoa aceite.</p>
         {errorLine}
-        <button type="button" onClick={handleCancel} disabled={busy || !request} className={secondaryButton}>
-          {busy ? 'A cancelar...' : 'Cancelar pedido'}
-        </button>
+        {request ? (
+          <button type="button" onClick={handleCancel} disabled={busy} className={secondaryButton}>
+            {busy ? 'A cancelar...' : 'Cancelar pedido'}
+          </button>
+        ) : (
+          <button type="button" onClick={loadRequest} disabled={busy} className={secondaryButton}>
+            Tentar outra vez
+          </button>
+        )}
       </div>
     )
   }

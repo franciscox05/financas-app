@@ -1,10 +1,9 @@
-import { Plus } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { suggestAmount, suggestCategoryId } from '../lib/categorySuggest'
 import { useToast } from '../context/toastContext'
 import { today } from '../lib/dates'
-import { createDebt, createTransaction } from '../lib/db'
+import { createTransaction } from '../lib/db'
 import { eur } from '../lib/format'
 
 export default function QuickEntryForm({ accounts, categories, transactions, onCreated }) {
@@ -21,10 +20,6 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
   const [amountSuggested, setAmountSuggested] = useState(false)
   const categoryTouchedRef = useRef(false)
   const amountTouchedRef = useRef(false)
-
-  const [showDebt, setShowDebt] = useState(false)
-  const [debtCounterparty, setDebtCounterparty] = useState('')
-  const [debtAmount, setDebtAmount] = useState('')
 
   const categoriesForType = useMemo(
     () => categories.filter((c) => c.type === type),
@@ -73,14 +68,6 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note, type])
 
-  useEffect(() => {
-    if (type !== 'expense') {
-      setShowDebt(false)
-      setDebtCounterparty('')
-      setDebtAmount('')
-    }
-  }, [type])
-
   async function handleSubmit(e) {
     e.preventDefault()
     const numericAmount = Number(amount)
@@ -97,12 +84,6 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       return
     }
 
-    const numericDebtAmount = Number(debtAmount)
-    if (showDebt && (!debtCounterparty.trim() || !numericDebtAmount || numericDebtAmount <= 0)) {
-      setError('Indica quem te deve e um valor válido, ou fecha essa secção.')
-      return
-    }
-
     setSubmitting(true)
     setError('')
     try {
@@ -114,14 +95,6 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
         occurredOn,
         note: note.trim(),
       })
-      if (showDebt) {
-        await createDebt({
-          direction: 'owed_to_me',
-          counterpartyName: debtCounterparty.trim(),
-          amount: numericDebtAmount,
-          transactionId: created.id,
-        })
-      }
       setAmount('')
       setNote('')
       setOccurredOn(today())
@@ -130,9 +103,6 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       setAmountSuggested(false)
       categoryTouchedRef.current = false
       amountTouchedRef.current = false
-      setShowDebt(false)
-      setDebtCounterparty('')
-      setDebtAmount('')
       onCreated(created)
       toast.success(
         `${type === 'income' ? 'Ganho' : 'Gasto'} de ${eur(numericAmount)} registado.`,
@@ -271,44 +241,13 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       </div>
 
       {type === 'expense' && (
-        <div>
-          <button
-            type="button"
-            onClick={() => {
-              if (!showDebt && !debtAmount && amount) setDebtAmount(amount)
-              setShowDebt((v) => !v)
-            }}
-            className="-my-1 flex min-h-9 items-center gap-0.5 text-xs text-neutral-600 underline-offset-2 hover:underline dark:text-neutral-400"
-          >
-            {showDebt ? 'Fechar' : (
-              <>
-                <Plus size={13} /> Alguém te deve por isto?
-              </>
-            )}
-          </button>
-
-          {showDebt && (
-            <div className="mt-2 grid grid-cols-2 gap-2 rounded-lg border border-neutral-200 p-2 dark:border-neutral-800">
-              <input
-                type="text"
-                placeholder="Nome de quem te deve"
-                value={debtCounterparty}
-                onChange={(e) => setDebtCounterparty(e.target.value)}
-                className="col-span-2 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-              />
-              <input
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                min="0"
-                placeholder="Quanto te deve (€)"
-                value={debtAmount}
-                onChange={(e) => setDebtAmount(e.target.value)}
-                className="col-span-2 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-              />
-            </div>
-          )}
-        </div>
+        <p className="-my-1 text-xs text-neutral-400">
+          Alguém te deve por isto?{' '}
+          <Link to="/dividas" className="underline underline-offset-2">
+            Regista em Amigos
+          </Link>{' '}
+          depois de guardares.
+        </p>
       )}
 
       {error && <p className="text-sm text-red-600">{error}</p>}

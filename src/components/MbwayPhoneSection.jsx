@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { getMyMbwayPhone, saveMbwayPhone } from '../lib/friendsDb'
 
@@ -12,33 +12,39 @@ export default function MbwayPhoneSection() {
   const [loaded, setLoaded] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const mounted = useRef(true)
 
   useEffect(() => {
-    let active = true
+    mounted.current = true
     getMyMbwayPhone()
       .then((phone) => {
-        if (active) setValue(phone ?? '')
+        if (mounted.current) setValue(phone ?? '')
       })
-      .catch(() => {})
+      .catch((err) => {
+        if (mounted.current) setError(err.message || 'Não foi possível carregar o número.')
+      })
       .finally(() => {
-        if (active) setLoaded(true)
+        if (mounted.current) setLoaded(true)
       })
     return () => {
-      active = false
+      mounted.current = false
     }
   }, [])
 
   async function handleSubmit(e) {
     e.preventDefault()
+    if (busy) return
     setBusy(true)
     setError('')
     try {
       await saveMbwayPhone(value)
-      toast.success(value.trim() === '' ? 'Número MB Way removido.' : 'Número MB Way guardado.')
+      if (mounted.current) {
+        toast.success(value.trim() === '' ? 'Número MB Way removido.' : 'Número MB Way guardado.')
+      }
     } catch (err) {
-      setError(err.message || 'Não foi possível guardar o número. Tenta outra vez.')
+      if (mounted.current) setError(err.message || 'Não foi possível guardar o número. Tenta outra vez.')
     } finally {
-      setBusy(false)
+      if (mounted.current) setBusy(false)
     }
   }
 
@@ -58,7 +64,7 @@ export default function MbwayPhoneSection() {
             autoComplete="off"
             placeholder="Ex: 912 345 678"
             value={value}
-            disabled={!loaded}
+            disabled={!loaded || busy}
             onChange={(e) => setValue(e.target.value)}
             className={`min-h-11 min-w-0 flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm transition-colors duration-150 ease-out disabled:opacity-50 motion-reduce:transition-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 ${focusRing}`}
           />
