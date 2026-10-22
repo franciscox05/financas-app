@@ -4,7 +4,7 @@ import { today } from '../lib/dates'
 import { listAccounts, listCategories } from '../lib/db'
 import { parseExpenseAmount } from '../lib/expenseInput'
 import { createRepayment } from '../lib/friendsDb'
-import { createSharedEntry } from '../lib/linkedDb'
+import { createSharedEntry, retireDeclinedEntry } from '../lib/linkedDb'
 import { isSharedGuardError } from '../lib/linkedLogic'
 import { notifyPendingChanged } from '../lib/pendingEvents'
 import { suggestedRepayment } from '../lib/ledgerMath'
@@ -129,6 +129,11 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
       if (shared) {
         await createSharedEntry(fields)
         notifyPendingChanged()
+        if (prefill?.id) {
+          await retireDeclinedEntry(prefill.id).catch(() => {
+            toast.error('Corrigido e reenviado, mas o movimento antigo continua a contar — apaga-o à mão na lista.')
+          })
+        }
         toast.success(`Já conta do teu lado. Enviado a ${friend.name} para confirmar também.`)
       } else {
         await createRepayment({ ...fields, friendName: friend.name })

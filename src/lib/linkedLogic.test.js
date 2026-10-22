@@ -112,19 +112,23 @@ test('countActionableRequests ignora pedidos que aguardam o remetente', () => {
 })
 
 test('blocksTransactionEdit: só bloqueia enquanto o movimento ainda conta ou está por responder', () => {
-  for (const status of ['pending', 'confirmed', 'cancel_requested']) {
+  for (const status of ['pending', 'confirmed', 'cancel_requested', 'declined']) {
     assert.equal(blocksTransactionEdit({ status }), true, status)
   }
-  for (const status of ['declined', 'cancelled', 'archived', undefined]) {
+  for (const status of ['cancelled', 'archived', undefined]) {
     assert.equal(blocksTransactionEdit({ status }), false, String(status))
   }
   assert.equal(blocksTransactionEdit(null), false)
 })
 
-test('transactionLinkedMessage: texto diferente para pendente vs. já resolvido', () => {
+test('transactionLinkedMessage: texto diferente para pendente, contestado e já resolvido', () => {
   assert.match(
     transactionLinkedMessage({ status: 'pending', friendName: 'Tiago' }),
     /pedido pendente com Tiago/,
+  )
+  assert.match(
+    transactionLinkedMessage({ status: 'declined', friendName: 'Tiago' }),
+    /Tiago contestou este movimento, mas continua a contar/,
   )
   assert.match(
     transactionLinkedMessage({ status: 'confirmed', friendName: 'Tiago' }),

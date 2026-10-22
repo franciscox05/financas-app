@@ -41,7 +41,10 @@ test('lifetimeTotals soma por direção, ignorando devoluções já feitas e mov
     { kind: 'repaid_to_me', amount: 25, status: 'confirmed' },
     { kind: 'paid_for_them', amount: 10, status: 'confirmed' },
     { kind: 'paid_for_me', amount: 5, status: 'confirmed' },
-    { kind: 'paid_for_them', amount: 999, status: 'declined' },
+    // Cancelado: nunca conta, independentemente de quem criou.
+    { kind: 'paid_for_them', amount: 999, status: 'cancelled' },
+    // Pendente criado pelo amigo (não por mim): ainda não conta do meu lado.
+    { kind: 'paid_for_them', amount: 888, status: 'pending', created_by: 'him', user_id: 'me' },
   ]
   assert.deepEqual(lifetimeTotals(entries), { lent: 35, borrowed: 5, repaidToMe: 25, repaidToThem: 0 })
 })
@@ -55,7 +58,7 @@ test('entryCounts: pendente conta se eu criei, não conta se o outro criou', () 
   assert.equal(entryCounts({ status: 'pending', created_by: HIM, user_id: ME }), false)
   assert.equal(entryCounts({ status: 'confirmed', created_by: HIM, user_id: ME }), true)
   assert.equal(entryCounts({ status: 'cancel_requested', created_by: HIM, user_id: ME }), true)
-  assert.equal(entryCounts({ status: 'declined', created_by: ME, user_id: ME }), false)
+  assert.equal(entryCounts({ status: 'declined', created_by: ME, user_id: ME }), true)
   assert.equal(entryCounts({ status: 'cancelled', created_by: ME, user_id: ME }), false)
 })
 test('balanceOf: um gasto partilhado pendente já conta do lado de quem o criou', () => {

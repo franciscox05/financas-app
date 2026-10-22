@@ -27,13 +27,15 @@ export function signedCents(kind, amount) {
 }
 
 // Conta para o saldo: confirmado/anulação pedida (movimentos sem estado, antigos/locais,
-// contam como confirmados) — ou ainda pendente mas criado por quem está a ver as suas
-// próprias linhas. Quem cria um movimento partilhado já o vê contar do seu lado; só o
-// saldo da OUTRA pessoa é que espera pela confirmação dela.
+// contam como confirmados) — ou ainda pendente/contestado mas criado por quem está a ver
+// as suas próprias linhas. Quem cria um movimento partilhado já o vê contar do seu lado,
+// mesmo que o amigo recuse ("declined" é só um aviso, nunca reverte sozinho); só o saldo
+// da OUTRA pessoa é que espera pela confirmação dela.
 export function entryCounts(entry) {
   const status = entry.status ?? 'confirmed'
   if (COUNTING_STATUSES.includes(status)) return true
-  return status === 'pending' && entry.created_by === entry.user_id
+  if (status === 'pending' || status === 'declined') return entry.created_by === entry.user_id
+  return false
 }
 
 export function balanceOf(entries) {

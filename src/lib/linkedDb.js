@@ -97,6 +97,12 @@ export async function cancelPendingEntry(id) {
   await rpc('cancel_pending_entry', { p_id: id })
 }
 
+// Depois de "Corrigir e reenviar" criar o movimento substituto, aposenta o
+// contestado (deixa de contar) — evita contar os dois.
+export async function retireDeclinedEntry(id) {
+  await rpc('retire_declined_entry', { p_id: id })
+}
+
 export async function requestCancel(id) {
   await rpc('request_cancel', { p_id: id })
 }

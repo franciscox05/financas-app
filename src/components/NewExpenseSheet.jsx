@@ -3,7 +3,7 @@ import { useToast } from '../context/toastContext'
 import { today } from '../lib/dates'
 import { parseExpenseAmount } from '../lib/expenseInput'
 import { createExpense } from '../lib/friendsDb'
-import { createSharedEntry } from '../lib/linkedDb'
+import { createSharedEntry, retireDeclinedEntry } from '../lib/linkedDb'
 import { isSharedGuardError } from '../lib/linkedLogic'
 import { notifyPendingChanged } from '../lib/pendingEvents'
 import OptionalDateField from './OptionalDateField'
@@ -54,6 +54,12 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
       if (friend.status === 'connected') {
         await createSharedEntry(fields)
         notifyPendingChanged()
+        if (prefill?.id) {
+          // O antigo (contestado) deixa de contar — senão o corrigido contava a dobrar.
+          await retireDeclinedEntry(prefill.id).catch(() => {
+            toast.error('Corrigido e reenviado, mas o movimento antigo continua a contar — apaga-o à mão na lista.')
+          })
+        }
         toast.success(`Já conta do teu lado. Enviado a ${friend.name} para confirmar também.`)
       } else {
         await createExpense(fields)
