@@ -66,6 +66,7 @@ export async function createSharedEntry({
   settlement,
   accountId,
   categoryId,
+  transactionId,
 }) {
   return rpc('create_shared_entry', {
     p_friend_id: friendId,
@@ -77,6 +78,7 @@ export async function createSharedEntry({
     p_settlement: settlement || null,
     p_account_id: accountId || null,
     p_category_id: categoryId || null,
+    p_transaction_id: transactionId || null,
   })
 }
 

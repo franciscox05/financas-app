@@ -214,6 +214,26 @@ export async function deleteEntry(entry) {
   if (error) throw error
 }
 
+// Movimento (de um amigo) ligado a uma transação, se existir — para avisar antes de
+// editar/apagar a transação em Registo que isso também mexe no conta-corrente.
+export async function getLedgerEntryForTransaction(transactionId) {
+  const { data, error } = await supabase
+    .from('ledger_entries')
+    .select('id, friend_id, status, mirror_id, kind')
+    .eq('transaction_id', transactionId)
+    .maybeSingle()
+  if (error) throw error
+  if (!data) return null
+
+  const { data: friend, error: friendError } = await supabase
+    .from('friends')
+    .select('name')
+    .eq('id', data.friend_id)
+    .maybeSingle()
+  if (friendError) throw friendError
+  return { ...data, friendName: friend?.name ?? 'um amigo' }
+}
+
 export async function getMyMbwayPhone() {
   const userId = await getCurrentUserId()
   const { data, error } = await supabase

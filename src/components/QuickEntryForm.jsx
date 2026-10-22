@@ -201,7 +201,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
         if (friend) {
           // Tudo ou nada: se o movimento do amigo falhar, apaga a transação.
           try {
-            if (mode === 'shared-expense') await createSharedEntry(entryFields)
+            if (mode === 'shared-expense') await createSharedEntry({ ...entryFields, transactionId: created.id })
             else {
               await createLinkedEntry({
                 ...entryFields,

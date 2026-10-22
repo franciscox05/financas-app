@@ -1,5 +1,6 @@
-import { ArrowRightLeft, Pencil, Search, Trash2 } from 'lucide-react'
+import { ArrowRightLeft, Link2, Pencil, Search, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useToast } from '../context/toastContext'
 import {
   createTransaction,
@@ -9,7 +10,9 @@ import {
   listMovementsPage,
   updateTransaction,
 } from '../lib/db'
+import { getLedgerEntryForTransaction } from '../lib/friendsDb'
 import { addMonths, monthLabel, monthStart, toIsoDate } from '../lib/dates'
+import { blocksTransactionEdit, transactionLinkedMessage } from '../lib/linkedLogic'
 import { parseSmartQuery } from '../lib/smartSearch'
 import { EmptyState, ErrorNotice, ListSkeleton, Pager } from './Feedback'
 import Money from './Money'
@@ -115,9 +118,8 @@ function TransferRow({ tx, onDeleted, onRestored }) {
   )
 }
 
-function TransactionRow({ tx, categories, accounts, onUpdated, onDeleted, onRestored }) {
+function TransactionRow({ tx, categories, accounts, editing, onEditStart, onEditEnd, onUpdated, onDeleted, onRestored }) {
   const toast = useToast()
-  const [editing, setEditing] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [amount, setAmount] = useState(tx.amount)
   const [categoryId, setCategoryId] = useState(tx.category_id)
@@ -125,10 +127,38 @@ function TransactionRow({ tx, categories, accounts, onUpdated, onDeleted, onRest
   const [note, setNote] = useState(tx.note ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [linkedEntry, setLinkedEntry] = useState(undefined) // undefined = a carregar, null = nenhum
 
   const categoriesForType = categories.filter((c) => c.type === tx.type)
 
+  // Só verifica a ligação a um amigo quando o utilizador vai editar ou apagar —
+  // evita um pedido extra por transação só para listar.
+  useEffect(() => {
+    if (!editing && !confirmingDelete) return
+    let cancelled = false
+    setLinkedEntry(undefined)
+    getLedgerEntryForTransaction(tx.id)
+      .then((entry) => {
+        if (!cancelled) setLinkedEntry(entry)
+      })
+      .catch(() => {
+        if (!cancelled) setLinkedEntry(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [editing, confirmingDelete, tx.id])
+
   async function handleDelete() {
+    if (linkedEntry === undefined) {
+      toast.error('A verificar... tenta outra vez num instante.')
+      return
+    }
+    if (linkedEntry && blocksTransactionEdit(linkedEntry)) {
+      toast.error(transactionLinkedMessage(linkedEntry))
+      setConfirmingDelete(false)
+      return
+    }
     setBusy(true)
     setError('')
     try {
@@ -189,7 +219,7 @@ function TransactionRow({ tx, categories, accounts, onUpdated, onDeleted, onRest
         category_name: categories.find((c) => c.id === updated.category_id)?.name,
         account_name: accounts.find((a) => a.id === updated.account_id)?.name,
       })
-      setEditing(false)
+      onEditEnd()
       toast.success('Transação atualizada.')
     } catch (err) {
       toast.error(`Não foi possível guardar: ${err.message}`)
@@ -204,12 +234,24 @@ function TransactionRow({ tx, categories, accounts, onUpdated, onDeleted, onRest
     setAccountId(tx.account_id)
     setNote(tx.note ?? '')
     setError('')
-    setEditing(false)
+    onEditEnd()
   }
 
   if (editing) {
     return (
       <li className="space-y-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
+        {linkedEntry && (
+          <p className="flex items-start gap-1.5 rounded-lg bg-amber-50 p-2 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+            <Link2 size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <span>
+              Ligado a um movimento com{' '}
+              <Link to={`/dividas/${linkedEntry.friend_id}`} className="underline underline-offset-2">
+                {linkedEntry.friendName}
+              </Link>
+              . Mudar o valor aqui não atualiza esse movimento.
+            </span>
+          </p>
+        )}
         <input
           type="number"
           step="0.01"
@@ -294,7 +336,7 @@ function TransactionRow({ tx, categories, accounts, onUpdated, onDeleted, onRest
           <Money>{formatAmount(tx.amount, tx.type)}</Money>
         </span>
         <button
-          onClick={() => setEditing(true)}
+          onClick={onEditStart}
           aria-label="Editar"
           className="rounded p-1 text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
         >
@@ -430,6 +472,8 @@ export default function TransactionList({ categories, accounts, refreshToken, on
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  // Só uma transação de cada vez em edição: abrir outra fecha a anterior.
+  const [editingId, setEditingId] = useState(null)
 
   // Debounce do texto de pesquisa, para não disparar um pedido a cada tecla.
   useEffect(() => {
@@ -463,9 +507,10 @@ export default function TransactionList({ categories, accounts, refreshToken, on
     return { pageRows, count }
   }
 
-  // Mudar filtros, mês ou pesquisa volta sempre à primeira página.
+  // Mudar filtros, mês ou pesquisa volta sempre à primeira página e fecha a edição aberta.
   useEffect(() => {
     setPage(1)
+    setEditingId(null)
   }, [filters.type, filters.accountId, filters.categoryId, debouncedQuery, selectedMonth, refreshToken])
 
   useEffect(() => {
@@ -478,6 +523,7 @@ export default function TransactionList({ categories, accounts, refreshToken, on
         if (cancelled) return
         setRows(pageRows)
         setTotalCount(count)
+        setEditingId(null)
       } catch (err) {
         if (!cancelled) setError(err.message)
       } finally {
@@ -575,6 +621,9 @@ export default function TransactionList({ categories, accounts, refreshToken, on
                   tx={tx}
                   categories={categories}
                   accounts={accounts}
+                  editing={editingId === tx.id}
+                  onEditStart={() => setEditingId(tx.id)}
+                  onEditEnd={() => setEditingId(null)}
                   onUpdated={handleUpdated}
                   onDeleted={handleDeleted}
                   onRestored={handleRestored}

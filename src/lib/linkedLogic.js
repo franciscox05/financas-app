@@ -95,3 +95,18 @@ export function isCancelRequestForMe(entry, viewerId) {
 export function countActionableRequests(requests) {
   return requests.filter((r) => !r.awaiting).length
 }
+
+// Apagar/editar a transação de um movimento declined/cancelled/archived não faz mal
+// (já não conta para nada); pending/confirmed/cancel_requested ainda são "reais" e têm
+// de ser geridos a partir da página do amigo, nunca apagando a transação por baixo.
+export function blocksTransactionEdit(entry) {
+  return ['pending', 'confirmed', 'cancel_requested'].includes(entry?.status)
+}
+
+// Mensagem a mostrar quando blocksTransactionEdit(entry) é true.
+export function transactionLinkedMessage(entry) {
+  if (entry.status === 'pending') {
+    return `Este gasto tem um pedido pendente com ${entry.friendName}. Cancela o pedido na página dele antes de editar ou apagar esta transação.`
+  }
+  return `Este gasto está ligado a um movimento com ${entry.friendName}. Gere isso na página dele — apagar esse movimento também apaga esta transação.`
+}
