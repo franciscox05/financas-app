@@ -8,6 +8,40 @@ export async function getFullName() {
   return data?.full_name ?? ''
 }
 
+export async function getAvatarPath() {
+  const userId = await getCurrentUserId()
+  const { data, error } = await supabase.from('profiles').select('avatar_path').eq('id', userId).maybeSingle()
+  if (error) throw error
+  return data?.avatar_path ?? null
+}
+
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024
+const EXT_BY_TYPE = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' }
+
+// Caminho fixo "{userId}/avatar.ext" (upsert: substitui a anterior, mesmo que
+// tivesse outra extensão — apaga-se a antiga só se a extensão mudar).
+export async function uploadAvatar(file) {
+  if (!file.type.startsWith('image/')) throw new Error('Escolhe uma imagem.')
+  if (file.size > MAX_AVATAR_BYTES) throw new Error('A imagem não pode passar de 5 MB.')
+  const userId = await getCurrentUserId()
+  const ext = EXT_BY_TYPE[file.type] ?? 'jpg'
+  const path = `${userId}/avatar.${ext}`
+
+  const previous = await getAvatarPath()
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(path, file, { upsert: true, contentType: file.type })
+  if (uploadError) throw uploadError
+
+  const { error } = await supabase.from('profiles').upsert({ id: userId, avatar_path: path })
+  if (error) throw error
+
+  if (previous && previous !== path) {
+    await supabase.storage.from('avatars').remove([previous]).catch(() => {})
+  }
+  return path
+}
+
 // Upsert: garante que funciona mesmo que a linha de perfil ainda não exista.
 export async function updateFullName(fullName) {
   const userId = await getCurrentUserId()

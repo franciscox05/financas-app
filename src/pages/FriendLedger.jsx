@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import CollapsibleSection from '../components/CollapsibleSection'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { EmptyState, ErrorNotice, PageSkeleton } from '../components/Feedback'
+import FriendAvatar from '../components/FriendAvatar'
 import FriendRequestPanel from '../components/FriendRequestPanel'
 import LedgerEntryRow from '../components/LedgerEntryRow'
 import Money from '../components/Money'
@@ -248,6 +249,7 @@ export default function FriendLedger() {
           </form>
         ) : (
           <div className="flex items-center gap-1">
+            <FriendAvatar name={friend.name} avatarPath={friend.avatarPath} size="md" />
             <h2 className="min-w-0 truncate text-xl font-semibold tracking-tight">{friend.name}</h2>
             <button
               type="button"

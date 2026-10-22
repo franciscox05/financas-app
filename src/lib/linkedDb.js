@@ -129,3 +129,9 @@ export async function countPendingForMe() {
 export async function shareOpeningBalance(friendId) {
   return rpc('share_opening_balance', { p_friend_id: friendId })
 }
+
+// Caminho da foto de cada amigo ligado que já tem uma — {friend_id: avatar_path}.
+export async function listFriendAvatars() {
+  const rows = (await rpc('list_friend_avatars')) ?? []
+  return new Map(rows.map((r) => [r.friend_id, r.avatar_path]))
+}

@@ -2,6 +2,7 @@ import { ChevronRight, Plus } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState, ErrorNotice, PageSkeleton } from '../components/Feedback'
+import FriendAvatar from '../components/FriendAvatar'
 import IncomingRequests from '../components/IncomingRequests'
 import Money from '../components/Money'
 import PendingEntriesStrip from '../components/PendingEntriesStrip'
@@ -267,11 +268,14 @@ export default function Friends() {
                     to={`/dividas/${friend.id}`}
                     className={`-mx-2 flex min-h-14 items-center justify-between gap-3 rounded-lg px-2 py-2 transition-colors duration-150 ease-out hover:bg-neutral-100 active:bg-neutral-200 motion-reduce:transition-none dark:hover:bg-neutral-800 dark:active:bg-neutral-700 ${focusRing}`}
                   >
-                    <span className="min-w-0 truncate font-medium text-neutral-800 dark:text-neutral-200">
-                      {friend.name}
-                      {link !== 'Local' && (
-                        <span className="ml-2 text-xs font-normal text-neutral-500">{link}</span>
-                      )}
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <FriendAvatar name={friend.name} avatarPath={friend.avatarPath} />
+                      <span className="min-w-0 truncate font-medium text-neutral-800 dark:text-neutral-200">
+                        {friend.name}
+                        {link !== 'Local' && (
+                          <span className="ml-2 text-xs font-normal text-neutral-500">{link}</span>
+                        )}
+                      </span>
                     </span>
                     <span className="flex shrink-0 items-center gap-1.5 text-sm">
                       <span className="text-right">

@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 import { createTransaction, getCurrentUserId } from './db'
 import { validateName } from './names'
-import { sendFriendRequestByPhone } from './linkedDb'
+import { listFriendAvatars, sendFriendRequestByPhone } from './linkedDb'
 import {
   phoneForStorage,
   mbwayForStorage,
@@ -16,18 +16,25 @@ import {
 
 // Amigos + saldo. A view `friend_balances` não tem linha para amigos sem
 // movimentos, por isso o saldo assume 0 quando falta (em vez de um join que
-// os esconderia).
+// os esconderia). A foto só existe para quem está "connected" — falha
+// silenciosamente (sem foto) se o pedido da foto falhar, para não bloquear a
+// lista por causa de um extra.
 export async function listFriendsWithBalance() {
-  const [friendsRes, balancesRes] = await Promise.all([
+  const [friendsRes, balancesRes, avatars] = await Promise.all([
     supabase.from('friends').select('*').order('name'),
     supabase.from('friend_balances').select('friend_id, balance'),
+    listFriendAvatars().catch(() => new Map()),
   ])
   if (friendsRes.error) throw friendsRes.error
   if (balancesRes.error) throw balancesRes.error
 
   // friends.* inclui status e linked_user_id.
   const balances = new Map(balancesRes.data.map((b) => [b.friend_id, Number(b.balance)]))
-  return friendsRes.data.map((f) => ({ ...f, balance: balances.get(f.id) ?? 0 }))
+  return friendsRes.data.map((f) => ({
+    ...f,
+    balance: balances.get(f.id) ?? 0,
+    avatarPath: avatars.get(f.id) ?? null,
+  }))
 }
 
 // Os nomes são únicos por utilizador (sem acentos nem maiúsculas); a
