@@ -19,8 +19,16 @@ const focusRing =
 const labelClass = 'mb-1 block text-xs font-medium text-neutral-500'
 
 const OPTIONS = [
-  { value: 'bank', title: 'MB Way / banco', hint: 'Escolhe a conta onde entrou ou saiu' },
-  { value: 'cash', title: 'Dinheiro na mão', hint: 'Não mexe em nenhuma conta' },
+  {
+    value: 'bank',
+    title: 'Entrou numa conta tua',
+    hint: 'Banco, MB Way, ou uma conta de dinheiro físico que já tenhas — escolhes qual a seguir',
+  },
+  {
+    value: 'cash',
+    title: 'Dinheiro, sem conta',
+    hint: 'Não atualiza nenhuma conta tua — só fecha o saldo com ele',
+  },
   { value: 'offset', title: 'Descontado noutra coisa', hint: 'Abate noutra coisa que fizeste por ele' },
 ]
 
@@ -95,6 +103,10 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
     if (saving) return
     if (parsed === null) {
       setError('Indica um valor válido.')
+      return
+    }
+    if (!note.trim()) {
+      setError('Indica uma nota (ex: a que respeita).')
       return
     }
     if (bankBlocked) {
@@ -237,12 +249,14 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
 
       <div>
         <label htmlFor="repayment-note" className={labelClass}>
-          Nota (opcional)
+          Nota
         </label>
         <input
           id="repayment-note"
           type="text"
           autoComplete="off"
+          required
+          placeholder="Ex: Almoço de sexta"
           value={note}
           onChange={(e) => setNote(e.target.value)}
           className={inputClass}
@@ -279,7 +293,7 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
         </button>
         <button
           type="submit"
-          disabled={saving || bankBlocked}
+          disabled={saving || bankBlocked || !note.trim()}
           className={`min-h-11 flex-1 rounded-lg bg-neutral-900 font-medium text-white transition duration-150 ease-out hover:bg-neutral-700 active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300 ${focusRing}`}
         >
           {saving ? 'A guardar...' : shared ? 'Enviar para confirmar' : 'Guardar'}

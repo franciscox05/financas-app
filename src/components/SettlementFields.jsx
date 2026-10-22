@@ -7,8 +7,16 @@ const inputClass =
 const labelClass = 'mb-1 block text-xs font-medium text-neutral-500'
 
 const OPTIONS = [
-  { value: 'bank', title: 'MB Way / banco', hint: 'Escolhe a conta onde entrou ou saiu' },
-  { value: 'cash', title: 'Dinheiro na mão', hint: 'Não mexe em nenhuma conta' },
+  {
+    value: 'bank',
+    title: 'Entrou numa conta tua',
+    hint: 'Banco, MB Way, ou uma conta de dinheiro físico que já tenhas — escolhes qual a seguir',
+  },
+  {
+    value: 'cash',
+    title: 'Dinheiro, sem conta',
+    hint: 'Não atualiza nenhuma conta tua — só fecha o saldo com ele',
+  },
   { value: 'offset', title: 'Descontado noutra coisa', hint: 'Abate noutra coisa que fizeste por ele' },
 ]
 

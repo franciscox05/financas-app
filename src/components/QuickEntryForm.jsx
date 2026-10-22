@@ -74,9 +74,11 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
     .includes('investiment')
 
   // Sugere categoria a partir do histórico quando o utilizador escreve uma nota,
-  // desde que não tenha escolhido a categoria manualmente para esta transação.
+  // desde que não tenha escolhido a categoria manualmente para esta transação,
+  // nem tenha um amigo associado (nesse caso "Empréstimos"/"Devoluções" manda —
+  // senão escrever a nota depois de escolher o amigo trocava a categoria de volta).
   useEffect(() => {
-    if (categoryTouchedRef.current) return
+    if (categoryTouchedRef.current || friendId) return
     const id = suggestCategoryId(note, type, transactions ?? [])
     if (id && categoriesForType.some((c) => c.id === id)) {
       setCategoryId(id)
