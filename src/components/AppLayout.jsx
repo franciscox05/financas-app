@@ -1,6 +1,6 @@
-import { Wallet } from 'lucide-react'
+import { UserCircle2, Wallet } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Link, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { subscribeLiveUpdates } from '../lib/liveUpdates'
 import { notifyPendingChanged } from '../lib/pendingEvents'
@@ -49,6 +49,13 @@ export default function AppLayout() {
         </span>
         <div className="flex items-center gap-3">
           <span className="hidden text-sm text-neutral-500 sm:inline">{user.email}</span>
+          <Link
+            to="/perfil"
+            aria-label="Perfil"
+            className="flex size-9 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100"
+          >
+            <UserCircle2 size={20} aria-hidden="true" />
+          </Link>
           <PrivacyToggle />
           <NotificationToggle />
           <button

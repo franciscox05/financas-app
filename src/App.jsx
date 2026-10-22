@@ -11,6 +11,7 @@ import Friends from './pages/Friends'
 import Login from './pages/Login'
 import Manage from './pages/Manage'
 import NetWorth from './pages/NetWorth'
+import Profile from './pages/Profile'
 import Signup from './pages/Signup'
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
               <Route path="/dividas" element={<Friends />} />
               <Route path="/dividas/:friendId" element={<FriendLedger />} />
               <Route path="/gestao" element={<Manage />} />
+              <Route path="/perfil" element={<Profile />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

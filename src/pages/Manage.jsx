@@ -3,8 +3,6 @@ import CategoryRulesSection from '../components/CategoryRulesSection'
 import EntityManager from '../components/EntityManager'
 import { ErrorNotice, ListSkeleton } from '../components/Feedback'
 import ImportSection from '../components/ImportSection'
-import MbwayPhoneSection from '../components/MbwayPhoneSection'
-import MyPhoneSection from '../components/MyPhoneSection'
 import ReclassifySection from '../components/ReclassifySection'
 import { balanceAt } from '../lib/accountBalance'
 import { today } from '../lib/dates'
@@ -146,10 +144,6 @@ export default function Manage() {
           setCategories((prev) => prev.map((c) => (c.id === item.id ? updated : c)).sort(byName))
         }}
       />
-
-      <MyPhoneSection />
-
-      <MbwayPhoneSection />
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-neutral-500">Ferramentas avançadas</h2>
