@@ -123,7 +123,7 @@ async function insertEntry(fields) {
   return data
 }
 
-export async function createExpense({ friendId, kind, amount, note, occurredOn, dueOn }) {
+export async function createExpense({ friendId, kind, amount, note, occurredOn, dueOn, transactionId }) {
   return insertEntry({
     friend_id: friendId,
     kind,
@@ -131,6 +131,7 @@ export async function createExpense({ friendId, kind, amount, note, occurredOn, 
     note: note || null,
     occurred_on: occurredOn,
     due_on: dueOn || null,
+    transaction_id: transactionId || null,
   })
 }
 

@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { today } from '../lib/dates'
+import { createTransaction, deleteTransaction, listAccounts, listCategories } from '../lib/db'
 import { parseExpenseAmount } from '../lib/expenseInput'
 import { createExpense } from '../lib/friendsDb'
 import { createSharedEntry, retireDeclinedEntry } from '../lib/linkedDb'
@@ -32,6 +33,47 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  // Só faz sentido ligar a uma conta tua quando FOSTE TU que pagaste (paid_for_them):
+  // se "ele pagou por mim", não saiu dinheiro nenhum da tua conta.
+  const [linkAccount, setLinkAccount] = useState(false)
+  const [accounts, setAccounts] = useState([])
+  const [categories, setCategories] = useState([])
+  const [loadingLists, setLoadingLists] = useState(false)
+  const [listsFailed, setListsFailed] = useState(false)
+  const [accountId, setAccountId] = useState('')
+  const [categoryId, setCategoryId] = useState('')
+
+  useEffect(() => {
+    if (kind !== 'paid_for_them') setLinkAccount(false)
+  }, [kind])
+
+  useEffect(() => {
+    if (!linkAccount) return
+    let cancelled = false
+    setLoadingLists(true)
+    setListsFailed(false)
+    Promise.all([listAccounts(), listCategories()])
+      .then(([accs, cats]) => {
+        if (cancelled) return
+        setAccounts(accs)
+        setCategories(cats.filter((c) => c.type === 'expense'))
+        setAccountId((prev) => prev || (accs[0]?.id ?? ''))
+        setCategoryId((prev) => prev || cats.find((c) => c.type === 'expense')?.id || '')
+      })
+      .catch(() => {
+        if (!cancelled) setListsFailed(true)
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingLists(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [linkAccount])
+
+  const wantsAccount = kind === 'paid_for_them' && linkAccount
+  const accountBlocked = wantsAccount && (loadingLists || listsFailed || accounts.length === 0 || categories.length === 0)
+
   async function handleSubmit(e) {
     e.preventDefault()
     if (saving) return
@@ -40,9 +82,27 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
       setError('Indica um valor válido.')
       return
     }
+    if (wantsAccount && (accountBlocked || !accountId || !categoryId)) {
+      setError(listsFailed ? 'Não foi possível carregar as contas. Tenta outra vez.' : 'Escolhe a conta e a categoria.')
+      return
+    }
     setSaving(true)
     setError('')
+
+    let transactionId = null
     try {
+      if (wantsAccount) {
+        const created = await createTransaction({
+          amount: value,
+          type: 'expense',
+          accountId,
+          categoryId,
+          occurredOn: occurredOn || today(),
+          note: note.trim() || `Conta-corrente: ${friend.name}`,
+        })
+        transactionId = created.id
+      }
+
       const fields = {
         friendId: friend.id,
         kind,
@@ -50,6 +110,7 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
         note: note.trim(),
         occurredOn: occurredOn || today(),
         dueOn,
+        transactionId,
       }
       if (friend.status === 'connected') {
         await createSharedEntry(fields)
@@ -67,6 +128,7 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
       }
       onDone()
     } catch (err) {
+      if (transactionId) await deleteTransaction(transactionId).catch(() => {})
       if (isSharedGuardError(err)) onStale?.()
       setError(err.message)
       setSaving(false)
@@ -79,16 +141,9 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
       aria-label={`Novo gasto com ${friend.name}`}
       className="space-y-4 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
     >
-      <div>
-        <h3 className="text-base font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
-          Novo gasto com {friend.name}
-        </h3>
-        <p className="mt-1 text-xs text-neutral-500">
-          Só fica registado aqui no conta-corrente — não mexe em nenhuma das tuas contas nem aparece no
-          Registo. Se o dinheiro passou mesmo por uma conta tua agora, usa antes o Registo rápido e marca "
-          {friend.name}" lá.
-        </p>
-      </div>
+      <h3 className="text-base font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+        Novo gasto com {friend.name}
+      </h3>
 
       <fieldset className="space-y-2">
         <legend className="sr-only">Quem pagou</legend>
@@ -143,6 +198,68 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
           className={inputClass}
         />
       </div>
+
+      {kind === 'paid_for_them' && (
+        <div>
+          <label className="flex min-h-11 items-center gap-2 text-sm text-neutral-800 dark:text-neutral-200">
+            <input
+              type="checkbox"
+              checked={linkAccount}
+              onChange={(e) => setLinkAccount(e.target.checked)}
+              className="size-5 accent-neutral-900 dark:accent-neutral-100"
+            />
+            Saiu agora de uma conta tua
+          </label>
+          <p className="mt-0.5 text-xs text-neutral-500">
+            {linkAccount
+              ? 'Cria logo o gasto em Registo, ligado a este movimento.'
+              : 'Fica só aqui no conta-corrente, sem mexer nas tuas contas (ex.: pagaste em dinheiro).'}
+          </p>
+
+          {linkAccount && (
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {listsFailed ? (
+                <p className="col-span-2 text-sm text-red-600 dark:text-red-400">
+                  Não foi possível carregar as contas. Tenta outra vez.
+                </p>
+              ) : !loadingLists && (accounts.length === 0 || categories.length === 0) ? (
+                <p className="col-span-2 text-sm text-red-600 dark:text-red-400">
+                  Precisas de ter pelo menos uma conta e uma categoria de gastos.
+                </p>
+              ) : (
+                <>
+                  <select
+                    value={accountId}
+                    disabled={loadingLists}
+                    onChange={(e) => setAccountId(e.target.value)}
+                    aria-label="Conta"
+                    className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                  >
+                    {accounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={categoryId}
+                    disabled={loadingLists}
+                    onChange={(e) => setCategoryId(e.target.value)}
+                    aria-label="Categoria"
+                    className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                  >
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="space-y-4">
         <div className="min-w-0">
