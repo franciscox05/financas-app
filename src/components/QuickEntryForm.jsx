@@ -10,6 +10,7 @@ import { createLinkedEntry, listFriendsWithBalance } from '../lib/friendsDb'
 import { createSharedEntry } from '../lib/linkedDb'
 import { notifyPendingChanged } from '../lib/pendingEvents'
 import { friendEntryKind, friendEntryMode } from '../lib/quickEntryFriend'
+import { defaultCategoryId } from '../lib/repaymentInput'
 
 export default function QuickEntryForm({ accounts, categories, transactions, onCreated }) {
   const toast = useToast()
@@ -103,6 +104,18 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
     setFriendId('')
     setDebtAmount('')
   }, [type])
+
+  // Ao escolher um amigo, salta para "Empréstimos"/"Devoluções" (se existirem e a
+  // categoria ainda não tiver sido escolhida à mão para esta transação).
+  useEffect(() => {
+    if (!friendId || categoryTouchedRef.current) return
+    const id = defaultCategoryId(categories, friendEntryKind(type))
+    if (id && categoriesForType.some((c) => c.id === id)) {
+      setCategoryId(id)
+      setSuggested(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [friendId])
 
   async function handleSubmit(e) {
     e.preventDefault()

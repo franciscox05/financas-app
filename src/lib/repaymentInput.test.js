@@ -24,3 +24,13 @@ test('categoria por defeito', () => {
   assert.equal(defaultCategoryId(cats, 'repaid_to_me'), 'c')
   assert.equal(defaultCategoryId([], 'repaid_to_me'), '')
 })
+test('"Empréstimos"/"Devoluções" têm prioridade sobre "Outros Gastos"/"Outros Ganhos"', () => {
+  const cats = [
+    { id: 'a', type: 'expense', name: 'Outros Gastos' },
+    { id: 'b', type: 'expense', name: 'Empréstimos' },
+    { id: 'c', type: 'income', name: 'Outros Ganhos' },
+    { id: 'd', type: 'income', name: 'Devoluções' },
+  ]
+  assert.equal(defaultCategoryId(cats, 'repaid_to_them'), 'b')
+  assert.equal(defaultCategoryId(cats, 'repaid_to_me'), 'd')
+})

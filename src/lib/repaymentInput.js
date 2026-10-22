@@ -9,11 +9,16 @@ export function overshootNote(kind, balance, amount) {
   return kind === 'repaid_to_me' ? `Passa a ficar a dever-lhe ${x}` : `Passa a ficar ele a dever-te ${x}`
 }
 
-// Categoria por defeito (como em Debts.jsx): "Outros Ganhos" para ganhos,
-// "Outros Gastos" para gastos; senão a primeira do tipo; senão ''.
+// Categoria por defeito para uma devolução: "Devoluções"/"Empréstimos" (dedicadas); se o
+// utilizador ainda não as tiver (criado antes desta categoria existir), cai em
+// "Outros Ganhos"/"Outros Gastos"; por fim a primeira do tipo; senão ''.
 export function defaultCategoryId(categories, kind) {
   const type = kind === 'repaid_to_me' ? 'income' : 'expense'
-  const name = type === 'income' ? 'Outros Ganhos' : 'Outros Gastos'
+  const names = type === 'income' ? ['Devoluções', 'Outros Ganhos'] : ['Empréstimos', 'Outros Gastos']
   const ofType = categories.filter((c) => c.type === type)
-  return (ofType.find((c) => c.name === name) ?? ofType[0])?.id ?? ''
+  for (const name of names) {
+    const match = ofType.find((c) => c.name === name)
+    if (match) return match.id
+  }
+  return ofType[0]?.id ?? ''
 }

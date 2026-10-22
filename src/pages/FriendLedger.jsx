@@ -1,6 +1,7 @@
 import { ArrowLeft, Pencil, Plus } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import CollapsibleSection from '../components/CollapsibleSection'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { EmptyState, ErrorNotice, PageSkeleton } from '../components/Feedback'
 import FriendRequestPanel from '../components/FriendRequestPanel'
@@ -15,7 +16,7 @@ import { getCurrentUserId } from '../lib/db'
 import { deleteEntry, deleteFriend, listEntries, listFriendsWithBalance, updateFriend } from '../lib/friendsDb'
 import { formatPhoneDisplay } from '../lib/contactMessage'
 import { hasOpenBalance } from '../lib/friendsLogic'
-import { balanceOf, describeBalance, suggestedRepayment } from '../lib/ledgerMath'
+import { balanceOf, describeBalance, lifetimeTotals, suggestedRepayment } from '../lib/ledgerMath'
 import { hasPendingOpening, privateConfirmedEntries } from '../lib/linkedLogic'
 import { onPendingChanged } from '../lib/pendingEvents'
 
@@ -55,6 +56,7 @@ export default function FriendLedger() {
   const [savingName, setSavingName] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [confirmFriendDelete, setConfirmFriendDelete] = useState(false)
+  const [showLifetime, setShowLifetime] = useState(false)
 
   // Só a carga mais recente (e só enquanto o ecrã existe) escreve no estado.
   const loadSeq = useRef(0)
@@ -184,6 +186,7 @@ export default function FriendLedger() {
   const repayment = suggestedRepayment(balance)
   const canDeleteFriend = friend.status === 'local' && !hasOpenBalance(balance)
   const connected = friend.status === 'connected'
+  const lifetime = lifetimeTotals(entries)
   const privateOnly = privateConfirmedEntries(entries)
   const privateBalance = balanceOf(privateOnly)
   const showOpeningOffer = connected && privateBalance !== 0 && !hasPendingOpening(entries)
@@ -299,6 +302,49 @@ export default function FriendLedger() {
       </div>
 
       {balance > 0 && <ReminderButtons friend={friend} balance={balance} entries={entries} />}
+
+      {(lifetime.lent > 0 || lifetime.borrowed > 0) && (
+        <CollapsibleSection
+          title="Totais desde sempre"
+          open={showLifetime}
+          onToggle={() => setShowLifetime((v) => !v)}
+        >
+          <dl className="space-y-1.5 text-sm">
+            {lifetime.lent > 0 && (
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-neutral-500">Já lhe emprestaste no total</dt>
+                <dd className="font-medium text-neutral-800 dark:text-neutral-200">
+                  <Money value={lifetime.lent} />
+                </dd>
+              </div>
+            )}
+            {lifetime.repaidToMe > 0 && (
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-neutral-500">Já te devolveu</dt>
+                <dd className="font-medium text-neutral-800 dark:text-neutral-200">
+                  <Money value={lifetime.repaidToMe} />
+                </dd>
+              </div>
+            )}
+            {lifetime.borrowed > 0 && (
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-neutral-500">Já te emprestou no total</dt>
+                <dd className="font-medium text-neutral-800 dark:text-neutral-200">
+                  <Money value={lifetime.borrowed} />
+                </dd>
+              </div>
+            )}
+            {lifetime.repaidToThem > 0 && (
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-neutral-500">Já lhe devolveste</dt>
+                <dd className="font-medium text-neutral-800 dark:text-neutral-200">
+                  <Money value={lifetime.repaidToThem} />
+                </dd>
+              </div>
+            )}
+          </dl>
+        </CollapsibleSection>
+      )}
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <button

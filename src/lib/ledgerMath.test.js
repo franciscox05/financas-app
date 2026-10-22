@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { signedCents, balanceOf, describeBalance, suggestedRepayment, entryLabel } from './ledgerMath.js'
+import { signedCents, balanceOf, describeBalance, suggestedRepayment, entryLabel, lifetimeTotals } from './ledgerMath.js'
 
 test('balanceOf soma com sinal', () => {
   assert.equal(balanceOf([{ kind: 'paid_for_me', amount: 10 }, { kind: 'paid_for_them', amount: 11.5 }]), 1.5)
@@ -26,6 +26,19 @@ test('entryLabel', () => {
   assert.equal(entryLabel('paid_for_me'), 'ele pagou por mim')
   assert.equal(entryLabel('repaid_to_me'), 'ele devolveu-me')
   assert.equal(entryLabel('repaid_to_them'), 'devolvi-lhe')
+})
+test('lifetimeTotals soma por direção, ignorando devoluções já feitas e movimentos que não contam', () => {
+  const entries = [
+    { kind: 'paid_for_them', amount: 25, status: 'confirmed' },
+    { kind: 'repaid_to_me', amount: 25, status: 'confirmed' },
+    { kind: 'paid_for_them', amount: 10, status: 'confirmed' },
+    { kind: 'paid_for_me', amount: 5, status: 'confirmed' },
+    { kind: 'paid_for_them', amount: 999, status: 'declined' },
+  ]
+  assert.deepEqual(lifetimeTotals(entries), { lent: 35, borrowed: 5, repaidToMe: 25, repaidToThem: 0 })
+})
+test('lifetimeTotals de lista vazia é tudo 0', () => {
+  assert.deepEqual(lifetimeTotals([]), { lent: 0, borrowed: 0, repaidToMe: 0, repaidToThem: 0 })
 })
 test('signedCents tabela de sinais e kind desconhecido', () => {
   assert.equal(signedCents('paid_for_them', 1.1), 110)

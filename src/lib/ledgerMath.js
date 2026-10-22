@@ -53,3 +53,18 @@ export function suggestedRepayment(balance) {
 export function entryLabel(kind) {
   return LABELS[kind]
 }
+
+// Totais históricos (desde sempre), por direção — ao contrário do saldo, uma devolução
+// não reduz o que já foi emprestado: só diz quanto falta. Útil para "quanto já lhe
+// emprestei no total", independente de já estar tudo pago ou não.
+export function lifetimeTotals(entries) {
+  const counting = entries.filter((e) => COUNTING_STATUSES.includes(e.status ?? 'confirmed'))
+  const sumKind = (kind) =>
+    counting.filter((e) => e.kind === kind).reduce((total, e) => total + cents(e.amount), 0) / 100
+  return {
+    lent: sumKind('paid_for_them'),
+    borrowed: sumKind('paid_for_me'),
+    repaidToMe: sumKind('repaid_to_me'),
+    repaidToThem: sumKind('repaid_to_them'),
+  }
+}
