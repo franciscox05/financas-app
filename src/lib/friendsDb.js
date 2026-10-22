@@ -218,21 +218,28 @@ export async function deleteEntry(entry) {
 // Movimento (de um amigo) ligado a uma transação, se existir — para avisar antes de
 // editar/apagar a transação em Registo que isso também mexe no conta-corrente.
 export async function getLedgerEntryForTransaction(transactionId) {
+  const map = await getLedgerEntriesForTransactions([transactionId])
+  return map.get(transactionId) ?? null
+}
+
+// Versão em lote, para uma página inteira de Registo de uma vez (1 pedido, não 1 por linha).
+export async function getLedgerEntriesForTransactions(transactionIds) {
+  const ids = transactionIds.filter(Boolean)
+  if (ids.length === 0) return new Map()
+
   const { data, error } = await supabase
     .from('ledger_entries')
-    .select('id, friend_id, status, mirror_id, kind')
-    .eq('transaction_id', transactionId)
-    .maybeSingle()
+    .select('transaction_id, friend_id, status, mirror_id, kind')
+    .in('transaction_id', ids)
   if (error) throw error
-  if (!data) return null
+  if (data.length === 0) return new Map()
 
-  const { data: friend, error: friendError } = await supabase
-    .from('friends')
-    .select('name')
-    .eq('id', data.friend_id)
-    .maybeSingle()
-  if (friendError) throw friendError
-  return { ...data, friendName: friend?.name ?? 'um amigo' }
+  const friendIds = [...new Set(data.map((d) => d.friend_id))]
+  const { data: friends, error: friendsError } = await supabase.from('friends').select('id, name').in('id', friendIds)
+  if (friendsError) throw friendsError
+  const names = new Map(friends.map((f) => [f.id, f.name]))
+
+  return new Map(data.map((d) => [d.transaction_id, { ...d, friendName: names.get(d.friend_id) ?? 'um amigo' }]))
 }
 
 export async function getMyMbwayPhone() {

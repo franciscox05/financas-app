@@ -10,7 +10,7 @@ import {
   listMovementsPage,
   updateTransaction,
 } from '../lib/db'
-import { getLedgerEntryForTransaction } from '../lib/friendsDb'
+import { getLedgerEntriesForTransactions } from '../lib/friendsDb'
 import { addMonths, monthLabel, monthStart, toIsoDate } from '../lib/dates'
 import { blocksTransactionEdit, transactionLinkedMessage } from '../lib/linkedLogic'
 import { parseSmartQuery } from '../lib/smartSearch'
@@ -32,6 +32,14 @@ function formatDate(isoDate) {
     month: '2-digit',
     year: 'numeric',
   })
+}
+
+// Texto extra junto ao nome do amigo na ligação — só para estados que valem a pena
+// destacar; confirmado/cancelado não precisam de aviso (fica só o nome).
+const LINKED_BADGE_TEXT = {
+  pending: 'pendente',
+  declined: 'contestado',
+  cancel_requested: 'anulação pedida',
 }
 
 function TransferRow({ tx, onDeleted, onRestored }) {
@@ -118,7 +126,18 @@ function TransferRow({ tx, onDeleted, onRestored }) {
   )
 }
 
-function TransactionRow({ tx, categories, accounts, editing, onEditStart, onEditEnd, onUpdated, onDeleted, onRestored }) {
+function TransactionRow({
+  tx,
+  categories,
+  accounts,
+  editing,
+  onEditStart,
+  onEditEnd,
+  linkedEntry,
+  onUpdated,
+  onDeleted,
+  onRestored,
+}) {
   const toast = useToast()
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [amount, setAmount] = useState(tx.amount)
@@ -127,33 +146,10 @@ function TransactionRow({ tx, categories, accounts, editing, onEditStart, onEdit
   const [note, setNote] = useState(tx.note ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [linkedEntry, setLinkedEntry] = useState(undefined) // undefined = a carregar, null = nenhum
 
   const categoriesForType = categories.filter((c) => c.type === tx.type)
 
-  // Só verifica a ligação a um amigo quando o utilizador vai editar ou apagar —
-  // evita um pedido extra por transação só para listar.
-  useEffect(() => {
-    if (!editing && !confirmingDelete) return
-    let cancelled = false
-    setLinkedEntry(undefined)
-    getLedgerEntryForTransaction(tx.id)
-      .then((entry) => {
-        if (!cancelled) setLinkedEntry(entry)
-      })
-      .catch(() => {
-        if (!cancelled) setLinkedEntry(null)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [editing, confirmingDelete, tx.id])
-
   async function handleDelete() {
-    if (linkedEntry === undefined) {
-      toast.error('A verificar... tenta outra vez num instante.')
-      return
-    }
     if (linkedEntry && blocksTransactionEdit(linkedEntry)) {
       toast.error(transactionLinkedMessage(linkedEntry))
       setConfirmingDelete(false)
@@ -326,6 +322,16 @@ function TransactionRow({ tx, categories, accounts, editing, onEditStart, onEdit
           {formatDate(tx.occurred_on)}
           {tx.note && ` · ${tx.category_name ?? 'Sem categoria'}`} · {tx.account_name ?? 'Sem conta'}
         </p>
+        {linkedEntry && (
+          <Link
+            to={`/dividas/${linkedEntry.friend_id}`}
+            className="mt-0.5 inline-flex items-center gap-1 text-xs text-neutral-500 underline-offset-2 hover:underline"
+          >
+            <Link2 size={11} aria-hidden="true" />
+            {linkedEntry.friendName}
+            {LINKED_BADGE_TEXT[linkedEntry.status] ? ` · ${LINKED_BADGE_TEXT[linkedEntry.status]}` : ''}
+          </Link>
+        )}
       </div>
       <div className="flex shrink-0 items-center gap-2">
         <span
@@ -474,6 +480,8 @@ export default function TransactionList({ categories, accounts, refreshToken, on
   const [error, setError] = useState('')
   // Só uma transação de cada vez em edição: abrir outra fecha a anterior.
   const [editingId, setEditingId] = useState(null)
+  // {transactionId: entry} para a página atual — um só pedido por página, não um por linha.
+  const [linkedEntries, setLinkedEntries] = useState(new Map())
 
   // Debounce do texto de pesquisa, para não disparar um pedido a cada tecla.
   useEffect(() => {
@@ -494,6 +502,26 @@ export default function TransactionList({ categories, accounts, refreshToken, on
       dateTo: toIsoDate(addMonths(selectedMonth, 1)),
     }
   }, [parsedSmart, selectedMonth])
+
+  // Ligações a amigos da página atual, visíveis sempre (não só ao editar/apagar).
+  useEffect(() => {
+    const ids = rows.filter((r) => r.source !== 'transfer').map((r) => r.id)
+    if (ids.length === 0) {
+      setLinkedEntries(new Map())
+      return
+    }
+    let cancelled = false
+    getLedgerEntriesForTransactions(ids)
+      .then((map) => {
+        if (!cancelled) setLinkedEntries(map)
+      })
+      .catch(() => {
+        if (!cancelled) setLinkedEntries(new Map())
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [rows])
 
   async function loadPage(offset) {
     const { rows: pageRows, totalCount: count } = await listMovementsPage({
@@ -624,6 +652,7 @@ export default function TransactionList({ categories, accounts, refreshToken, on
                   editing={editingId === tx.id}
                   onEditStart={() => setEditingId(tx.id)}
                   onEditEnd={() => setEditingId(null)}
+                  linkedEntry={linkedEntries.get(tx.id)}
                   onUpdated={handleUpdated}
                   onDeleted={handleDeleted}
                   onRestored={handleRestored}
