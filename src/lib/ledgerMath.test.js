@@ -1,6 +1,14 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { signedCents, balanceOf, describeBalance, suggestedRepayment, entryLabel, lifetimeTotals } from './ledgerMath.js'
+import {
+  signedCents,
+  balanceOf,
+  describeBalance,
+  suggestedRepayment,
+  entryLabel,
+  lifetimeTotals,
+  entryCounts,
+} from './ledgerMath.js'
 
 test('balanceOf soma com sinal', () => {
   assert.equal(balanceOf([{ kind: 'paid_for_me', amount: 10 }, { kind: 'paid_for_them', amount: 11.5 }]), 1.5)
@@ -39,6 +47,30 @@ test('lifetimeTotals soma por direção, ignorando devoluções já feitas e mov
 })
 test('lifetimeTotals de lista vazia é tudo 0', () => {
   assert.deepEqual(lifetimeTotals([]), { lent: 0, borrowed: 0, repaidToMe: 0, repaidToThem: 0 })
+})
+test('entryCounts: pendente conta se eu criei, não conta se o outro criou', () => {
+  const ME = 'me'
+  const HIM = 'him'
+  assert.equal(entryCounts({ status: 'pending', created_by: ME, user_id: ME }), true)
+  assert.equal(entryCounts({ status: 'pending', created_by: HIM, user_id: ME }), false)
+  assert.equal(entryCounts({ status: 'confirmed', created_by: HIM, user_id: ME }), true)
+  assert.equal(entryCounts({ status: 'cancel_requested', created_by: HIM, user_id: ME }), true)
+  assert.equal(entryCounts({ status: 'declined', created_by: ME, user_id: ME }), false)
+  assert.equal(entryCounts({ status: 'cancelled', created_by: ME, user_id: ME }), false)
+})
+test('balanceOf: um gasto partilhado pendente já conta do lado de quem o criou', () => {
+  const ME = 'me'
+  const HIM = 'him'
+  // Eu paguei por ele (100), ainda pendente de ele confirmar: já conta a meu favor.
+  assert.equal(
+    balanceOf([{ kind: 'paid_for_them', amount: 100, status: 'pending', created_by: ME, user_id: ME }]),
+    100,
+  )
+  // Pedido dele (ele diz que pagou por mim), ainda pendente da minha resposta: não conta.
+  assert.equal(
+    balanceOf([{ kind: 'paid_for_me', amount: 100, status: 'pending', created_by: HIM, user_id: ME }]),
+    0,
+  )
 })
 test('signedCents tabela de sinais e kind desconhecido', () => {
   assert.equal(signedCents('paid_for_them', 1.1), 110)

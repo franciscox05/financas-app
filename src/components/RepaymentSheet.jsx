@@ -129,7 +129,7 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
       if (shared) {
         await createSharedEntry(fields)
         notifyPendingChanged()
-        toast.success(`Enviado a ${friend.name} para confirmar.`)
+        toast.success(`Já conta do teu lado. Enviado a ${friend.name} para confirmar também.`)
       } else {
         await createRepayment({ ...fields, friendName: friend.name })
         toast.success('Devolução guardada.')

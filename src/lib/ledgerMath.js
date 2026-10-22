@@ -26,13 +26,18 @@ export function signedCents(kind, amount) {
   return SIGNS[kind] * cents(amount)
 }
 
+// Conta para o saldo: confirmado/anulação pedida (movimentos sem estado, antigos/locais,
+// contam como confirmados) — ou ainda pendente mas criado por quem está a ver as suas
+// próprias linhas. Quem cria um movimento partilhado já o vê contar do seu lado; só o
+// saldo da OUTRA pessoa é que espera pela confirmação dela.
+export function entryCounts(entry) {
+  const status = entry.status ?? 'confirmed'
+  if (COUNTING_STATUSES.includes(status)) return true
+  return status === 'pending' && entry.created_by === entry.user_id
+}
+
 export function balanceOf(entries) {
-  // Movimentos sem estado (antigos/locais) contam como confirmados.
-  return (
-    entries
-      .filter((e) => COUNTING_STATUSES.includes(e.status ?? 'confirmed'))
-      .reduce((sum, e) => sum + signedCents(e.kind, e.amount), 0) / 100
-  )
+  return entries.filter(entryCounts).reduce((sum, e) => sum + signedCents(e.kind, e.amount), 0) / 100
 }
 
 export function describeBalance(balance) {
@@ -58,7 +63,7 @@ export function entryLabel(kind) {
 // não reduz o que já foi emprestado: só diz quanto falta. Útil para "quanto já lhe
 // emprestei no total", independente de já estar tudo pago ou não.
 export function lifetimeTotals(entries) {
-  const counting = entries.filter((e) => COUNTING_STATUSES.includes(e.status ?? 'confirmed'))
+  const counting = entries.filter(entryCounts)
   const sumKind = (kind) =>
     counting.filter((e) => e.kind === kind).reduce((total, e) => total + cents(e.amount), 0) / 100
   return {

@@ -234,9 +234,9 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       if (created) onCreated(created)
       toast.success(
         mode === 'shared-repayment'
-          ? `Enviado a ${friend.name} para confirmar.`
+          ? `Já conta do teu lado. Enviado a ${friend.name} para confirmar também.`
           : mode === 'shared-expense'
-            ? `Gasto de ${eur(numericAmount)} registado. Enviado a ${friend.name} para confirmar.`
+            ? `Gasto de ${eur(numericAmount)} registado. Já conta do teu lado — enviado a ${friend.name} para confirmar também.`
             : `${type === 'income' ? 'Ganho' : 'Gasto'} de ${eur(numericAmount)} registado.`,
       )
     } catch (err) {

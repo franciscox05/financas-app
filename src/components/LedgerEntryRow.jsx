@@ -1,7 +1,7 @@
 import { Trash2 } from 'lucide-react'
 import Money from './Money'
 import PendingEntryActions from './PendingEntryActions'
-import { entryLabel, signedCents } from '../lib/ledgerMath'
+import { entryCounts, entryLabel, signedCents } from '../lib/ledgerMath'
 import { entryStatusText } from '../lib/linkedLogic'
 import { eur, shortDate } from '../lib/format'
 
@@ -20,9 +20,6 @@ const TONE_CLASS = {
   muted: 'text-neutral-400 dark:text-neutral-500',
 }
 
-// Estados em que o movimento não conta para o saldo (aparece esbatido).
-const NOT_COUNTING = ['pending', 'declined', 'cancelled', 'archived']
-
 // Uma linha do conta-corrente: título (nota ou tipo), data + tipo, valor com
 // sinal (verde = ele deve-me mais; vermelho = eu devo-lhe mais) e apagar.
 // Movimentos partilhados (mirror_id) e arquivados não se apagam: têm ações
@@ -33,7 +30,7 @@ export default function LedgerEntryRow({ entry, friend, viewerId, onDelete, onCh
   const title = entry.note || KIND_TITLES[entry.kind] || 'Gasto'
   const formatted = `${positive ? '+' : '−'}${eur(Math.abs(cents) / 100)}`
   const status = friend && viewerId ? entryStatusText(entry, viewerId, friend.name) : { text: '', tone: 'none' }
-  const dimmed = NOT_COUNTING.includes(entry.status)
+  const dimmed = !entryCounts(entry)
   const canDelete = !entry.mirror_id && entry.status !== 'archived'
   const amountColor = dimmed
     ? 'text-neutral-400 dark:text-neutral-500'

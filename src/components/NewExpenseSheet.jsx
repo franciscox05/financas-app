@@ -54,7 +54,7 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
       if (friend.status === 'connected') {
         await createSharedEntry(fields)
         notifyPendingChanged()
-        toast.success(`Enviado a ${friend.name} para confirmar.`)
+        toast.success(`Já conta do teu lado. Enviado a ${friend.name} para confirmar também.`)
       } else {
         await createExpense(fields)
         toast.success('Gasto guardado.')

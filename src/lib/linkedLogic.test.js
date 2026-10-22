@@ -23,14 +23,15 @@ const HIM = 'him'
 test('COUNTING_STATUSES', () => {
   assert.deepEqual(COUNTING_STATUSES, ['confirmed', 'cancel_requested'])
 })
-test('balanceOf só conta confirmed e cancel_requested', () => {
+test('balanceOf conta confirmed/cancel_requested, e pending só se criado por quem vê', () => {
   const entries = [
     { kind: 'paid_for_them', amount: 10, status: 'confirmed' },
-    { kind: 'paid_for_them', amount: 5, status: 'pending' },
+    { kind: 'paid_for_them', amount: 5, status: 'pending', created_by: HIM, user_id: ME },
     { kind: 'paid_for_them', amount: 3, status: 'archived' },
     { kind: 'paid_for_me', amount: 2, status: 'cancel_requested' },
+    { kind: 'paid_for_them', amount: 7, status: 'pending', created_by: ME, user_id: ME },
   ]
-  assert.equal(balanceOf(entries) * 100, 800)
+  assert.equal(balanceOf(entries) * 100, 1500)
 })
 test('balanceOf trata movimentos sem estado como confirmados', () => {
   assert.equal(balanceOf([{ kind: 'paid_for_them', amount: 4 }]), 4)
