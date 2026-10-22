@@ -49,8 +49,7 @@ export default function MyPhoneSection() {
   }
 
   return (
-    <section className="space-y-3">
-      <h2 className="text-sm font-semibold text-neutral-500">O teu número</h2>
+    <div>
       <form onSubmit={handleSubmit} className="space-y-2">
         <label htmlFor="my-phone" className="block text-xs font-medium text-neutral-500">
           O meu número de telemóvel (opcional)
@@ -85,6 +84,6 @@ export default function MyPhoneSection() {
           </p>
         )}
       </form>
-    </section>
+    </div>
   )
 }

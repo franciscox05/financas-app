@@ -1,7 +1,7 @@
 import { Plus, Trash2 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import ConfirmDialog from './ConfirmDialog'
-import { EmptyState } from './Feedback'
+import { EmptyState, Pager } from './Feedback'
 import OptionalDateField from './OptionalDateField'
 import { useToast } from '../context/toastContext'
 import { shortDate } from '../lib/format'
@@ -23,7 +23,9 @@ export default function GoalsSection() {
   const [dueOn, setDueOn] = useState('')
   const [adding, setAdding] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [page, setPage] = useState(1)
   const mounted = useRef(true)
+  const PER_PAGE = 10
 
   useEffect(() => {
     mounted.current = true
@@ -49,6 +51,14 @@ export default function GoalsSection() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const totalPages = Math.max(1, Math.ceil(goals.length / PER_PAGE))
+  const pageItems = useMemo(() => goals.slice((page - 1) * PER_PAGE, page * PER_PAGE), [goals, page])
+
+  // Mantém a página dentro dos limites depois de apagar (ex. última página ficou vazia).
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages)
+  }, [page, totalPages])
+
   async function handleAdd(e) {
     e.preventDefault()
     if (adding) return
@@ -58,6 +68,7 @@ export default function GoalsSection() {
       const created = await createGoal({ title, dueOn })
       if (!mounted.current) return
       setGoals((prev) => [created, ...prev])
+      setPage(1)
       setTitle('')
       setDueOn('')
     } catch (err) {
@@ -91,9 +102,7 @@ export default function GoalsSection() {
   }
 
   return (
-    <section className="space-y-3">
-      <h2 className="text-sm font-semibold text-neutral-500">Objetivos</h2>
-
+    <div className="space-y-3">
       <form onSubmit={handleAdd} className="space-y-2 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
         <label htmlFor="goal-title" className="block text-xs font-medium text-neutral-500">
           Novo objetivo
@@ -132,7 +141,7 @@ export default function GoalsSection() {
         <EmptyState title="Ainda sem objetivos" description="Adiciona o primeiro acima." />
       ) : (
         <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
-          {goals.map((goal) => (
+          {pageItems.map((goal) => (
             <li key={goal.id} className="flex min-h-12 items-center gap-3 py-2">
               <input
                 type="checkbox"
@@ -167,6 +176,7 @@ export default function GoalsSection() {
           ))}
         </ul>
       )}
+      <Pager page={page} totalPages={totalPages} onChange={setPage} />
 
       <ConfirmDialog
         open={deleteTarget !== null}
@@ -176,6 +186,6 @@ export default function GoalsSection() {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
       />
-    </section>
+    </div>
   )
 }

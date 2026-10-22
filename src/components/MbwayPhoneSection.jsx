@@ -49,8 +49,7 @@ export default function MbwayPhoneSection() {
   }
 
   return (
-    <section className="space-y-3">
-      <h2 className="text-sm font-semibold text-neutral-500">O meu MB Way</h2>
+    <div className="border-t border-neutral-200 pt-4 dark:border-neutral-800">
       <form onSubmit={handleSubmit} className="space-y-2">
         <label htmlFor="my-mbway" className="block text-xs font-medium text-neutral-500">
           O meu número MB Way (opcional)
@@ -82,6 +81,6 @@ export default function MbwayPhoneSection() {
           </p>
         )}
       </form>
-    </section>
+    </div>
   )
 }

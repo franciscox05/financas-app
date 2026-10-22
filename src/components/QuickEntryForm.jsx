@@ -6,7 +6,7 @@ import { useToast } from '../context/toastContext'
 import { today } from '../lib/dates'
 import { createTransaction, deleteTransaction } from '../lib/db'
 import { eur } from '../lib/format'
-import { createLinkedEntry, listFriendsWithBalance } from '../lib/friendsDb'
+import { createFriend, createLinkedEntry, listFriendsWithBalance } from '../lib/friendsDb'
 import { createSharedEntry } from '../lib/linkedDb'
 import { notifyPendingChanged } from '../lib/pendingEvents'
 import { friendEntryKind, friendEntryMode } from '../lib/quickEntryFriend'
@@ -33,6 +33,10 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
   const [debtAmount, setDebtAmount] = useState('')
   const [friends, setFriends] = useState([])
   const [friendsFailed, setFriendsFailed] = useState(false)
+  const [newFriendMode, setNewFriendMode] = useState(false)
+  const [newFriendName, setNewFriendName] = useState('')
+  const [newFriendBusy, setNewFriendBusy] = useState(false)
+  const [newFriendError, setNewFriendError] = useState('')
 
   // Só carrega a lista quando o utilizador abre a secção.
   useEffect(() => {
@@ -103,6 +107,8 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
     setShowFriend(false)
     setFriendId('')
     setDebtAmount('')
+    setNewFriendMode(false)
+    setNewFriendName('')
   }, [type])
 
   // Ao escolher um amigo, salta para "Empréstimos"/"Devoluções" (se existirem e a
@@ -116,6 +122,24 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [friendId])
+
+  async function handleCreateFriend(e) {
+    e.preventDefault()
+    if (newFriendBusy) return
+    setNewFriendBusy(true)
+    setNewFriendError('')
+    try {
+      const created = await createFriend({ name: newFriendName, phone: '', requestLink: false })
+      setFriends((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name, 'pt')))
+      setFriendId(created.id)
+      setNewFriendMode(false)
+      setNewFriendName('')
+    } catch (err) {
+      setNewFriendError(err.message || 'Não foi possível adicionar. Tenta outra vez.')
+    } finally {
+      setNewFriendBusy(false)
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -203,6 +227,8 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       setShowFriend(false)
       setFriendId('')
       setDebtAmount('')
+      setNewFriendMode(false)
+      setNewFriendName('')
       if (created) onCreated(created)
       toast.success(
         mode === 'shared-repayment'
@@ -350,6 +376,8 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
           onClick={() => {
             if (!showFriend && type === 'expense' && !debtAmount && amount) setDebtAmount(amount)
             setShowFriend((v) => !v)
+            setNewFriendMode(false)
+            setNewFriendName('')
           }}
           className="-my-1 flex min-h-9 items-center gap-0.5 text-xs text-neutral-600 underline-offset-2 hover:underline dark:text-neutral-400"
         >
@@ -366,29 +394,69 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
               <label htmlFor="quick-entry-friend" className="mb-1 block text-xs font-medium text-neutral-500">
                 {type === 'expense' ? 'Quem te deve' : 'Quem devolveu'}
               </label>
-              <select
-                id="quick-entry-friend"
-                value={friendId}
-                onChange={(e) => setFriendId(e.target.value)}
-                className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-              >
-                <option value="">Escolhe um amigo</option>
-                {friends.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.name}
-                  </option>
-                ))}
-              </select>
-              {friendsFailed && <p className="mt-1 text-xs text-red-600">Não foi possível carregar os amigos.</p>}
-              {!friendsFailed && friends.length === 0 && (
-                <p className="mt-1 text-xs text-neutral-500">
-                  Ainda não tens amigos.{' '}
-                  <Link to="/dividas" className="underline underline-offset-2">
-                    Adiciona um em Dívidas
-                  </Link>
-                  .
-                </p>
+              {newFriendMode ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Nome do amigo"
+                    value={newFriendName}
+                    disabled={newFriendBusy}
+                    onChange={(e) => setNewFriendName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleCreateFriend(e)
+                      }
+                    }}
+                    className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                  />
+                  <button
+                    type="button"
+                    disabled={newFriendBusy || !newFriendName.trim()}
+                    onClick={handleCreateFriend}
+                    className="min-h-9 shrink-0 rounded-lg bg-neutral-900 px-3 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+                  >
+                    {newFriendBusy ? '...' : 'Adicionar'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={newFriendBusy}
+                    onClick={() => {
+                      setNewFriendMode(false)
+                      setNewFriendName('')
+                      setNewFriendError('')
+                    }}
+                    className="min-h-9 shrink-0 rounded-lg border border-neutral-300 px-3 text-sm dark:border-neutral-700"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              ) : (
+                <select
+                  id="quick-entry-friend"
+                  value={friendId}
+                  onChange={(e) => {
+                    if (e.target.value === '__new__') {
+                      setNewFriendMode(true)
+                      setNewFriendError('')
+                      return
+                    }
+                    setFriendId(e.target.value)
+                  }}
+                  className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                >
+                  <option value="">Escolhe um amigo</option>
+                  {friends.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                  <option value="__new__">+ Novo amigo...</option>
+                </select>
               )}
+              {newFriendError && <p className="mt-1 text-xs text-red-600">{newFriendError}</p>}
+              {friendsFailed && <p className="mt-1 text-xs text-red-600">Não foi possível carregar os amigos.</p>}
               {friends.find((f) => f.id === friendId)?.status === 'connected' && (
                 <p className="mt-1 text-xs text-neutral-500">
                   {type === 'expense'

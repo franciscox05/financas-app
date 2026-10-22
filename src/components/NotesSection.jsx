@@ -1,7 +1,7 @@
 import { Trash2 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import ConfirmDialog from './ConfirmDialog'
-import { EmptyState } from './Feedback'
+import { EmptyState, Pager } from './Feedback'
 import { useToast } from '../context/toastContext'
 import { shortDate } from '../lib/format'
 import { createNote, deleteNote, listNotes } from '../lib/profileDb'
@@ -21,7 +21,9 @@ export default function NotesSection() {
   const [body, setBody] = useState('')
   const [adding, setAdding] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [page, setPage] = useState(1)
   const mounted = useRef(true)
+  const PER_PAGE = 10
 
   useEffect(() => {
     mounted.current = true
@@ -47,6 +49,13 @@ export default function NotesSection() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const totalPages = Math.max(1, Math.ceil(notes.length / PER_PAGE))
+  const pageItems = useMemo(() => notes.slice((page - 1) * PER_PAGE, page * PER_PAGE), [notes, page])
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages)
+  }, [page, totalPages])
+
   async function handleAdd(e) {
     e.preventDefault()
     if (adding) return
@@ -56,6 +65,7 @@ export default function NotesSection() {
       const created = await createNote(body)
       if (!mounted.current) return
       setNotes((prev) => [created, ...prev])
+      setPage(1)
       setBody('')
     } catch (err) {
       if (mounted.current) setError(err.message || 'Não foi possível guardar. Tenta outra vez.')
@@ -77,9 +87,7 @@ export default function NotesSection() {
   }
 
   return (
-    <section className="space-y-3">
-      <h2 className="text-sm font-semibold text-neutral-500">Notas</h2>
-
+    <div className="space-y-3">
       <form onSubmit={handleAdd} className="space-y-2 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
         <label htmlFor="note-body" className="sr-only">
           Nova nota
@@ -110,7 +118,7 @@ export default function NotesSection() {
         <EmptyState title="Ainda sem notas" description="Escreve a primeira acima." />
       ) : (
         <ul className="space-y-2">
-          {notes.map((note) => (
+          {pageItems.map((note) => (
             <li
               key={note.id}
               className="flex items-start gap-3 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800"
@@ -133,6 +141,7 @@ export default function NotesSection() {
           ))}
         </ul>
       )}
+      <Pager page={page} totalPages={totalPages} onChange={setPage} />
 
       <ConfirmDialog
         open={deleteTarget !== null}
@@ -141,6 +150,6 @@ export default function NotesSection() {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
       />
-    </section>
+    </div>
   )
 }

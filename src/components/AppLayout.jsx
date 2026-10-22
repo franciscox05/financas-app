@@ -1,17 +1,15 @@
 import { UserCircle2, Wallet } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Link, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { subscribeLiveUpdates } from '../lib/liveUpdates'
 import { notifyPendingChanged } from '../lib/pendingEvents'
 import BottomNav from './BottomNav'
-import ConfirmDialog from './ConfirmDialog'
 import NotificationToggle from './NotificationToggle'
 import PrivacyToggle from './PrivacyToggle'
 
 export default function AppLayout() {
-  const { user, signOut } = useAuth()
-  const [confirmLogout, setConfirmLogout] = useState(false)
+  const { user } = useAuth()
 
   // Pedidos e movimentos chegam ao vivo; ao voltar à app (iOS suspende o websocket em segundo
   // plano) volta-se a ligar e recarrega-se o que se perdeu.
@@ -58,12 +56,6 @@ export default function AppLayout() {
           </Link>
           <PrivacyToggle />
           <NotificationToggle />
-          <button
-            onClick={() => setConfirmLogout(true)}
-            className="rounded-lg border border-neutral-300 px-3 py-1 text-sm dark:border-neutral-700"
-          >
-            Sair
-          </button>
         </div>
       </header>
 
@@ -72,18 +64,6 @@ export default function AppLayout() {
       </main>
 
       <BottomNav />
-
-      <ConfirmDialog
-        open={confirmLogout}
-        title="Terminar sessão?"
-        message="Vais ter de entrar novamente para voltar a ver os teus dados."
-        confirmLabel="Terminar sessão"
-        onCancel={() => setConfirmLogout(false)}
-        onConfirm={() => {
-          setConfirmLogout(false)
-          signOut()
-        }}
-      />
     </div>
   )
 }

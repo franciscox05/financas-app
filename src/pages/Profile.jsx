@@ -1,19 +1,24 @@
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Phone, Target, StickyNote } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import GoalsSection from '../components/GoalsSection'
 import MbwayPhoneSection from '../components/MbwayPhoneSection'
 import MyPhoneSection from '../components/MyPhoneSection'
 import NotesSection from '../components/NotesSection'
 import PersonalInfoSection from '../components/PersonalInfoSection'
+import SignOutButton from '../components/SignOutButton'
 
 const focusRing =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
+
+const cardClass = 'space-y-3 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800'
+const cardTitleClass =
+  'flex items-center gap-1.5 text-sm font-semibold text-neutral-500'
 
 // Módulo pessoal: dados do perfil, telefone/MB Way (usados pelos Amigos) e um
 // espaço livre para objetivos e notas, sem ligação a dinheiro.
 export default function Profile() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <header>
         <Link
           to="/"
@@ -21,14 +26,33 @@ export default function Profile() {
         >
           <ArrowLeft size={16} aria-hidden="true" /> Início
         </Link>
-        <h2 className="mt-1 text-xl font-semibold tracking-tight">Perfil</h2>
       </header>
 
       <PersonalInfoSection />
-      <MyPhoneSection />
-      <MbwayPhoneSection />
-      <GoalsSection />
-      <NotesSection />
+
+      <section className={cardClass}>
+        <h2 className={cardTitleClass}>
+          <Phone size={14} aria-hidden="true" /> Contactos para Amigos
+        </h2>
+        <MyPhoneSection />
+        <MbwayPhoneSection />
+      </section>
+
+      <section className={cardClass}>
+        <h2 className={cardTitleClass}>
+          <Target size={14} aria-hidden="true" /> Objetivos
+        </h2>
+        <GoalsSection />
+      </section>
+
+      <section className={cardClass}>
+        <h2 className={cardTitleClass}>
+          <StickyNote size={14} aria-hidden="true" /> Notas
+        </h2>
+        <NotesSection />
+      </section>
+
+      <SignOutButton />
     </div>
   )
 }

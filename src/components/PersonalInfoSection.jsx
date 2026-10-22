@@ -1,3 +1,4 @@
+import { Pencil } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/toastContext'
@@ -8,12 +9,29 @@ const focusRing =
 
 const inputClass = `min-h-11 min-w-0 flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm transition-colors duration-150 ease-out disabled:opacity-50 motion-reduce:transition-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 ${focusRing}`
 
-// Nome (editável) e email (vem da conta, não editável aqui).
+// Iniciais para o avatar: 2 primeiras palavras do nome, ou a primeira letra do email.
+function initials(name, email) {
+  const words = String(name ?? '').trim().split(/\s+/).filter(Boolean)
+  if (words.length > 0) {
+    return words
+      .slice(0, 2)
+      .map((w) => w[0])
+      .join('')
+      .toUpperCase()
+  }
+  return (email?.[0] ?? '?').toUpperCase()
+}
+
+// Cabeçalho do Perfil: avatar (iniciais), nome editável (mesmo padrão de
+// edição em linha usado no nome de um amigo) e email (da conta, não editável
+// aqui).
 export default function PersonalInfoSection() {
   const { user } = useAuth()
   const toast = useToast()
   const [value, setValue] = useState('')
   const [loaded, setLoaded] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const mounted = useRef(true)
@@ -41,8 +59,12 @@ export default function PersonalInfoSection() {
     setBusy(true)
     setError('')
     try {
-      await updateFullName(value)
-      if (mounted.current) toast.success('Nome guardado.')
+      await updateFullName(draft)
+      if (mounted.current) {
+        setValue(draft)
+        setEditing(false)
+        toast.success('Nome guardado.')
+      }
     } catch (err) {
       if (mounted.current) setError(err.message || 'Não foi possível guardar. Tenta outra vez.')
     } finally {
@@ -51,40 +73,71 @@ export default function PersonalInfoSection() {
   }
 
   return (
-    <section className="space-y-3">
-      <h2 className="text-sm font-semibold text-neutral-500">Dados pessoais</h2>
-      <form onSubmit={handleSubmit} className="space-y-2">
-        <label htmlFor="profile-name" className="block text-xs font-medium text-neutral-500">
-          Nome
-        </label>
-        <div className="flex gap-2">
-          <input
-            id="profile-name"
-            type="text"
-            autoComplete="name"
-            value={value}
-            disabled={!loaded || busy}
-            onChange={(e) => setValue(e.target.value)}
-            className={inputClass}
-          />
-          <button
-            type="submit"
-            disabled={busy || !loaded}
-            className={`min-h-11 rounded-lg bg-neutral-900 px-4 text-sm font-medium text-white transition duration-150 ease-out hover:bg-neutral-700 active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300 ${focusRing}`}
-          >
-            {busy ? 'A guardar...' : 'Guardar'}
-          </button>
-        </div>
-        {error && (
-          <p role="alert" className="text-sm text-red-600 dark:text-red-400">
-            {error}
-          </p>
-        )}
-      </form>
+    <section className="flex items-center gap-4 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
+      <div
+        aria-hidden="true"
+        className="flex size-14 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-lg font-semibold text-white dark:bg-neutral-100 dark:text-neutral-900"
+      >
+        {initials(value, user?.email)}
+      </div>
 
-      <div>
-        <p className="block text-xs font-medium text-neutral-500">Email</p>
-        <p className="text-sm text-neutral-700 dark:text-neutral-300">{user?.email}</p>
+      <div className="min-w-0 flex-1">
+        {editing ? (
+          <form onSubmit={handleSubmit} className="space-y-2">
+            <input
+              type="text"
+              autoFocus
+              autoComplete="name"
+              placeholder="O teu nome"
+              value={draft}
+              disabled={busy}
+              onChange={(e) => setDraft(e.target.value)}
+              className={inputClass}
+            />
+            {error && (
+              <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+                {error}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={busy}
+                className={`min-h-9 rounded-lg bg-neutral-900 px-3 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900 ${focusRing}`}
+              >
+                {busy ? 'A guardar...' : 'Guardar'}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setEditing(false)}
+                className={`min-h-9 rounded-lg border border-neutral-300 px-3 text-sm dark:border-neutral-700 ${focusRing}`}
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="flex items-center gap-1">
+            <h2 className="min-w-0 truncate text-base font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+              {loaded ? value || 'Sem nome' : '...'}
+            </h2>
+            <button
+              type="button"
+              onClick={() => {
+                setDraft(value)
+                setError('')
+                setEditing(true)
+              }}
+              aria-label="Editar nome"
+              disabled={!loaded}
+              className={`flex size-9 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors duration-150 ease-out hover:text-neutral-900 disabled:opacity-40 motion-reduce:transition-none dark:hover:text-neutral-100 ${focusRing}`}
+            >
+              <Pencil size={14} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+        {!editing && <p className="truncate text-sm text-neutral-500">{user?.email}</p>}
       </div>
     </section>
   )
