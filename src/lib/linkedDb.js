@@ -132,6 +132,12 @@ export async function shareOpeningBalance(friendId) {
   return rpc('share_opening_balance', { p_friend_id: friendId })
 }
 
+// Forma de pagamento que o remetente já escolheu para um movimento pendente — para
+// pré-selecionar no ecrã de aceitar (continua editável). null se ainda não escolheu.
+export async function getMirrorSettlement(id) {
+  return rpc('get_mirror_settlement', { p_id: id })
+}
+
 // Caminho da foto de cada amigo ligado que já tem uma — {friend_id: avatar_path}.
 export async function listFriendAvatars() {
   const rows = (await rpc('list_friend_avatars')) ?? []

@@ -22,9 +22,10 @@ const OPTIONS = [
 
 // "Como foi pago?" para quem aceita uma devolução: forma + (se banco) conta e
 // categoria. Entrega `value` ao pai via onChange e diz se já pode submeter.
-// `kind` é o tipo do movimento do ponto de vista de quem aceita.
-export default function SettlementFields({ kind, idPrefix, disabled, onChange }) {
-  const [settlement, setSettlement] = useState('')
+// `kind` é o tipo do movimento do ponto de vista de quem aceita. `initialSettlement`
+// pré-seleciona a opção que o remetente indicou (continua editável).
+export default function SettlementFields({ kind, idPrefix, disabled, onChange, initialSettlement = '' }) {
+  const [settlement, setSettlement] = useState(initialSettlement)
   const [accounts, setAccounts] = useState([])
   const [categories, setCategories] = useState([])
   const [loadingLists, setLoadingLists] = useState(false)

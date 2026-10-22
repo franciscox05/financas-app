@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useToast } from '../context/toastContext'
-import { cancelPendingEntry, requestCancel, respondCancel, respondEntry } from '../lib/linkedDb'
+import { cancelPendingEntry, getMirrorSettlement, requestCancel, respondCancel, respondEntry } from '../lib/linkedDb'
 import { canRequestCancel, canRespond, isCancelRequestForMe } from '../lib/linkedLogic'
 import { notifyPendingChanged } from '../lib/pendingEvents'
 import ConfirmDialog from './ConfirmDialog'
@@ -23,6 +23,8 @@ export default function PendingEntryActions({ entry, friend, viewerId, onChanged
   const [mode, setMode] = useState(null) // null | 'contest' | 'accept'
   const [note, setNote] = useState('')
   const [choice, setChoice] = useState(EMPTY_CHOICE)
+  const [suggestedSettlement, setSuggestedSettlement] = useState('')
+  const [loadingSuggestion, setLoadingSuggestion] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -120,7 +122,13 @@ export default function PendingEntryActions({ entry, friend, viewerId, onChanged
             )
           }}
         >
-          <SettlementFields kind={entry.kind} idPrefix={`accept-${entry.id}`} disabled={busy} onChange={setChoice} />
+          <SettlementFields
+            kind={entry.kind}
+            idPrefix={`accept-${entry.id}`}
+            disabled={busy}
+            onChange={setChoice}
+            initialSettlement={suggestedSettlement}
+          />
           {errorLine}
           <div className="flex gap-2">
             <button type="submit" disabled={busy || !choice.ready} className={primaryButton}>
@@ -141,19 +149,29 @@ export default function PendingEntryActions({ entry, friend, viewerId, onChanged
         <div className="flex gap-2">
           <button
             type="button"
-            disabled={busy}
-            onClick={() => {
+            disabled={busy || loadingSuggestion}
+            onClick={async () => {
               if (isRepayment) {
                 setChoice(EMPTY_CHOICE)
                 setError('')
-                setMode('accept')
+                setSuggestedSettlement('')
+                setLoadingSuggestion(true)
+                try {
+                  const suggestion = await getMirrorSettlement(entry.id)
+                  if (mounted.current) setSuggestedSettlement(suggestion ?? '')
+                } catch {
+                  // Sem sugestão não é bloqueante: o aceitador escolhe à mão.
+                } finally {
+                  if (mounted.current) setLoadingSuggestion(false)
+                }
+                if (mounted.current) setMode('accept')
               } else {
                 run(() => respondEntry({ id: entry.id, accept: true }), 'Movimento aceite.')
               }
             }}
             className={primaryButton}
           >
-            Aceitar
+            {loadingSuggestion ? 'A carregar...' : 'Aceitar'}
           </button>
           <button
             type="button"
