@@ -1,10 +1,15 @@
+import { Plus } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { suggestAmount, suggestCategoryId } from '../lib/categorySuggest'
 import { useToast } from '../context/toastContext'
 import { today } from '../lib/dates'
-import { createTransaction } from '../lib/db'
+import { createTransaction, deleteTransaction } from '../lib/db'
 import { eur } from '../lib/format'
+import { createLinkedEntry, listFriendsWithBalance } from '../lib/friendsDb'
+import { createSharedEntry } from '../lib/linkedDb'
+import { notifyPendingChanged } from '../lib/pendingEvents'
+import { friendEntryKind, friendEntryMode } from '../lib/quickEntryFriend'
 
 export default function QuickEntryForm({ accounts, categories, transactions, onCreated }) {
   const toast = useToast()
@@ -20,6 +25,30 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
   const [amountSuggested, setAmountSuggested] = useState(false)
   const categoryTouchedRef = useRef(false)
   const amountTouchedRef = useRef(false)
+
+  // Amigo associado (gasto: "alguém te deve"; ganho: "um amigo devolveu-te").
+  const [showFriend, setShowFriend] = useState(false)
+  const [friendId, setFriendId] = useState('')
+  const [debtAmount, setDebtAmount] = useState('')
+  const [friends, setFriends] = useState([])
+  const [friendsFailed, setFriendsFailed] = useState(false)
+
+  // Só carrega a lista quando o utilizador abre a secção.
+  useEffect(() => {
+    if (!showFriend) return
+    let cancelled = false
+    setFriendsFailed(false)
+    listFriendsWithBalance()
+      .then((list) => {
+        if (!cancelled) setFriends(list)
+      })
+      .catch(() => {
+        if (!cancelled) setFriendsFailed(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [showFriend])
 
   const categoriesForType = useMemo(
     () => categories.filter((c) => c.type === type),
@@ -68,6 +97,13 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note, type])
 
+  // Gasto e ganho têm textos e campos diferentes: ao trocar, fecha a secção.
+  useEffect(() => {
+    setShowFriend(false)
+    setFriendId('')
+    setDebtAmount('')
+  }, [type])
+
   async function handleSubmit(e) {
     e.preventDefault()
     const numericAmount = Number(amount)
@@ -84,17 +120,65 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       return
     }
 
+    const friend = showFriend ? friends.find((f) => f.id === friendId) : null
+    const numericDebtAmount = Number(debtAmount)
+    if (showFriend && !friend) {
+      setError('Escolhe o amigo, ou fecha essa secção.')
+      return
+    }
+    if (friend && type === 'expense' && (!numericDebtAmount || numericDebtAmount <= 0)) {
+      setError('Indica quanto te deve (valor válido), ou fecha essa secção.')
+      return
+    }
+
+    const mode = friend ? friendEntryMode(type, friend.status) : null
+    const entryFields = friend && {
+      friendId: friend.id,
+      kind: friendEntryKind(type),
+      amount: type === 'income' ? numericAmount : numericDebtAmount,
+      note: note.trim(),
+      occurredOn,
+    }
+
     setSubmitting(true)
     setError('')
     try {
-      const created = await createTransaction({
-        amount: numericAmount,
-        type,
-        accountId,
-        categoryId: effectiveCategoryId,
-        occurredOn,
-        note: note.trim(),
-      })
+      let created = null
+      if (mode === 'shared-repayment') {
+        // Sem transação própria: é criada quando o amigo confirmar a devolução.
+        await createSharedEntry({
+          ...entryFields,
+          settlement: 'bank',
+          accountId,
+          categoryId: effectiveCategoryId,
+        })
+      } else {
+        created = await createTransaction({
+          amount: numericAmount,
+          type,
+          accountId,
+          categoryId: effectiveCategoryId,
+          occurredOn,
+          note: note.trim(),
+        })
+        if (friend) {
+          // Tudo ou nada: se o movimento do amigo falhar, apaga a transação.
+          try {
+            if (mode === 'shared-expense') await createSharedEntry(entryFields)
+            else {
+              await createLinkedEntry({
+                ...entryFields,
+                settlement: type === 'income' ? 'bank' : null,
+                transactionId: created.id,
+              })
+            }
+          } catch (err) {
+            await deleteTransaction(created.id).catch(() => {})
+            throw err
+          }
+        }
+      }
+      if (mode?.startsWith('shared')) notifyPendingChanged()
       setAmount('')
       setNote('')
       setOccurredOn(today())
@@ -103,9 +187,16 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       setAmountSuggested(false)
       categoryTouchedRef.current = false
       amountTouchedRef.current = false
-      onCreated(created)
+      setShowFriend(false)
+      setFriendId('')
+      setDebtAmount('')
+      if (created) onCreated(created)
       toast.success(
-        `${type === 'income' ? 'Ganho' : 'Gasto'} de ${eur(numericAmount)} registado.`,
+        mode === 'shared-repayment'
+          ? `Enviado a ${friend.name} para confirmar.`
+          : mode === 'shared-expense'
+            ? `Gasto de ${eur(numericAmount)} registado. Enviado a ${friend.name} para confirmar.`
+            : `${type === 'income' ? 'Ganho' : 'Gasto'} de ${eur(numericAmount)} registado.`,
       )
     } catch (err) {
       toast.error(`Não foi possível registar: ${err.message}`)
@@ -240,15 +331,75 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
         </div>
       </div>
 
-      {type === 'expense' && (
-        <p className="-my-1 text-xs text-neutral-400">
-          Alguém te deve por isto?{' '}
-          <Link to="/dividas" className="underline underline-offset-2">
-            Regista em Amigos
-          </Link>{' '}
-          depois de guardares.
-        </p>
-      )}
+      <div>
+        <button
+          type="button"
+          onClick={() => {
+            if (!showFriend && type === 'expense' && !debtAmount && amount) setDebtAmount(amount)
+            setShowFriend((v) => !v)
+          }}
+          className="-my-1 flex min-h-9 items-center gap-0.5 text-xs text-neutral-600 underline-offset-2 hover:underline dark:text-neutral-400"
+        >
+          {showFriend ? 'Fechar' : (
+            <>
+              <Plus size={13} /> {type === 'expense' ? 'Alguém te deve por isto?' : 'Foi um amigo que te devolveu?'}
+            </>
+          )}
+        </button>
+
+        {showFriend && (
+          <div className="mt-2 grid grid-cols-2 gap-2 rounded-lg border border-neutral-200 p-2 dark:border-neutral-800">
+            <div className="col-span-2 min-w-0">
+              <label htmlFor="quick-entry-friend" className="mb-1 block text-xs font-medium text-neutral-500">
+                {type === 'expense' ? 'Quem te deve' : 'Quem devolveu'}
+              </label>
+              <select
+                id="quick-entry-friend"
+                value={friendId}
+                onChange={(e) => setFriendId(e.target.value)}
+                className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              >
+                <option value="">Escolhe um amigo</option>
+                {friends.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name}
+                  </option>
+                ))}
+              </select>
+              {friendsFailed && <p className="mt-1 text-xs text-red-600">Não foi possível carregar os amigos.</p>}
+              {!friendsFailed && friends.length === 0 && (
+                <p className="mt-1 text-xs text-neutral-500">
+                  Ainda não tens amigos.{' '}
+                  <Link to="/dividas" className="underline underline-offset-2">
+                    Adiciona um em Dívidas
+                  </Link>
+                  .
+                </p>
+              )}
+              {friends.find((f) => f.id === friendId)?.status === 'connected' && (
+                <p className="mt-1 text-xs text-neutral-500">
+                  {type === 'expense'
+                    ? 'Ligado: o pedido vai para ele confirmar.'
+                    : 'Ligado: só entra na conta quando ele confirmar.'}
+                </p>
+              )}
+            </div>
+            {type === 'expense' && (
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0"
+                placeholder="Quanto te deve (€)"
+                aria-label="Quanto te deve (€)"
+                value={debtAmount}
+                onChange={(e) => setDebtAmount(e.target.value)}
+                className="col-span-2 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              />
+            )}
+          </div>
+        )}
+      </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 

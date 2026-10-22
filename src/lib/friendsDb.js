@@ -127,6 +127,19 @@ export async function createExpense({ friendId, kind, amount, note, occurredOn, 
   })
 }
 
+// Movimento ligado a uma transação já criada (registo rápido com amigo).
+export async function createLinkedEntry({ friendId, kind, amount, note, occurredOn, settlement, transactionId }) {
+  return insertEntry({
+    friend_id: friendId,
+    kind,
+    amount,
+    note: note || null,
+    occurred_on: occurredOn,
+    settlement: settlement || null,
+    transaction_id: transactionId,
+  })
+}
+
 // Devolução via banco: cria primeiro a transação na conta e só depois o
 // movimento que a referencia; se o movimento falhar apaga a transação, para
 // não ficar dinheiro "movido" na conta sem registo no conta-corrente
