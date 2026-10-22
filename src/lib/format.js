@@ -29,3 +29,12 @@ export function eurCompact(value, { signed = false } = {}) {
   const sign = isZero ? '' : n < 0 ? '-' : signed ? '+' : ''
   return `${sign}${body}€`
 }
+
+const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+
+// 'YYYY-MM-DD' -> '19 out' (ou '19 out 2026' com `withYear`), sem passar por
+// Date, para não haver desvios de fuso.
+export function shortDate(iso, { withYear = false } = {}) {
+  const [year, month, day] = iso.split('-').map(Number)
+  return `${day} ${MONTHS[month - 1]}${withYear ? ` ${year}` : ''}`
+}

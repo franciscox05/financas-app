@@ -11,6 +11,7 @@ import NewExpenseSheet from '../components/NewExpenseSheet'
 import OpeningBalanceOffer from '../components/OpeningBalanceOffer'
 import ReminderButtons from '../components/ReminderButtons'
 import RepaymentSheet from '../components/RepaymentSheet'
+import ShareSummaryButtons from '../components/ShareSummaryButtons'
 import { useToast } from '../context/toastContext'
 import { getCurrentUserId } from '../lib/db'
 import { deleteEntry, deleteFriend, listEntries, listFriendsWithBalance, updateFriend } from '../lib/friendsDb'
@@ -398,6 +399,7 @@ export default function FriendLedger() {
 
       <section className="space-y-2">
         <h3 className="text-sm font-semibold text-neutral-500">Movimentos</h3>
+        {entries.length > 0 && <ShareSummaryButtons friend={friend} balance={balance} entries={entries} />}
         {entries.length === 0 ? (
           <EmptyState
             title="Ainda sem movimentos"

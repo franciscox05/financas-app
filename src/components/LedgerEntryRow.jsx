@@ -3,18 +3,10 @@ import Money from './Money'
 import PendingEntryActions from './PendingEntryActions'
 import { entryLabel, signedCents } from '../lib/ledgerMath'
 import { entryStatusText } from '../lib/linkedLogic'
-import { eur } from '../lib/format'
+import { eur, shortDate } from '../lib/format'
 
 const focusRing =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
-
-const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
-
-// 'YYYY-MM-DD' -> '19 out' (sem passar por Date, para não haver desvios de fuso).
-function shortDate(iso) {
-  const [, month, day] = iso.split('-').map(Number)
-  return `${day} ${MONTHS[month - 1]}`
-}
 
 const KIND_TITLES = {
   repaid_to_me: 'Devolução recebida',

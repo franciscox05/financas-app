@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { normalizePhone, reminderText, whatsappUrl, smsUrl } from './contactMessage.js'
+import { normalizePhone, reminderText, whatsappUrl, smsUrl, ledgerSummaryText } from './contactMessage.js'
 import { eur } from './format.js'
 
 test('normalizePhone: formatos portugueses convergem para 351 + 9 dígitos', () => {
@@ -54,6 +54,33 @@ test('whatsappUrl', () => {
 test('smsUrl', () => {
   assert.equal(smsUrl('351912345678', 'Olá'), 'sms:+351912345678?&body=Ol%C3%A1')
   assert.equal(smsUrl(null, 'Olá'), 'sms:?&body=Ol%C3%A1')
+})
+
+test('ledgerSummaryText: lista movimentos que contam e termina com o saldo', () => {
+  const entries = [
+    { kind: 'paid_for_them', amount: 25, note: 'Empréstimo', occurred_on: '2026-10-20', status: 'confirmed' },
+    { kind: 'repaid_to_me', amount: 25, note: '', occurred_on: '2026-10-20', status: 'confirmed' },
+    { kind: 'paid_for_them', amount: 999, occurred_on: '2026-10-19', status: 'declined' },
+  ]
+  const text = ledgerSummaryText({ friendName: 'Prima', entries, balance: 0 })
+  assert.ok(text.includes('Conta-corrente com Prima'))
+  assert.ok(text.includes(`20 out 2026 · Empréstimo: +${eur(25)}`))
+  assert.ok(text.includes(`20 out 2026 · ele devolveu-me: -${eur(25)}`))
+  assert.ok(!text.includes('999'))
+  assert.ok(text.includes('Estão quites.'))
+})
+
+test('ledgerSummaryText: saldo diferente de zero em cada sentido', () => {
+  assert.ok(
+    ledgerSummaryText({ friendName: 'Prima', entries: [], balance: 12.5 }).includes(
+      `Saldo atual: Prima deve-te ${eur(12.5)}.`,
+    ),
+  )
+  assert.ok(
+    ledgerSummaryText({ friendName: 'Prima', entries: [], balance: -12.5 }).includes(
+      `Saldo atual: deves ${eur(12.5)} a Prima.`,
+    ),
+  )
 })
 
 test('formatPhoneDisplay mostra números portugueses legíveis e estrangeiros com +', async () => {

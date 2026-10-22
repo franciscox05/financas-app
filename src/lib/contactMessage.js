@@ -1,5 +1,7 @@
 // Mensagem de lembrete e ligações de contacto (WhatsApp/SMS) para amigos.
-import { eur } from './format.js'
+import { eur, shortDate } from './format.js'
+import { entryLabel, signedCents } from './ledgerMath.js'
+import { COUNTING_STATUSES } from './linkedLogic.js'
 
 // Só dígitos com indicativo, que é o que o wa.me exige. 9 dígitos assumem
 // Portugal (+351); "00" é o prefixo internacional equivalente a "+".
@@ -48,4 +50,27 @@ export function whatsappUrl(phone, text) {
 // "?&body=" funciona tanto em iOS como em Android.
 export function smsUrl(phone, text) {
   return `sms:${phone ? `+${phone}` : ''}?&body=${encodeURIComponent(text)}`
+}
+
+// Resumo em texto simples do conta-corrente com um amigo, para partilhar por
+// WhatsApp/SMS ou copiar — útil para quem nunca vai instalar a app (ex. um
+// familiar a quem se emprestou dinheiro uma vez). Só os movimentos que contam
+// para o saldo entram no resumo; `entries` já vem do mais recente ao mais antigo.
+export function ledgerSummaryText({ friendName, entries, balance }) {
+  const lines = entries
+    .filter((e) => COUNTING_STATUSES.includes(e.status ?? 'confirmed'))
+    .map((e) => {
+      const amount = signedCents(e.kind, e.amount) / 100
+      const sign = amount >= 0 ? '+' : '-'
+      return `${shortDate(e.occurred_on, { withYear: true })} · ${e.note || entryLabel(e.kind)}: ${sign}${eur(Math.abs(amount))}`
+    })
+
+  const balanceLine =
+    Math.abs(balance) < 0.005
+      ? 'Estão quites.'
+      : balance > 0
+        ? `Saldo atual: ${friendName} deve-te ${eur(balance)}.`
+        : `Saldo atual: deves ${eur(Math.abs(balance))} a ${friendName}.`
+
+  return [`Conta-corrente com ${friendName} — FinançasApp`, '', ...lines, '', balanceLine].join('\n')
 }
