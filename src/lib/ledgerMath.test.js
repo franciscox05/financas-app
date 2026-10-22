@@ -8,6 +8,7 @@ import {
   entryLabel,
   lifetimeTotals,
   entryCounts,
+  forgivenessEntry,
 } from './ledgerMath.js'
 
 test('balanceOf soma com sinal', () => {
@@ -74,6 +75,17 @@ test('balanceOf: um gasto partilhado pendente já conta do lado de quem o criou'
     balanceOf([{ kind: 'paid_for_me', amount: 100, status: 'pending', created_by: HIM, user_id: ME }]),
     0,
   )
+})
+test('forgivenessEntry: devolveu a mais (bilhete 12€ > dívida 9,99€), perdoa os 2,01€', () => {
+  // Eu devo 9,99€; devolvo-lhe 12€ (bilhete) → passo a ter 2,01€ a meu favor.
+  assert.deepEqual(forgivenessEntry('repaid_to_them', -9.99, 12), { kind: 'repaid_to_me', amount: 2.01 })
+})
+test('forgivenessEntry: devolveu a menos, perdoa o resto que faltava', () => {
+  // Ele deve-me 9,99€; devolve-me só 5€ → continua a faltar 4,99€ (ainda a dever-me).
+  assert.deepEqual(forgivenessEntry('repaid_to_me', 9.99, 5), { kind: 'repaid_to_me', amount: 4.99 })
+})
+test('forgivenessEntry: valor exato não sobra nada para perdoar', () => {
+  assert.equal(forgivenessEntry('repaid_to_them', -9.99, 9.99), null)
 })
 test('signedCents tabela de sinais e kind desconhecido', () => {
   assert.equal(signedCents('paid_for_them', 1.1), 110)

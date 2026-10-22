@@ -57,6 +57,15 @@ export function suggestedRepayment(balance) {
   return null
 }
 
+// Movimento que perdoa a diferença depois de uma devolução por um valor diferente
+// do que faltava (ex.: pagou 12€ de um bilhete quando só faltavam 9,99€, mas
+// combinaram ficar quites na mesma) — zera o saldo que ficou depois dessa
+// devolução, sem mexer no valor real já registado. null se não sobra diferença.
+export function forgivenessEntry(kind, balanceBefore, amount) {
+  const balanceAfter = balanceBefore + signedCents(kind, amount) / 100
+  return suggestedRepayment(balanceAfter)
+}
+
 export function entryLabel(kind) {
   return LABELS[kind]
 }

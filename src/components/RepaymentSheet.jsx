@@ -7,8 +7,9 @@ import { createRepayment } from '../lib/friendsDb'
 import { createSharedEntry, retireDeclinedEntry } from '../lib/linkedDb'
 import { isSharedGuardError } from '../lib/linkedLogic'
 import { notifyPendingChanged } from '../lib/pendingEvents'
-import { suggestedRepayment } from '../lib/ledgerMath'
+import { forgivenessEntry, suggestedRepayment } from '../lib/ledgerMath'
 import { defaultCategoryId, overshootNote } from '../lib/repaymentInput'
+import { eur } from '../lib/format'
 
 const inputClass =
   'min-h-11 w-full rounded-lg border border-neutral-300 px-3 py-2 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 motion-reduce:transition-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus-visible:outline-neutral-100'
@@ -50,6 +51,7 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
   const [categoryId, setCategoryId] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [forgiveDifference, setForgiveDifference] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -121,6 +123,7 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
         accountId: settlement === 'bank' ? accountId : null,
         categoryId: settlement === 'bank' ? categoryId : null,
       }
+      let successMessage
       if (shared) {
         await createSharedEntry(fields)
         notifyPendingChanged()
@@ -129,11 +132,35 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
             toast.error('Corrigido e reenviado, mas o movimento antigo continua a contar — apaga-o à mão na lista.')
           })
         }
-        toast.success(`Já conta do teu lado. Enviado a ${friend.name} para confirmar também.`)
+        successMessage = `Já conta do teu lado. Enviado a ${friend.name} para confirmar também.`
       } else {
         await createRepayment({ ...fields, friendName: friend.name })
-        toast.success('Devolução guardada.')
+        successMessage = 'Devolução guardada.'
       }
+
+      if (forgiveDifference) {
+        const forgive = forgivenessEntry(kind, balance, parsed)
+        if (forgive) {
+          const forgiveFields = {
+            friendId: friend.id,
+            kind: forgive.kind,
+            amount: forgive.amount,
+            note: `Perdão da diferença (${note.trim()})`,
+            occurredOn: occurredOn || today(),
+            settlement: 'offset',
+            accountId: null,
+            categoryId: null,
+          }
+          try {
+            if (shared) await createSharedEntry(forgiveFields)
+            else await createRepayment({ ...forgiveFields, friendName: friend.name })
+            successMessage += ` Perdoaste ${eur(forgive.amount)} de diferença.`
+          } catch {
+            toast.error('Guardado, mas não foi possível perdoar a diferença — regista-a à mão se for preciso.')
+          }
+        }
+      }
+      toast.success(successMessage)
       onDone()
     } catch (err) {
       // Os erros do servidor já vêm em português e prontos para mostrar.
@@ -173,9 +200,18 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
           className={inputClass}
         />
         {overshoot && (
-          <p id="repayment-overshoot" className="mt-1.5 text-sm text-neutral-600 dark:text-neutral-400">
-            {overshoot}
-          </p>
+          <div id="repayment-overshoot" className="mt-1.5 space-y-1.5">
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">{overshoot}</p>
+            <label className="flex min-h-9 items-center gap-2 text-sm text-neutral-800 dark:text-neutral-200">
+              <input
+                type="checkbox"
+                checked={forgiveDifference}
+                onChange={(e) => setForgiveDifference(e.target.checked)}
+                className="size-4 accent-neutral-900 dark:accent-neutral-100"
+              />
+              Ficamos quites — perdoa esta diferença
+            </label>
+          </div>
         )}
       </div>
 
