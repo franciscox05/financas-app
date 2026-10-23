@@ -2,3 +2,15 @@
 node_modules/
 out/
 public/captures/
+
+# Gerados por `npm run sfx` (sfx-gen.mjs) — recriados antes de cada render.
+public/music/
+public/sfx/coin.wav
+public/sfx/impact.wav
+public/sfx/notify.wav
+public/sfx/pop.wav
+public/sfx/riser.wav
+public/sfx/share-*.wav
+public/sfx/success.wav
+public/sfx/swish.wav
+public/sfx/toggle.wav
