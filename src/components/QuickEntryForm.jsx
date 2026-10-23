@@ -1,10 +1,9 @@
-import { Plus, Trash2 } from 'lucide-react'
+import { ArrowRightLeft, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { suggestAmount, suggestCategoryId } from '../lib/categorySuggest'
 import { useToast } from '../context/toastContext'
 import { today } from '../lib/dates'
-import { createTransaction, deleteTransaction } from '../lib/db'
+import { createTransaction, createTransfer, deleteTransaction } from '../lib/db'
 import { eur } from '../lib/format'
 import { createFriend, createLinkedEntry, deleteLocalEntryById, listFriendsWithBalance } from '../lib/friendsDb'
 import { cancelPendingEntry, createSharedEntry } from '../lib/linkedDb'
@@ -105,7 +104,7 @@ function FriendPicker({ id, friends, value, onChange, onFriendCreated, disabled 
   )
 }
 
-export default function QuickEntryForm({ accounts, categories, transactions, onCreated }) {
+export default function QuickEntryForm({ accounts, categories, transactions, onCreated, onTransferCreated }) {
   const toast = useToast()
   const [type, setType] = useState('expense')
   const [amount, setAmount] = useState('')
@@ -119,6 +118,11 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
   const [amountSuggested, setAmountSuggested] = useState(false)
   const categoryTouchedRef = useRef(false)
   const amountTouchedRef = useRef(false)
+
+  // Mover dinheiro entre as tuas próprias contas (ex. Conta à Ordem -> XTB):
+  // não é um Gasto/Ganho, por isso tem o seu próprio modo, sem categoria/amigo.
+  const [showTransfer, setShowTransfer] = useState(false)
+  const [transferToId, setTransferToId] = useState('')
 
   const [showFriend, setShowFriend] = useState(false)
   const [friends, setFriends] = useState([])
@@ -203,6 +207,8 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
     setShowFriend(false)
     setFriendId('')
     setFriendShares([{ friendId: '', amount: '' }])
+    setShowTransfer(false)
+    setTransferToId('')
   }, [type])
 
   // Ao escolher um amigo (devolução, ou qualquer linha da divisão), salta para
@@ -264,6 +270,43 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       setError('Indica um valor válido.')
       return
     }
+
+    if (showTransfer) {
+      if (!accountId || !transferToId) {
+        setError('Escolhe a conta de origem e a conta destino.')
+        return
+      }
+      if (accountId === transferToId) {
+        setError('A conta de origem e destino têm de ser diferentes.')
+        return
+      }
+      setSubmitting(true)
+      setError('')
+      try {
+        await createTransfer({
+          fromAccountId: accountId,
+          toAccountId: transferToId,
+          amount: numericAmount,
+          occurredOn,
+          note: note.trim(),
+        })
+        setAmount('')
+        setNote('')
+        setOccurredOn(today())
+        amountTouchedRef.current = false
+        setAmountSuggested(false)
+        setShowTransfer(false)
+        setTransferToId('')
+        onTransferCreated?.()
+        toast.success(`Transferência de ${eur(numericAmount)} registada.`)
+      } catch (err) {
+        toast.error(`Não foi possível transferir: ${err.message}`)
+      } finally {
+        setSubmitting(false)
+      }
+      return
+    }
+
     if (!accountId || !effectiveCategoryId) {
       setError('Escolhe conta e categoria.')
       return
@@ -455,43 +498,83 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
         )}
       </div>
 
+      {accounts.length > 1 && (
+      <div>
+        <button
+          type="button"
+          onClick={() => {
+            setShowTransfer((v) => !v)
+            setShowFriend(false)
+            setFriendId('')
+            setFriendShares([{ friendId: '', amount: '' }])
+          }}
+          className={`-my-1 mb-2 flex min-h-9 items-center gap-1 text-xs underline-offset-2 hover:underline ${
+            showTransfer ? 'text-neutral-900 dark:text-neutral-100' : 'text-neutral-600 dark:text-neutral-400'
+          }`}
+        >
+          <ArrowRightLeft size={13} /> {showTransfer ? 'Fechar transferência' : 'Mover para outra conta tua?'}
+        </button>
+        {!showTransfer && isLikelyOwnTransfer && (
+          <p className="-mt-2 mb-2 text-xs text-neutral-400">
+            Parece uma transferência entre as tuas contas — não conta como Gasto/Ganho.
+          </p>
+        )}
+      </div>
+      )}
+
       <div className="grid grid-cols-2 gap-3">
-        <div className="min-w-0">
-          <label className="mb-1 block text-xs font-medium text-neutral-500">Categoria</label>
-          <select
-            value={effectiveCategoryId}
-            onChange={(e) => {
-              categoryTouchedRef.current = true
-              setSuggested(false)
-              setCategoryId(e.target.value)
-            }}
-            className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-          >
-            {categoriesForType.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          {suggested && (
-            <p className="mt-0.5 text-xs text-neutral-400">sugerido a partir do histórico</p>
-          )}
-          {isLikelyOwnTransfer && (
-            <p className="mt-0.5 text-xs text-neutral-400">
-              A mover dinheiro entre as tuas contas?{' '}
-              <Link to="/patrimonio" className="underline underline-offset-2">
-                Usa Transferir entre contas
-              </Link>{' '}
-              em vez disto — não conta como Gasto/Ganho.
-            </p>
-          )}
-        </div>
+        {showTransfer ? (
+          <div className="min-w-0">
+            <label className="mb-1 block text-xs font-medium text-neutral-500">Conta destino</label>
+            <select
+              value={transferToId}
+              onChange={(e) => setTransferToId(e.target.value)}
+              className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            >
+              <option value="">Escolhe a conta</option>
+              {accounts
+                .filter((a) => a.id !== accountId)
+                .map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+        ) : (
+          <div className="min-w-0">
+            <label className="mb-1 block text-xs font-medium text-neutral-500">Categoria</label>
+            <select
+              value={effectiveCategoryId}
+              onChange={(e) => {
+                categoryTouchedRef.current = true
+                setSuggested(false)
+                setCategoryId(e.target.value)
+              }}
+              className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            >
+              {categoriesForType.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            {suggested && (
+              <p className="mt-0.5 text-xs text-neutral-400">sugerido a partir do histórico</p>
+            )}
+          </div>
+        )}
 
         <div className="min-w-0">
-          <label className="mb-1 block text-xs font-medium text-neutral-500">Conta</label>
+          <label className="mb-1 block text-xs font-medium text-neutral-500">
+            {showTransfer ? 'Conta origem' : 'Conta'}
+          </label>
           <select
             value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
+            onChange={(e) => {
+              setAccountId(e.target.value)
+              if (e.target.value === transferToId) setTransferToId('')
+            }}
             className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
           >
             {accounts.map((a) => (
@@ -514,11 +597,13 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
           />
         </div>
         <div className="min-w-0">
-          <label className="mb-1 block text-xs font-medium text-neutral-500">Nota</label>
+          <label className="mb-1 block text-xs font-medium text-neutral-500">
+            Nota{showTransfer ? ' (opcional)' : ''}
+          </label>
           <input
             type="text"
             placeholder="Ex: supermercado"
-            required
+            required={!showTransfer}
             value={note}
             onChange={(e) => setNote(e.target.value)}
             className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
@@ -526,6 +611,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
         </div>
       </div>
 
+      {!showTransfer && (
       <div>
         <button
           type="button"
@@ -623,6 +709,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
           </div>
         )}
       </div>
+      )}
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
@@ -631,7 +718,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
         disabled={submitting}
         className="min-h-12 w-full rounded-lg bg-neutral-900 py-3 font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
       >
-        {submitting ? 'A guardar...' : 'Registar'}
+        {submitting ? 'A guardar...' : showTransfer ? 'Transferir' : 'Registar'}
       </button>
     </form>
   )

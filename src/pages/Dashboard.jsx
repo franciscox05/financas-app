@@ -147,6 +147,10 @@ export default function Dashboard() {
           setRefreshToken((prev) => prev + 1)
           loadAll()
         }}
+        onTransferCreated={() => {
+          setRefreshToken((prev) => prev + 1)
+          loadAll()
+        }}
       />
 
       <section className="space-y-3">

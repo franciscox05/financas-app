@@ -62,13 +62,6 @@ export default function NetWorth() {
   const [confirmingSnapshotId, setConfirmingSnapshotId] = useState(null)
   const [historyPage, setHistoryPage] = useState(1)
 
-  const [transferFromId, setTransferFromId] = useState('')
-  const [transferToId, setTransferToId] = useState('')
-  const [transferAmount, setTransferAmount] = useState('')
-  const [transferDate, setTransferDate] = useState(today())
-  const [transferNote, setTransferNote] = useState('')
-  const [transferSubmitting, setTransferSubmitting] = useState(false)
-  const [transferError, setTransferError] = useState('')
   const [confirmingTransferId, setConfirmingTransferId] = useState(null)
   const [transferHistoryPage, setTransferHistoryPage] = useState(1)
 
@@ -86,8 +79,6 @@ export default function NetWorth() {
       setSnapshots(snaps)
       setTransfers(trs)
       setSnapAccountId((prev) => prev || accs[0]?.id || '')
-      setTransferFromId((prev) => prev || accs[0]?.id || '')
-      setTransferToId((prev) => prev || accs[1]?.id || accs[0]?.id || '')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -217,43 +208,6 @@ export default function NetWorth() {
       })
     } catch (err) {
       toast.error(`Não foi possível apagar: ${err.message}`)
-    }
-  }
-
-  async function handleAddTransfer(e) {
-    e.preventDefault()
-    const numericAmount = Number(transferAmount)
-    if (!transferFromId || !transferToId) {
-      setTransferError('Escolhe as duas contas.')
-      return
-    }
-    if (transferFromId === transferToId) {
-      setTransferError('A conta de origem e destino têm de ser diferentes.')
-      return
-    }
-    if (!numericAmount || numericAmount <= 0) {
-      setTransferError('Indica um valor válido.')
-      return
-    }
-    setTransferSubmitting(true)
-    setTransferError('')
-    try {
-      await createTransfer({
-        fromAccountId: transferFromId,
-        toAccountId: transferToId,
-        amount: numericAmount,
-        occurredOn: transferDate,
-        note: transferNote.trim(),
-      })
-      setTransferAmount('')
-      setTransferNote('')
-      setTransferDate(today())
-      await loadAll()
-      toast.success('Transferência registada.')
-    } catch (err) {
-      setTransferError(err.message)
-    } finally {
-      setTransferSubmitting(false)
     }
   }
 
@@ -505,99 +459,14 @@ export default function NetWorth() {
         </section>
       )}
 
-      <section>
-        <h3 className="mb-1.5 text-sm font-semibold text-neutral-500">Transferir entre contas</h3>
-        <p className="mb-3 text-xs leading-relaxed text-neutral-400">
-          Para mover dinheiro entre as tuas contas (ex.: Conta Corrente → XTB ao investir). Atualiza os
-          dois saldos de imediato e não conta como Gasto/Ganho no Balanço.
-        </p>
-        <form
-          onSubmit={handleAddTransfer}
-          className="space-y-4 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
-        >
-          <div className="grid grid-cols-2 gap-3">
-            <div className="min-w-0">
-              <label className="mb-1 block text-xs font-medium text-neutral-500">De</label>
-              <select
-                value={transferFromId}
-                onChange={(e) => {
-                  const nextFrom = e.target.value
-                  setTransferFromId(nextFrom)
-                  if (nextFrom === transferToId) {
-                    setTransferToId(accounts.find((a) => a.id !== nextFrom)?.id ?? '')
-                  }
-                }}
-                className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-              >
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="min-w-0">
-              <label className="mb-1 block text-xs font-medium text-neutral-500">Para</label>
-              <select
-                value={transferToId}
-                onChange={(e) => setTransferToId(e.target.value)}
-                className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-              >
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id} disabled={a.id === transferFromId}>
-                    {a.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="min-w-0">
-            <label className="mb-1 block text-xs font-medium text-neutral-500">Data</label>
-            <input
-              type="date"
-              value={transferDate}
-              onChange={(e) => setTransferDate(e.target.value)}
-              className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-neutral-500">Valor</label>
-            <input
-              type="number"
-              inputMode="decimal"
-              step="0.01"
-              min="0"
-              required
-              placeholder="0.00 €"
-              value={transferAmount}
-              onChange={(e) => setTransferAmount(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-neutral-500">Nota (opcional)</label>
-            <input
-              type="text"
-              placeholder="Ex: aporte mensal"
-              value={transferNote}
-              onChange={(e) => setTransferNote(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-            />
-          </div>
-          {transferError && <p className="text-sm text-red-600">{transferError}</p>}
-          <button
-            type="submit"
-            disabled={transferSubmitting}
-            className="w-full rounded-lg bg-neutral-900 min-h-12 py-2.5 font-medium text-white transition-colors disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
-          >
-            {transferSubmitting ? 'A guardar...' : 'Transferir'}
-          </button>
-        </form>
-      </section>
-
       {transfers.length > 0 && (
         <section>
-          <h3 className="mb-2 text-sm font-semibold text-neutral-500">Histórico de transferências</h3>
+          <h3 className="mb-1.5 text-sm font-semibold text-neutral-500">Transferências entre contas</h3>
+          <p className="mb-3 text-xs leading-relaxed text-neutral-400">
+            Para mover dinheiro entre as tuas contas (ex.: Conta Corrente → XTB ao investir), usa a
+            opção "Mover para outra conta tua?" no Registo. Aqui fica o histórico, para apagar ou
+            desfazer.
+          </p>
           <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
             {transfers
               .slice((transferHistoryPage - 1) * HISTORY_PAGE_SIZE, transferHistoryPage * HISTORY_PAGE_SIZE)
