@@ -11,11 +11,22 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from 'remotion'
-import { CAMERA, SCENES, SCREENS, TAPS } from './timeline'
+import {
+  BEAT_FRAMES,
+  CAMERA,
+  MUSIC_DROP,
+  NOTIFICATION,
+  SCENES,
+  SCREENS,
+  SFX,
+  TAPS,
+  isRitaScreen,
+} from './timeline'
 
 const { fontFamily } = loadFont('normal', { weights: ['400', '600'], subsets: ['latin', 'latin-ext'] })
 
-export const pitchSchemaDefaults = { vertical: false, scheme: 'dark', music: '' }
+// Faixa gerada por sfx-gen.mjs; passar music: '' para render sem música.
+export const pitchSchemaDefaults = { vertical: false, scheme: 'dark', music: 'music/groove.wav' }
 type Props = typeof pitchSchemaDefaults
 
 const GREEN = '#22c55e'
@@ -39,20 +50,38 @@ export const Pitch = ({ vertical, scheme, music }: Props) => (
 
     <PhoneStage vertical={vertical} scheme={scheme} />
 
+    <Sequence from={SCENES.split.from} durationInFrames={SCENES.split.duration}>
+      <Caption
+        vertical={vertical}
+        eyebrow="Dividir a conta"
+        title="Pagas tu, divides por todos."
+        subtitle="60 € de sushi a quatro? Um toque e cada um fica com os seus 15 €."
+      />
+    </Sequence>
+    <Sequence from={SCENES.sync.from} durationInFrames={SCENES.sync.duration}>
+      <Caption
+        vertical={vertical}
+        eyebrow="Amigos ligados"
+        title="Chega-lhe ao telemóvel."
+        subtitle="A Rita confirma e fica certo dos dois lados. Sem prints, sem discussões."
+      >
+        <PhoneOwner />
+      </Caption>
+    </Sequence>
+    <Sequence from={SCENES.friends.from} durationInFrames={SCENES.friends.duration}>
+      <Caption
+        vertical={vertical}
+        eyebrow="Amigos"
+        title="Sabes sempre quem te deve."
+        subtitle="O saldo de cada amigo, e um lembrete por WhatsApp num toque."
+      />
+    </Sequence>
     <Sequence from={SCENES.networth.from} durationInFrames={SCENES.networth.duration}>
       <Caption
         vertical={vertical}
         eyebrow="Património"
         title="Tudo num só sítio."
-        subtitle="Cada conta, cada movimento, mês a mês."
-      />
-    </Sequence>
-    <Sequence from={SCENES.debts.from} durationInFrames={SCENES.debts.duration}>
-      <Caption
-        vertical={vertical}
-        eyebrow="Dívidas"
-        title="Quem te deve, quanto falta."
-        subtitle="Pagamentos parciais, aviso quando atrasa. Enganaste-te? Anula."
+        subtitle="Banco, XTB, Trade Republic e poupança, mês a mês."
       />
     </Sequence>
     <Sequence from={SCENES.privacy.from} durationInFrames={SCENES.privacy.duration}>
@@ -72,10 +101,14 @@ export const Pitch = ({ vertical, scheme, music }: Props) => (
   </AbsoluteFill>
 )
 
-// Fundo escuro com um brilho verde suave que acompanha o telemóvel.
+// Fundo escuro com um brilho verde suave que acompanha o telemóvel e pulsa com o
+// bombo da faixa (só entre o drop e o CTA, como a bateria).
 const Backdrop = ({ vertical }: { vertical: boolean }) => {
   const frame = useCurrentFrame()
-  const glow = interpolate(frame, [SCENES.networth.from - 10, SCENES.networth.from + 30], [0.35, 1], clamp)
+  const base = interpolate(frame, [SCENES.split.from - 10, SCENES.split.from + 30], [0.35, 1], clamp)
+  const onBeat = frame >= MUSIC_DROP && frame < SCENES.cta.from
+  const pulse = onBeat ? Math.exp(-(((frame - MUSIC_DROP) % BEAT_FRAMES) / BEAT_FRAMES) * 5) : 0
+  const glow = base * (0.85 + 0.35 * pulse)
   const position = vertical ? '50% 68%' : '70% 50%'
   return (
     <AbsoluteFill
@@ -90,12 +123,12 @@ const Backdrop = ({ vertical }: { vertical: boolean }) => {
 
 // Posições em fração de meia largura/altura, para servir 16:9 e 9:16.
 const SCATTERED = [
-  { label: 'App do banco', x: -0.62, y: -0.56, d: 0 },
-  { label: 'XTB', x: 0.6, y: -0.62, d: 4 },
-  { label: 'Trade Republic', x: -0.58, y: 0.46, d: 8 },
-  { label: 'Excel de 2023', x: 0.56, y: 0.52, d: 12 },
-  { label: '"A Rita deve-me 30€?"', x: -0.08, y: 0.72, d: 16 },
-  { label: 'Notas do telemóvel', x: 0.12, y: -0.76, d: 20 },
+  { label: '"Quem pagou o sushi?"', x: -0.62, y: -0.56, d: 0 },
+  { label: '"Manda MB Way"', x: 0.6, y: -0.62, d: 4 },
+  { label: 'Excel de 2023', x: -0.58, y: 0.46, d: 8 },
+  { label: '"Já te paguei?"', x: 0.56, y: 0.52, d: 12 },
+  { label: 'App do banco', x: -0.08, y: 0.72, d: 16 },
+  { label: 'Grupo do jantar (47)', x: 0.12, y: -0.76, d: 20 },
 ]
 
 const ProblemScene = ({ vertical }: { vertical: boolean }) => {
@@ -132,10 +165,10 @@ const ProblemScene = ({ vertical }: { vertical: boolean }) => {
       })}
       <div style={{ textAlign: 'center', maxWidth: vertical ? 900 : 1600 }}>
         <RevealLine delay={6} size={vertical ? 76 : 72} weight={600}>
-          O teu dinheiro está em 4 apps.
+          Pagaste o jantar de todos.
         </RevealLine>
         <RevealLine delay={50} size={vertical ? 76 : 72} weight={600} color="#737373">
-          As dívidas dos amigos, em lado nenhum.
+          Agora é cobrar no grupo do WhatsApp.
         </RevealLine>
       </div>
     </AbsoluteFill>
@@ -147,7 +180,7 @@ const ProblemScene = ({ vertical }: { vertical: boolean }) => {
 const PhoneStage = ({ vertical, scheme }: { vertical: boolean; scheme: string }) => {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
-  const start = SCENES.networth.from
+  const start = SCENES.split.from
   const end = SCENES.cta.from
 
   if (frame < start - 2 || frame > end + 20) return null
@@ -201,6 +234,7 @@ const PhoneStage = ({ vertical, scheme }: { vertical: boolean; scheme: string })
           <StatusBar scale={k} />
           <div style={{ position: 'absolute', left: 0, right: 0, top: STATUS_H * k, height: CAPTURE_H * k }}>
             <Screens scheme={scheme} />
+            <PushNotification scale={k} />
             <Taps scale={k} />
           </div>
           {/* Dynamic Island */}
@@ -272,6 +306,95 @@ const Screens = ({ scheme }: { scheme: string }) => {
         />
       ))}
     </>
+  )
+}
+
+// Banner de notificação ao estilo iOS: cai do topo com mola, fica e recolhe.
+const PushNotification = ({ scale }: { scale: number }) => {
+  const frame = useCurrentFrame()
+  const { fps } = useVideoConfig()
+  if (frame < NOTIFICATION.from - 2 || frame > NOTIFICATION.to + 12) return null
+  const drop = spring({ frame: frame - NOTIFICATION.from, fps, config: { damping: 16, stiffness: 140 } })
+  const lift = interpolate(frame, [NOTIFICATION.to, NOTIFICATION.to + 10], [0, 1], { ...clamp, easing: easeInOut })
+  const y = (1 - drop) * -120 - lift * 40
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: 10 * scale,
+        right: 10 * scale,
+        top: 8 * scale,
+        transform: `translateY(${y * scale}px) scale(${1 - lift * 0.06})`,
+        opacity: Math.min(1, drop * 1.4) * (1 - lift),
+        display: 'flex',
+        gap: 10 * scale,
+        alignItems: 'flex-start',
+        padding: `${11 * scale}px ${13 * scale}px`,
+        borderRadius: 22 * scale,
+        background: 'rgba(58,58,60,0.86)',
+        backdropFilter: 'blur(20px)',
+        boxShadow: `0 ${10 * scale}px ${30 * scale}px rgba(0,0,0,0.45)`,
+        color: '#fafafa',
+      }}
+    >
+      <div
+        style={{
+          flexShrink: 0,
+          width: 38 * scale,
+          height: 38 * scale,
+          borderRadius: 9 * scale,
+          background: '#111',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <WalletIcon size={22 * scale} />
+      </div>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 * scale, fontWeight: 600 }}>
+          <span>{NOTIFICATION.title}</span>
+          <span style={{ fontWeight: 400, color: 'rgba(250,250,250,0.55)', fontSize: 12.5 * scale }}>agora</span>
+        </div>
+        <div style={{ fontSize: 13.5 * scale, lineHeight: 1.3, marginTop: 2 * scale, color: 'rgba(250,250,250,0.9)' }}>
+          {NOTIFICATION.body}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Etiqueta "de quem é este telemóvel" na cena dos amigos ligados: troca com o ecrã.
+const PhoneOwner = () => {
+  const frame = useCurrentFrame()
+  const { fps } = useVideoConfig()
+  // Dentro da Sequence o frame é relativo: converte para o frame absoluto do vídeo.
+  const absolute = frame + SCENES.sync.from
+  const current = SCREENS[SCREENS.findLastIndex((sc) => absolute >= sc.from)]
+  const rita = isRitaScreen(current.src)
+  const switchAt = SCREENS.find((sc) => isRitaScreen(sc.src))!.from - SCENES.sync.from
+  const pop = spring({ frame: frame - (rita ? switchAt : 30), fps, config: { damping: 14, stiffness: 160 } })
+  return (
+    <div style={{ marginTop: 36, opacity: interpolate(frame, [30, 42], [0, 1], clamp) }}>
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '12px 22px',
+          borderRadius: 999,
+          border: `1px solid ${rita ? 'rgba(34,197,94,0.45)' : 'rgba(255,255,255,0.18)'}`,
+          background: rita ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.05)',
+          fontSize: 28,
+          fontWeight: 600,
+          color: rita ? GREEN : '#d4d4d4',
+          transform: `scale(${0.92 + pop * 0.08})`,
+        }}
+      >
+        <span style={{ width: 12, height: 12, borderRadius: 99, background: rita ? GREEN : '#a3a3a3' }} />
+        {rita ? 'Telemóvel da Rita' : 'Telemóvel da Sofia'}
+      </span>
+    </div>
   )
 }
 
@@ -354,11 +477,13 @@ const Caption = ({
   eyebrow,
   title,
   subtitle,
+  children,
 }: {
   vertical: boolean
   eyebrow: string
   title: string
   subtitle: string
+  children?: React.ReactNode
 }) => {
   const frame = useCurrentFrame()
   const { durationInFrames } = useVideoConfig()
@@ -379,6 +504,7 @@ const Caption = ({
       <RevealLine delay={22} size={36} weight={400} color="#a3a3a3">
         <span style={{ lineHeight: 1.4, display: 'block' }}>{subtitle}</span>
       </RevealLine>
+      {children}
     </div>
   )
 }
@@ -413,11 +539,11 @@ const CtaScene = () => {
         <span style={{ fontSize: 56, fontWeight: 600, letterSpacing: '-0.03em' }}>FinancasApp</span>
       </div>
       <RevealLine delay={24} size={80} weight={600}>
-        O controlo total do teu dinheiro.
+        Contas com amigos, finalmente certas.
       </RevealLine>
       <div style={{ height: 18 }} />
       <RevealLine delay={36} size={44} weight={400} color="#a3a3a3">
-        Simples, privado e sem atritos.
+        O teu dinheiro e o que te devem, num só sítio.
       </RevealLine>
       <div style={{ height: 64 }} />
       <RevealLine delay={56} size={28} weight={600} color={GREEN}>
@@ -429,22 +555,34 @@ const CtaScene = () => {
 
 // --- Som ---------------------------------------------------------------------
 
+// Momentos de "recompensa": a música baixa um pouco para o efeito brilhar.
+const DUCKS = SFX.filter((fx) => fx.src === 'coin' || fx.src === 'success' || fx.src === 'notify').map((fx) => fx.at)
+
 const SoundDesign = ({ music }: { music: string }) => {
   const { durationInFrames } = useVideoConfig()
-  const transitions = [SCENES.networth.from, SCENES.cta.from]
+  const transitions = [SCENES.split.from, SCENES.cta.from]
+  const musicVolume = (f: number) => {
+    const fade = interpolate(f, [0, 20, durationInFrames - 30, durationInFrames], [0, 1, 1, 0], clamp)
+    const duck = DUCKS.reduce((v, at) => Math.min(v, interpolate(f, [at - 3, at, at + 18, at + 30], [1, 0.55, 0.55, 1], clamp)), 1)
+    return 0.42 * fade * duck
+  }
   return (
     <>
-      {music && (
-        <Audio
-          src={staticFile(music)}
-          volume={(f) =>
-            interpolate(f, [0, 20, durationInFrames - 45, durationInFrames], [0, 0.55, 0.55, 0], clamp)
-          }
-        />
-      )}
+      {music && <Audio src={staticFile(music)} volume={musicVolume} />}
       {transitions.map((at) => (
         <Sequence key={`w${at}`} from={at - 6} durationInFrames={20}>
-          <Audio src={staticFile('sfx/whoosh.wav')} volume={0.5} />
+          <Audio src={staticFile('sfx/whoosh.wav')} volume={0.4} />
+        </Sequence>
+      ))}
+      {/* Bolhas do problema: um pop por bolha, a acompanhar o aparecer. */}
+      {SCATTERED.map((chip) => (
+        <Sequence key={`p${chip.d}`} from={chip.d + 3} durationInFrames={10}>
+          <Audio src={staticFile('sfx/pop.wav')} volume={0.35} playbackRate={0.9 + chip.d / 60} />
+        </Sequence>
+      ))}
+      {SFX.map((fx) => (
+        <Sequence key={`fx${fx.at}${fx.src}`} from={fx.at} durationInFrames={60}>
+          <Audio src={staticFile(`sfx/${fx.src}.wav`)} volume={fx.volume} />
         </Sequence>
       ))}
       {TAPS.map((tap) => (
