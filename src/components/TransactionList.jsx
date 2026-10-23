@@ -10,9 +10,9 @@ import {
   listMovementsPage,
   updateTransaction,
 } from '../lib/db'
-import { getLedgerEntriesForTransactions, listUnlinkedLedgerEntriesInRange } from '../lib/friendsDb'
+import { getLedgerEntriesForTransactions } from '../lib/friendsDb'
 import { addMonths, monthLabel, monthStart, toIsoDate } from '../lib/dates'
-import { entryLabel, signedCents } from '../lib/ledgerMath'
+import { entryLabel } from '../lib/ledgerMath'
 import { blocksTransactionEdit, transactionLinkedMessage } from '../lib/linkedLogic'
 import { parseSmartQuery } from '../lib/smartSearch'
 import { EmptyState, ErrorNotice, ListSkeleton, Pager } from './Feedback'
@@ -123,6 +123,32 @@ function TransferRow({ tx, onDeleted, onRestored }) {
           </button>
         )}
       </div>
+    </li>
+  )
+}
+
+// Movimento de amigo sem transação ligada (ex. "Descontado noutra coisa") — só
+// leitura aqui: edita-se/apaga-se na página do amigo, nunca em Registo.
+function LedgerMovementRow({ tx }) {
+  return (
+    <li className="flex items-center justify-between gap-3 py-2">
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+          {tx.note || entryLabel(tx.ledger_kind)}
+        </p>
+        <Link
+          to={`/dividas/${tx.friend_id}`}
+          className="flex items-center gap-1 text-xs text-neutral-500 underline-offset-2 hover:underline"
+        >
+          {formatDate(tx.occurred_on)}
+          <Link2 size={11} aria-hidden="true" className="shrink-0" />
+          {tx.friend_name}
+          {LINKED_BADGE_TEXT[tx.ledger_status] ? ` · ${LINKED_BADGE_TEXT[tx.ledger_status]}` : ''}
+        </Link>
+      </div>
+      <span className={`shrink-0 text-sm font-semibold ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+        <Money>{formatAmount(tx.amount, tx.type)}</Money>
+      </span>
     </li>
   )
 }
@@ -483,9 +509,6 @@ export default function TransactionList({ categories, accounts, refreshToken, on
   const [editingId, setEditingId] = useState(null)
   // {transactionId: entry} para a página atual — um só pedido por página, não um por linha.
   const [linkedEntries, setLinkedEntries] = useState(new Map())
-  // Movimentos de amigos do mês sem transação ligada (ex. "Descontado noutra coisa") —
-  // não contam para nenhuma conta, mas ficam visíveis aqui à parte, a pedido do Francisco.
-  const [offsetEntries, setOffsetEntries] = useState([])
 
   // Debounce do texto de pesquisa, para não disparar um pedido a cada tecla.
   useEffect(() => {
@@ -507,9 +530,11 @@ export default function TransactionList({ categories, accounts, refreshToken, on
     }
   }, [parsedSmart, selectedMonth])
 
-  // Ligações a amigos da página atual, visíveis sempre (não só ao editar/apagar).
+  // Ligações a amigos da página atual, visíveis sempre (não só ao editar/apagar) — só
+  // para transações reais ligadas (os próprios movimentos "ledger" já se mostram a si
+  // mesmos, não precisam de ir buscar mais nada).
   useEffect(() => {
-    const ids = rows.filter((r) => r.source !== 'transfer').map((r) => r.id)
+    const ids = rows.filter((r) => r.source === 'transaction').map((r) => r.id)
     if (ids.length === 0) {
       setLinkedEntries(new Map())
       return
@@ -526,25 +551,6 @@ export default function TransactionList({ categories, accounts, refreshToken, on
       cancelled = true
     }
   }, [rows])
-
-  // Carrega ao mesmo tempo que a lista real, preso ao mesmo mês (não à pesquisa/filtros,
-  // que são só para transações).
-  useEffect(() => {
-    let cancelled = false
-    listUnlinkedLedgerEntriesInRange({
-      from: toIsoDate(selectedMonth),
-      to: toIsoDate(addMonths(selectedMonth, 1)),
-    })
-      .then((entries) => {
-        if (!cancelled) setOffsetEntries(entries)
-      })
-      .catch(() => {
-        if (!cancelled) setOffsetEntries([])
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [selectedMonth, refreshToken])
 
   async function loadPage(offset) {
     const { rows: pageRows, totalCount: count } = await listMovementsPage({
@@ -666,6 +672,8 @@ export default function TransactionList({ categories, accounts, refreshToken, on
             {rows.map((tx) =>
               tx.source === 'transfer' ? (
                 <TransferRow key={tx.id} tx={tx} onDeleted={handleDeleted} onRestored={handleRestored} />
+              ) : tx.source === 'ledger' ? (
+                <LedgerMovementRow key={tx.id} tx={tx} />
               ) : (
                 <TransactionRow
                   key={tx.id}
@@ -685,48 +693,6 @@ export default function TransactionList({ categories, accounts, refreshToken, on
           </ul>
           <Pager page={page} totalPages={Math.ceil(totalCount / PAGE_SIZE)} onChange={setPage} />
         </>
-      )}
-
-      {offsetEntries.length > 0 && (
-        <section className="space-y-2 border-t border-neutral-200 pt-4 dark:border-neutral-800">
-          <div>
-            <h3 className="text-sm font-semibold text-neutral-500">Conta-corrente (sem transação)</h3>
-            <p className="text-xs text-neutral-400">
-              Acertos com amigos que não mexeram em nenhuma conta tua — não contam para o Balanço.
-            </p>
-          </div>
-          <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
-            {offsetEntries.map((entry) => {
-              const cents = signedCents(entry.kind, entry.amount)
-              const positive = cents > 0
-              return (
-                <li key={entry.id} className="flex items-center justify-between gap-3 py-2">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                      {entry.note || entryLabel(entry.kind)}
-                    </p>
-                    <Link
-                      to={`/dividas/${entry.friend_id}`}
-                      className="flex items-center gap-1 text-xs text-neutral-500 underline-offset-2 hover:underline"
-                    >
-                      {formatDate(entry.occurred_on)} ·{' '}
-                      <Link2 size={11} aria-hidden="true" className="shrink-0" />
-                      {entry.friendName}
-                      {LINKED_BADGE_TEXT[entry.status] ? ` · ${LINKED_BADGE_TEXT[entry.status]}` : ''}
-                    </Link>
-                  </div>
-                  <span
-                    className={`shrink-0 text-sm font-semibold ${
-                      positive ? 'text-green-600' : 'text-red-600'
-                    }`}
-                  >
-                    <Money>{`${positive ? '+' : '−'}${eur(Math.abs(cents) / 100)}`}</Money>
-                  </span>
-                </li>
-              )
-            })}
-          </ul>
-        </section>
       )}
     </div>
   )
