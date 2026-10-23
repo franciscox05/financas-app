@@ -16,9 +16,11 @@ import {
   CAMERA,
   MUSIC_DROP,
   NOTIFICATION,
+  ORBIT,
   SCENES,
   SCREENS,
   SFX,
+  SPIN,
   TAPS,
   isRitaScreen,
 } from './timeline'
@@ -177,16 +179,14 @@ const ProblemScene = ({ vertical }: { vertical: boolean }) => {
 
 // --- Telemóvel ---------------------------------------------------------------
 
-const PhoneStage = ({ vertical, scheme }: { vertical: boolean; scheme: string }) => {
-  const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
-  const start = SCENES.split.from
-  const end = SCENES.cta.from
-
-  if (frame < start - 2 || frame > end + 20) return null
-
-  const enter = spring({ frame: frame - start, fps, config: { damping: 200, mass: 0.9 } })
-  const leave = interpolate(frame, [end - 4, end + 16], [0, 1], { ...clamp, easing: easeInOut })
+// O telemóvel é um objeto 3D em CSS: frente (ecrã), costas e espessura feita de camadas
+// empilhadas em Z. O ângulo vem de ORBIT (de um lado para o outro entre cenas), mais uma
+// oscilação lenta e a volta de 360° na troca Sofia → Rita (SPIN).
+// Pose do telemóvel num frame: câmara (zoom/foco) + ângulos. Função pura, para se poder
+// calcular também o frame anterior (velocidade) sem duplicar a lógica.
+function phonePose(frame: number, fps: number, vertical: boolean) {
+  const enter = spring({ frame: frame - SCENES.split.from, fps, config: { damping: 18, mass: 1.1, stiffness: 70 } })
+  const leave = interpolate(frame, [SCENES.cta.from - 4, SCENES.cta.from + 20], [0, 1], { ...clamp, easing: easeInOut })
 
   // Câmara: interpolação entre keyframes, com easing em cada troço.
   const at = CAMERA.map((k) => k.at)
@@ -194,14 +194,71 @@ const PhoneStage = ({ vertical, scheme }: { vertical: boolean; scheme: string })
   const zoom = vertical ? 1 : interpolate(frame, at, CAMERA.map((k) => k.zoom), { ...clamp, easing: easeInOut })
   const focusY = vertical ? 0.5 : interpolate(frame, at, CAMERA.map((k) => k.focusY), { ...clamp, easing: easeInOut })
 
+  // Ângulos: keyframes + oscilação (que some nos zooms, para o texto ficar parado).
+  const orbitAt = ORBIT.map((k) => k.at)
+  const calm = interpolate(zoom, [1, 1.25], [1, 0], clamp)
+  const amount = vertical ? 0.6 : 1
+  const spin = interpolate(frame, [SPIN.from, SPIN.to], [0, 360], { ...clamp, easing: easeInOut })
+  const rotY =
+    (interpolate(frame, orbitAt, ORBIT.map((k) => k.y), { ...clamp, easing: easeInOut }) +
+      Math.sin(frame / 38) * 3.5 * calm) *
+      amount +
+    spin +
+    (1 - enter) * -62 + // entra de lado...
+    leave * 55 // ...e sai a rodar para o outro
+  const rotX =
+    (interpolate(frame, orbitAt, ORBIT.map((k) => k.x), { ...clamp, easing: easeInOut }) +
+      Math.sin(frame / 53 + 1) * 1.8 * calm) *
+      amount +
+    (1 - enter) * 22
+  const rotZ = (1 - enter) * -8 + Math.sin(frame / 71) * 0.8 * calm
+  const depth = (1 - enter) * -700 - leave * 260
+  return { enter, leave, zoom, focusY, rotY, rotX, rotZ, depth }
+}
+
+const PhoneStage = ({ vertical, scheme }: { vertical: boolean; scheme: string }) => {
+  const frame = useCurrentFrame()
+  const { fps } = useVideoConfig()
+  const start = SCENES.split.from
+  const end = SCENES.cta.from
+
+  if (frame < start - 2 || frame > end + 24) return null
+
+  const { enter, leave, zoom, focusY, rotY, rotX, rotZ, depth } = phonePose(frame, fps, vertical)
+  // Velocidade de rotação (graus/frame): o vidro brilha mais enquanto o telemóvel se mexe.
+  const prev = phonePose(frame - 1, fps, vertical)
+  const speed = Math.hypot(rotY - prev.rotY, rotX - prev.rotX)
+
   const screenW = vertical ? 540 : 380
   const k = screenW / CAPTURE_W
   const screenH = (CAPTURE_H + STATUS_H) * k
   const bezel = screenW * 0.035
+  const bodyW = screenW + bezel * 2
+  const bodyH = screenH + bezel * 2
+  const radius = screenW * 0.16
+  const thickness = screenW * 0.055
   const offsetY = (0.5 - focusY) * screenH * zoom
 
   const left = vertical ? '50%' : '70%'
   const top = vertical ? '62%' : '50%'
+
+  // Ângulo efetivo face à câmara (0 = de frente), para o reflexo e a sombra.
+  const facing = ((((rotY % 360) + 540) % 360) - 180) // -180..180
+  // Reflexo: uma luz fixa à frente, à esquerda e acima. Ao rodar o telemóvel, o ponto
+  // onde a luz bate no vidro corre ao contrário do ângulo (rotY e rotX), atravessando o
+  // ecrã inteiro entre -25° e +25°; brilha mais com o ângulo e com a velocidade.
+  const glareX = screenW * (0.5 - facing / 25) // centro da faixa (px)
+  const glareY = screenH * (0.3 + rotX / 30)
+  const glareStrength = Math.min(0.42, 0.07 + (Math.abs(facing) / 25) * 0.12 + speed * 0.07)
+  const bezelLight = 145 + facing * 3
+
+  const face: React.CSSProperties = {
+    position: 'absolute',
+    inset: 0,
+    borderRadius: radius,
+    backfaceVisibility: 'hidden',
+    WebkitBackfaceVisibility: 'hidden',
+  }
 
   return (
     <div
@@ -209,47 +266,173 @@ const PhoneStage = ({ vertical, scheme }: { vertical: boolean; scheme: string })
         position: 'absolute',
         left,
         top,
-        transform: `translate(-50%, -50%) translateX(${(1 - enter) * 260}px) translateY(${offsetY + leave * 60}px) scale(${zoom * (1 - leave * 0.08)})`,
-        opacity: enter * (1 - leave),
+        transform: `translate(-50%, -50%) translateY(${offsetY}px) scale(${zoom})`,
+        opacity: Math.min(1, enter * 1.6) * (1 - leave),
       }}
     >
+      {/* Sombra no "chão": encolhe e afasta-se quando o telemóvel roda ou recua. */}
       <div
         style={{
-          padding: bezel,
-          borderRadius: screenW * 0.16,
-          background: 'linear-gradient(145deg, #3a3a3c, #1c1c1e)',
-          boxShadow: '0 60px 120px rgba(0,0,0,0.6), inset 0 0 0 2px rgba(255,255,255,0.08)',
+          position: 'absolute',
+          left: '50%',
+          top: bodyH * 0.96,
+          width: bodyW * (0.9 - Math.abs(Math.sin((rotY * Math.PI) / 180)) * 0.35),
+          height: bodyW * 0.12,
+          transform: 'translateX(-50%)',
+          borderRadius: '50%',
+          background: 'radial-gradient(closest-side, rgba(0,0,0,0.7), rgba(0,0,0,0))',
+          filter: 'blur(14px)',
+          opacity: enter * (1 - leave) * 0.9,
         }}
-      >
+      />
+      <div style={{ perspective: vertical ? 2400 : 1700, perspectiveOrigin: '50% 45%' }}>
         <div
           style={{
             position: 'relative',
-            width: screenW,
-            height: screenH,
-            borderRadius: screenW * 0.13,
-            overflow: 'hidden',
-            background: '#171717',
+            width: bodyW,
+            height: bodyH,
+            transformStyle: 'preserve-3d',
+            transform: `translateZ(${depth}px) rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`,
           }}
         >
-          <StatusBar scale={k} />
-          <div style={{ position: 'absolute', left: 0, right: 0, top: STATUS_H * k, height: CAPTURE_H * k }}>
-            <Screens scheme={scheme} />
-            <PushNotification scale={k} />
-            <Taps scale={k} />
-          </div>
-          {/* Dynamic Island */}
+          {/* Espessura: aro metálico em camadas, entre as costas e a frente. */}
+          {Array.from({ length: 14 }, (_, i) => {
+            const z = -thickness / 2 + (thickness * i) / 13
+            const light = 0.55 + 0.45 * Math.sin((i / 13) * Math.PI)
+            return (
+              <div
+                key={i}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: radius,
+                  transform: `translateZ(${z}px)`,
+                  background: `linear-gradient(${90 + facing}deg, rgb(${58 * light},${58 * light},${62 * light}), rgb(${120 * light},${120 * light},${128 * light}) 50%, rgb(${48 * light},${48 * light},${52 * light}))`,
+                }}
+              />
+            )
+          })}
+
+          {/* Costas: vidro grafite, câmaras e logótipo. */}
           <div
             style={{
-              position: 'absolute',
-              top: screenW * 0.025,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: screenW * 0.3,
-              height: screenW * 0.085,
-              borderRadius: 999,
-              background: '#000',
+              ...face,
+              transform: `rotateY(180deg) translateZ(${thickness / 2 + 0.5}px)`,
+              background: 'linear-gradient(160deg, #3b3b40 0%, #232326 45%, #18181a 100%)',
+              boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.08)',
             }}
-          />
+          >
+            <div
+              style={{
+                position: 'absolute',
+                left: bodyW * 0.07,
+                top: bodyW * 0.07,
+                width: bodyW * 0.4,
+                height: bodyW * 0.4,
+                borderRadius: bodyW * 0.1,
+                background: 'linear-gradient(145deg, #2e2e33, #1d1d20)',
+                boxShadow: '0 0 0 2px rgba(255,255,255,0.06), 0 8px 20px rgba(0,0,0,0.5)',
+              }}
+            >
+              {[
+                [0.27, 0.27],
+                [0.73, 0.5],
+                [0.27, 0.73],
+              ].map(([x, y]) => (
+                <div
+                  key={`${x}${y}`}
+                  style={{
+                    position: 'absolute',
+                    left: `${x * 100}%`,
+                    top: `${y * 100}%`,
+                    width: bodyW * 0.15,
+                    height: bodyW * 0.15,
+                    transform: 'translate(-50%, -50%)',
+                    borderRadius: 999,
+                    background: 'radial-gradient(circle at 35% 35%, #4a4a58 0%, #0b0b10 55%, #000 100%)',
+                    boxShadow: '0 0 0 3px #2a2a2e, 0 0 0 5px rgba(255,255,255,0.05)',
+                  }}
+                />
+              ))}
+            </div>
+            <div
+              style={{
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+                opacity: 0.9,
+              }}
+            >
+              <WalletIcon size={bodyW * 0.16} />
+            </div>
+          </div>
+
+          {/* Frente: moldura + ecrã. */}
+          <div
+            style={{
+              ...face,
+              transform: `translateZ(${thickness / 2 + 0.5}px)`,
+              padding: bezel,
+              // A moldura também apanha a luz: o lado claro muda com o ângulo.
+              background: `linear-gradient(${bezelLight}deg, #4a4a4e, #1c1c1e 55%, #2c2c30)`,
+              boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.1)',
+            }}
+          >
+            <div
+              style={{
+                position: 'relative',
+                width: screenW,
+                height: screenH,
+                borderRadius: screenW * 0.13,
+                overflow: 'hidden',
+                background: '#171717',
+              }}
+            >
+              <StatusBar scale={k} />
+              <div style={{ position: 'absolute', left: 0, right: 0, top: STATUS_H * k, height: CAPTURE_H * k }}>
+                <Screens scheme={scheme} />
+                <PushNotification scale={k} />
+                <Taps scale={k} />
+              </div>
+              {/* Dynamic Island */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: screenW * 0.025,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: screenW * 0.3,
+                  height: screenW * 0.085,
+                  borderRadius: 999,
+                  background: '#000',
+                }}
+              />
+              {/* Reflexo no vidro: faixa inclinada + brilho difuso, os dois a seguir a luz. */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: -screenH * 0.2,
+                  height: screenH * 1.4,
+                  left: glareX - screenW * 0.35,
+                  width: screenW * 0.7,
+                  pointerEvents: 'none',
+                  transform: 'skewX(-20deg)',
+                  background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,${glareStrength * 0.35}) 30%, rgba(255,255,255,${glareStrength}) 48%, rgba(255,255,255,${glareStrength * 0.25}) 62%, rgba(255,255,255,0) 100%)`,
+                  mixBlendMode: 'screen',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  pointerEvents: 'none',
+                  background: `radial-gradient(ellipse ${screenW * 0.9}px ${screenH * 0.45}px at ${glareX}px ${glareY}px, rgba(255,255,255,${glareStrength * 0.35}), rgba(255,255,255,0) 70%)`,
+                  mixBlendMode: 'screen',
+                }}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
