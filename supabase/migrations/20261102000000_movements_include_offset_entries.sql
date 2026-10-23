@@ -10,7 +10,12 @@
 -- quem está a ver) e que não têm transaction_id (esses já aparecem via a
 -- transação ligada, não fariam sentido em duplicado).
 
-create or replace view public.movements
+-- create or replace view falha aqui: o amount calculado (abs(...) sobre uma expressão)
+-- infere numeric genérico, e o Postgres não deixa mudar o tipo de uma coluna existente
+-- com replace — por isso apaga-se e recria-se a view em vez de substituir.
+drop view if exists public.movements;
+
+create view public.movements
 with (security_invoker = true) as
 select
   t.id,
