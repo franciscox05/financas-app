@@ -14,7 +14,6 @@ import {
   useVideoConfig,
 } from 'remotion'
 import {
-  BEAT_FRAMES,
   CAMERA,
   MUSIC_DROP,
   NOTIFICATION,
@@ -140,20 +139,19 @@ export const Pitch = ({ vertical, scheme, music }: Props) => (
   </AbsoluteFill>
 )
 
-// Fundo escuro com um brilho verde suave que acompanha o telemóvel e pulsa com o
-// bombo da faixa (só entre o drop e o CTA, como a bateria).
+// Fundo escuro com um brilho verde que acompanha o telemóvel. Em vez de pulsar a cada
+// bombo (parecia uma discoteca), respira devagar (~6 s por ciclo) a partir do drop.
 const Backdrop = ({ vertical }: { vertical: boolean }) => {
   const frame = useCurrentFrame()
-  const base = interpolate(frame, [SCENES.split.from - 10, SCENES.split.from + 30], [0.35, 1], clamp)
-  const onBeat = frame >= MUSIC_DROP && frame < SCENES.cta.from
-  const pulse = onBeat ? Math.exp(-(((frame - MUSIC_DROP) % BEAT_FRAMES) / BEAT_FRAMES) * 5) : 0
-  const glow = base * (0.85 + 0.35 * pulse)
+  const base = interpolate(frame, [MUSIC_DROP - 10, MUSIC_DROP + 30], [0.35, 1], clamp)
+  const breathe = frame >= MUSIC_DROP ? Math.sin(((frame - MUSIC_DROP) / 180) * Math.PI * 2) : 0
+  const glow = base * (1 + 0.08 * breathe)
   const side = phoneSide(frame)
   const position = vertical ? '50% 68%' : `${50 + side * 20}% 50%`
   return (
     <AbsoluteFill
       style={{
-        background: `radial-gradient(circle at ${position}, rgba(34,197,94,${0.16 * glow}) 0%, rgba(34,197,94,0) 45%)`,
+        background: `radial-gradient(circle at ${position}, rgba(34,197,94,${0.3 * glow}) 0%, rgba(34,197,94,${0.1 * glow}) 30%, rgba(34,197,94,0) 58%)`,
       }}
     />
   )
@@ -277,7 +275,7 @@ const PhoneStage = ({ vertical, scheme }: { vertical: boolean; scheme: string })
   const prev = phonePose(frame - 1, fps, vertical)
   const speed = Math.hypot(rotY - prev.rotY, rotX - prev.rotX)
 
-  const screenW = vertical ? 520 : 380
+  const screenW = vertical ? 550 : 400
   const k = screenW / CAPTURE_W
   const screenH = (CAPTURE_H + STATUS_H + HOME_H) * k
   const bezel = screenW * 0.035
@@ -288,7 +286,7 @@ const PhoneStage = ({ vertical, scheme }: { vertical: boolean; scheme: string })
   const offsetY = (0.5 - focusY) * screenH * zoom
 
   const left = `${50 + side * 20}%`
-  const top = vertical ? '63%' : '50%'
+  const top = vertical ? '61.5%' : '50%'
 
   // Ângulo efetivo face à câmara (0 = de frente), para o reflexo e a sombra.
   const facing = ((((rotY % 360) + 540) % 360) - 180) // -180..180
@@ -737,7 +735,7 @@ const Caption = ({
   const { durationInFrames } = useVideoConfig()
   const exit = interpolate(frame, [durationInFrames - 12, durationInFrames], [1, 0], clamp)
   const layout: React.CSSProperties = vertical
-    ? { left: 90, right: 90, top: 150, textAlign: 'center' }
+    ? { left: 90, right: 90, top: 120, textAlign: 'center' }
     : { [phoneSide > 0 ? 'left' : 'right']: 150, width: 820, top: '50%', transform: 'translateY(-50%)' }
   return (
     <div style={{ position: 'absolute', ...layout, opacity: exit }}>
