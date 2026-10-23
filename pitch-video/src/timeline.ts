@@ -13,6 +13,20 @@ export const SCENES = {
 }
 export const DURATION = s(41)
 
+// Lado do ecrã onde fica o telemóvel em cada cena (1 = direita, -1 = esquerda); a legenda
+// vai para o lado oposto. Na troca de cena desliza enquanto as legendas saem e entram.
+export const PHONE_SIDE = { split: 1, sync: -1, friends: 1, networth: -1, privacy: -1 } as const
+const SIDE_ORDER = ['split', 'sync', 'friends', 'networth', 'privacy'] as const
+export const SIDE_KEYS: { at: number; side: number }[] = SIDE_ORDER.flatMap((scene, i) => {
+  const { from } = SCENES[scene]
+  const side = PHONE_SIDE[scene]
+  if (i === 0) return [{ at: from, side }]
+  return [
+    { at: from - 12, side: PHONE_SIDE[SIDE_ORDER[i - 1]] },
+    { at: from + 12, side },
+  ]
+})
+
 // Volta de 360° do telemóvel na troca Sofia → Rita: o ecrã troca enquanto se vêem as
 // costas (entre os 90° e os 270°), por isso a troca de captura cai a meio da volta.
 export const SPIN = { from: s(15.4), to: s(16.8) }
@@ -92,7 +106,8 @@ export const CAMERA: { at: number; zoom: number; focusY: number }[] = [
 
 // Ângulo do telemóvel em 3D (graus): rotY > 0 vira o ecrã para a direita, rotX > 0
 // inclina o topo para trás. Vai de um lado para o outro entre cenas, como nos anúncios
-// de fintech; fica de frente nos zooms, para o texto da app se ler.
+// de fintech, sempre virado para o centro (acompanha PHONE_SIDE); fica de frente nos
+// zooms, para o texto da app se ler.
 export const ORBIT: { at: number; y: number; x: number }[] = [
   { at: s(5), y: -16, x: 7 }, // hero: 3/4 depois da entrada
   { at: s(8.6), y: -6, x: 3 },
