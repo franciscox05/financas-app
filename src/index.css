@@ -123,36 +123,42 @@ button {
   animation: toast-out 160ms ease-in forwards;
 }
 
-/* Diálogo de confirmação: entrada curta (160ms), sem saída animada. */
-@keyframes dialog-in {
+/* Popups (Modal.jsx): fundo a aparecer + folha a subir de baixo (centrada e a
+   encolher ligeiramente em ecrãs maiores, via sm:items-center no próprio componente). */
+@keyframes overlay-in {
   from {
     opacity: 0;
-    transform: scale(0.96);
   }
   to {
     opacity: 1;
-    transform: scale(1);
   }
 }
 
-.confirm-dialog[open] {
-  animation: dialog-in 160ms cubic-bezier(0.22, 1, 0.36, 1);
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-overlay {
+  animation: overlay-in 160ms ease-out;
+}
+
+.modal-sheet {
+  animation: sheet-in 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  overscroll-behavior: contain;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .toast-in,
   .toast-out,
-  .confirm-dialog[open] {
+  .modal-overlay,
+  .modal-sheet {
     animation: none;
   }
-}
-
-/* Com um diálogo modal aberto (ex. confirmar "Sair"), a página por baixo não deve
-   fazer scroll — no iOS o <dialog> não bloqueia isso sozinho. */
-html:has(dialog[open]) {
-  overflow: hidden;
-}
-
-dialog {
-  overscroll-behavior: contain;
 }

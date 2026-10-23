@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { ArrowRightLeft, Link2, Receipt, X } from 'lucide-react'
+import { useEffect, useId, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useToast } from '../context/toastContext'
 import { createTransaction, createTransfer, deleteTransaction, deleteTransfer, getCurrentUserId, updateTransaction } from '../lib/db'
@@ -7,14 +8,37 @@ import { blocksTransactionEdit, transactionLinkedMessage } from '../lib/linkedLo
 import { eur } from '../lib/format'
 import ConfirmDialog from './ConfirmDialog'
 import LedgerEntryRow from './LedgerEntryRow'
+import Modal from './Modal'
 
 const focusRing =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
 const inputClass =
   'min-h-11 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm transition-colors duration-150 ease-out dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100'
 const primaryButton = `min-h-11 flex-1 rounded-lg bg-neutral-900 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900 ${focusRing}`
-const secondaryButton = `min-h-11 flex-1 rounded-lg border border-neutral-300 text-sm font-medium dark:border-neutral-700 ${focusRing}`
+const secondaryButton = `min-h-11 flex-1 rounded-lg border border-neutral-300 text-sm font-medium text-neutral-900 dark:border-neutral-700 dark:text-neutral-100 ${focusRing}`
 const dangerButton = `min-h-11 flex-1 rounded-lg bg-red-600 text-sm font-medium text-white disabled:opacity-50 ${focusRing}`
+
+const TYPE_ICON = { transaction: Receipt, transfer: ArrowRightLeft, ledger: Link2 }
+
+// Cabeçalho uniforme dos 3 tipos: ícone, título, "x" para fechar.
+function ModalHeader({ titleId, icon: Icon, children, onClose }) {
+  return (
+    <div className="mb-4 flex items-start justify-between gap-3">
+      <h2 id={titleId} className="flex items-center gap-2 text-base font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+        <Icon size={17} className="shrink-0 text-neutral-400" aria-hidden="true" />
+        {children}
+      </h2>
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Fechar"
+        className={`flex size-8 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100 ${focusRing}`}
+      >
+        <X size={18} aria-hidden="true" />
+      </button>
+    </div>
+  )
+}
 
 // Detalhe de uma linha de Registo, num só sítio para os 3 tipos de movimento —
 // em vez de edição em linha (inconsistente: nem todas as linhas tinham lápis/
@@ -30,30 +54,10 @@ export default function TransactionDetailModal({
   onRestored,
   onRowChanged,
 }) {
-  const dialogRef = useRef(null)
   const titleId = useId()
-  const open = tx !== null
-
-  useEffect(() => {
-    const dialog = dialogRef.current
-    if (!dialog) return
-    if (open && !dialog.open) dialog.showModal()
-    if (!open && dialog.open) dialog.close()
-  }, [open])
 
   return (
-    <dialog
-      ref={dialogRef}
-      onCancel={(e) => {
-        e.preventDefault()
-        onClose()
-      }}
-      onClick={(e) => {
-        if (e.target === dialogRef.current) onClose()
-      }}
-      aria-labelledby={titleId}
-      className="m-auto w-[calc(100%-2rem)] max-w-sm rounded-2xl bg-white p-5 text-neutral-900 shadow-xl backdrop:bg-black/50 dark:bg-neutral-900 dark:text-neutral-100"
-    >
+    <Modal open={tx !== null} onClose={onClose} labelledBy={titleId}>
       {tx?.source === 'transaction' && (
         <TransactionBody
           tx={tx}
@@ -73,7 +77,7 @@ export default function TransactionDetailModal({
       {tx?.source === 'ledger' && (
         <LedgerBody tx={tx} titleId={titleId} onClose={onClose} onRowChanged={onRowChanged} />
       )}
-    </dialog>
+    </Modal>
   )
 }
 
@@ -163,9 +167,9 @@ function TransactionBody({ tx, categories, accounts, linkedEntry, titleId, onClo
 
   return (
     <form onSubmit={handleSave} className="space-y-3">
-      <h2 id={titleId} className="text-base font-semibold tracking-tight">
+      <ModalHeader titleId={titleId} icon={TYPE_ICON.transaction} onClose={onClose}>
         Editar transação
-      </h2>
+      </ModalHeader>
 
       {linkedEntry && (
         <p className="rounded-lg bg-amber-50 p-2 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
@@ -308,13 +312,15 @@ function TransferBody({ tx, titleId, onClose, onDeleted, onRestored }) {
 
   return (
     <div className="space-y-3">
-      <h2 id={titleId} className="text-base font-semibold tracking-tight">
+      <ModalHeader titleId={titleId} icon={TYPE_ICON.transfer} onClose={onClose}>
         {tx.note || 'Transferência'}
-      </h2>
-      <p className="text-sm text-neutral-600 dark:text-neutral-400">
-        {tx.account_name ?? 'Conta'} → {tx.counter_account_name ?? 'Conta'}
-      </p>
-      <p className="text-lg font-semibold text-blue-500">{eur(tx.amount)}</p>
+      </ModalHeader>
+      <div className="rounded-lg bg-neutral-50 p-3 dark:bg-neutral-800/60">
+        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          {tx.account_name ?? 'Conta'} → {tx.counter_account_name ?? 'Conta'}
+        </p>
+        <p className="mt-1 text-xl font-semibold text-blue-500">{eur(tx.amount)}</p>
+      </div>
 
       <div className="flex gap-2">
         <button type="button" onClick={() => setConfirmingDelete(true)} disabled={busy} className={dangerButton}>
@@ -380,9 +386,9 @@ function LedgerBody({ tx, titleId, onClose, onRowChanged }) {
 
   return (
     <div className="space-y-3">
-      <h2 id={titleId} className="text-base font-semibold tracking-tight">
+      <ModalHeader titleId={titleId} icon={TYPE_ICON.ledger} onClose={onClose}>
         Movimento com {tx.friend_name}
-      </h2>
+      </ModalHeader>
 
       {loading && <p className="text-sm text-neutral-500">A carregar...</p>}
       {error && (
