@@ -10,8 +10,9 @@ import {
   listMovementsPage,
   updateTransaction,
 } from '../lib/db'
-import { getLedgerEntriesForTransactions } from '../lib/friendsDb'
+import { getLedgerEntriesForTransactions, listUnlinkedLedgerEntriesInRange } from '../lib/friendsDb'
 import { addMonths, monthLabel, monthStart, toIsoDate } from '../lib/dates'
+import { entryLabel, signedCents } from '../lib/ledgerMath'
 import { blocksTransactionEdit, transactionLinkedMessage } from '../lib/linkedLogic'
 import { parseSmartQuery } from '../lib/smartSearch'
 import { EmptyState, ErrorNotice, ListSkeleton, Pager } from './Feedback'
@@ -482,6 +483,9 @@ export default function TransactionList({ categories, accounts, refreshToken, on
   const [editingId, setEditingId] = useState(null)
   // {transactionId: entry} para a página atual — um só pedido por página, não um por linha.
   const [linkedEntries, setLinkedEntries] = useState(new Map())
+  // Movimentos de amigos do mês sem transação ligada (ex. "Descontado noutra coisa") —
+  // não contam para nenhuma conta, mas ficam visíveis aqui à parte, a pedido do Francisco.
+  const [offsetEntries, setOffsetEntries] = useState([])
 
   // Debounce do texto de pesquisa, para não disparar um pedido a cada tecla.
   useEffect(() => {
@@ -522,6 +526,25 @@ export default function TransactionList({ categories, accounts, refreshToken, on
       cancelled = true
     }
   }, [rows])
+
+  // Carrega ao mesmo tempo que a lista real, preso ao mesmo mês (não à pesquisa/filtros,
+  // que são só para transações).
+  useEffect(() => {
+    let cancelled = false
+    listUnlinkedLedgerEntriesInRange({
+      from: toIsoDate(selectedMonth),
+      to: toIsoDate(addMonths(selectedMonth, 1)),
+    })
+      .then((entries) => {
+        if (!cancelled) setOffsetEntries(entries)
+      })
+      .catch(() => {
+        if (!cancelled) setOffsetEntries([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [selectedMonth, refreshToken])
 
   async function loadPage(offset) {
     const { rows: pageRows, totalCount: count } = await listMovementsPage({
@@ -662,6 +685,48 @@ export default function TransactionList({ categories, accounts, refreshToken, on
           </ul>
           <Pager page={page} totalPages={Math.ceil(totalCount / PAGE_SIZE)} onChange={setPage} />
         </>
+      )}
+
+      {offsetEntries.length > 0 && (
+        <section className="space-y-2 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+          <div>
+            <h3 className="text-sm font-semibold text-neutral-500">Conta-corrente (sem transação)</h3>
+            <p className="text-xs text-neutral-400">
+              Acertos com amigos que não mexeram em nenhuma conta tua — não contam para o Balanço.
+            </p>
+          </div>
+          <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+            {offsetEntries.map((entry) => {
+              const cents = signedCents(entry.kind, entry.amount)
+              const positive = cents > 0
+              return (
+                <li key={entry.id} className="flex items-center justify-between gap-3 py-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                      {entry.note || entryLabel(entry.kind)}
+                    </p>
+                    <Link
+                      to={`/dividas/${entry.friend_id}`}
+                      className="flex items-center gap-1 text-xs text-neutral-500 underline-offset-2 hover:underline"
+                    >
+                      {formatDate(entry.occurred_on)} ·{' '}
+                      <Link2 size={11} aria-hidden="true" className="shrink-0" />
+                      {entry.friendName}
+                      {LINKED_BADGE_TEXT[entry.status] ? ` · ${LINKED_BADGE_TEXT[entry.status]}` : ''}
+                    </Link>
+                  </div>
+                  <span
+                    className={`shrink-0 text-sm font-semibold ${
+                      positive ? 'text-green-600' : 'text-red-600'
+                    }`}
+                  >
+                    <Money>{`${positive ? '+' : '−'}${eur(Math.abs(cents) / 100)}`}</Money>
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
       )}
     </div>
   )

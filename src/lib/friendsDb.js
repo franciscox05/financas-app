@@ -2,6 +2,7 @@ import { supabase } from './supabase'
 import { createTransaction, getCurrentUserId } from './db'
 import { validateName } from './names'
 import { listFriendAvatars, sendFriendRequestByPhone } from './linkedDb'
+import { entryCounts } from './ledgerMath'
 import {
   phoneForStorage,
   mbwayForStorage,
@@ -279,4 +280,29 @@ export async function saveMyPhone(raw) {
     .from('profiles')
     .upsert({ id: userId, phone: phoneForProfile(raw) })
   if (error) throw error
+}
+
+// Movimentos de amigos sem transação ligada (ex. "Descontado noutra coisa") num
+// intervalo de datas — para aparecerem em Registo ao lado das transações reais,
+// claramente à parte (não mexem em nenhuma conta, não entram no Balanço).
+export async function listUnlinkedLedgerEntriesInRange({ from, to }) {
+  const { data, error } = await supabase
+    .from('ledger_entries')
+    .select('id, user_id, friend_id, kind, amount, note, occurred_on, status, created_by, transaction_id')
+    .is('transaction_id', null)
+    .gte('occurred_on', from)
+    .lt('occurred_on', to)
+    .order('occurred_on', { ascending: false })
+    .order('created_at', { ascending: false })
+  if (error) throw error
+
+  const counting = data.filter(entryCounts)
+  if (counting.length === 0) return []
+
+  const friendIds = [...new Set(counting.map((e) => e.friend_id))]
+  const { data: friends, error: friendsError } = await supabase.from('friends').select('id, name').in('id', friendIds)
+  if (friendsError) throw friendsError
+  const names = new Map(friends.map((f) => [f.id, f.name]))
+
+  return counting.map((e) => ({ ...e, friendName: names.get(e.friend_id) ?? 'um amigo' }))
 }
