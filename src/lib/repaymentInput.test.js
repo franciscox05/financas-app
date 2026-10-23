@@ -12,7 +12,7 @@ test('repaid_to_me (saldo 10, valor 11,5): passo a dever-lhe 1,50', () => {
   assert.equal(norm(overshootNote('repaid_to_me', 10, 11.5)), 'Passa a ficar a dever-lhe 1,50 €')
 })
 test('repaid_to_them (saldo -10, valor 11,5): ele passa a dever-me 1,50', () => {
-  assert.equal(norm(overshootNote('repaid_to_them', -10, 11.5)), 'Passa a ficar ele a dever-te 1,50 €')
+  assert.equal(norm(overshootNote('repaid_to_them', -10, 11.5)), 'Passa a ficar a dever-te 1,50 €')
 })
 test('categoria por defeito', () => {
   const cats = [

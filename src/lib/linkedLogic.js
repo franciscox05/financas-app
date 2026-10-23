@@ -16,7 +16,7 @@ export function entryStatusLabel(entry, viewerId) {
   switch (entry.status) {
     case 'pending':
       return entry.created_by === viewerId
-        ? { text: 'À espera que ele confirme', tone: 'waiting' }
+        ? { text: 'À espera de confirmação', tone: 'waiting' }
         : { text: 'Pendente de confirmação', tone: 'action' }
     case 'declined': {
       const note = String(entry.decline_note ?? '').trim()
@@ -60,11 +60,11 @@ export function normalizeEmail(raw) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null
 }
 
-// Como entryStatusLabel, mas com o nome do amigo no lugar de "ele".
+// Como entryStatusLabel, mas com o nome do amigo (sem nome, fica o texto genérico).
 export function entryStatusText(entry, viewerId, friendName) {
   const label = entryStatusLabel(entry, viewerId)
-  const name = friendName || 'ele'
-  if (entry.status === 'pending' && entry.created_by === viewerId) {
+  const name = friendName || 'o amigo'
+  if (entry.status === 'pending' && entry.created_by === viewerId && friendName) {
     return { ...label, text: `À espera que ${name} confirme` }
   }
   if (entry.status === 'cancel_requested') {

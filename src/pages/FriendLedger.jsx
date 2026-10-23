@@ -373,7 +373,7 @@ export default function FriendLedger() {
             aria-expanded={panel === 'repayment'}
             className={secondaryButton}
           >
-            {repayment.kind === 'repaid_to_me' ? 'Ele devolveu-me ' : 'Devolvi-lhe '}
+            {repayment.kind === 'repaid_to_me' ? 'Devolveu-me ' : 'Devolvi-lhe '}
             <Money value={repayment.amount} />
           </button>
         )}

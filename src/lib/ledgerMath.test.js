@@ -31,9 +31,9 @@ test('suggestedRepayment', () => {
   assert.equal(suggestedRepayment(0), null)
 })
 test('entryLabel', () => {
-  assert.equal(entryLabel('paid_for_them'), 'paguei por ele')
-  assert.equal(entryLabel('paid_for_me'), 'ele pagou por mim')
-  assert.equal(entryLabel('repaid_to_me'), 'ele devolveu-me')
+  assert.equal(entryLabel('paid_for_them'), 'paguei eu')
+  assert.equal(entryLabel('paid_for_me'), 'pagou por mim')
+  assert.equal(entryLabel('repaid_to_me'), 'devolveu-me')
   assert.equal(entryLabel('repaid_to_them'), 'devolvi-lhe')
 })
 test('lifetimeTotals soma por direção, ignorando devoluções já feitas e movimentos que não contam', () => {

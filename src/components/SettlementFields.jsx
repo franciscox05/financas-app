@@ -12,7 +12,7 @@ const OPTIONS = [
     title: 'Entrou numa conta tua',
     hint: 'Banco, MB Way, ou a tua conta de "Dinheiro" — escolhes qual a seguir',
   },
-  { value: 'offset', title: 'Descontado noutra coisa', hint: 'Abate noutra coisa que fizeste por ele' },
+  { value: 'offset', title: 'Descontado noutra coisa', hint: 'Abate noutra coisa que pagaste' },
 ]
 
 // "Como foi pago?" para quem aceita uma devolução: forma + (se banco) conta e
