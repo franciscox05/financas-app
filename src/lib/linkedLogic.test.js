@@ -57,7 +57,7 @@ test('canRequestCancel só em confirmed com mirror_id', () => {
   assert.equal(canRequestCancel({ status: 'pending', mirror_id: 'm' }), false)
 })
 test('entryStatusLabel', () => {
-  assert.deepEqual(entryStatusLabel({ status: 'pending', created_by: ME }, ME), { text: 'À espera que ele confirme', tone: 'waiting' })
+  assert.deepEqual(entryStatusLabel({ status: 'pending', created_by: ME }, ME), { text: 'À espera de confirmação', tone: 'waiting' })
   assert.deepEqual(entryStatusLabel({ status: 'pending', created_by: HIM }, ME), { text: 'Pendente de confirmação', tone: 'action' })
   assert.deepEqual(entryStatusLabel({ status: 'declined', decline_note: 'não foi assim' }, ME), { text: 'Contestado: não foi assim', tone: 'danger' })
   assert.equal(entryStatusLabel({ status: 'declined' }, ME).text, 'Contestado')

@@ -553,7 +553,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
             />
             {friendsFailed && <p className="mt-1 text-xs text-red-600">Não foi possível carregar os amigos.</p>}
             {friends.find((f) => f.id === friendId)?.status === 'connected' && (
-              <p className="mt-1 text-xs text-neutral-500">Ligado: só entra na conta quando ele confirmar.</p>
+              <p className="mt-1 text-xs text-neutral-500">Ligado: só entra na conta depois da confirmação.</p>
             )}
           </div>
         )}

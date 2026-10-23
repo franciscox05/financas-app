@@ -25,7 +25,7 @@ const OPTIONS = [
     title: 'Entrou numa conta tua',
     hint: 'Banco, MB Way, ou a tua conta de "Dinheiro" — escolhes qual a seguir',
   },
-  { value: 'offset', title: 'Descontado noutra coisa', hint: 'Abate noutra coisa que fizeste por ele' },
+  { value: 'offset', title: 'Descontado noutra coisa', hint: 'Abate noutra coisa que pagaste' },
 ]
 
 // `prefill` (opcional) repete os valores de uma devolução contestada.

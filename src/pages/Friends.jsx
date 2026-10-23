@@ -252,7 +252,7 @@ export default function Friends() {
         {sorted.length === 0 ? (
           <EmptyState
             title="Ainda não tens amigos aqui"
-            description="Adiciona um amigo para registares o que pagaste por ele e o que ele pagou por ti."
+            description="Adiciona um amigo para registares o que pagaste e o que te pagaram."
             actionLabel={showForm ? undefined : '+ Adicionar amigo'}
             onAction={showForm ? undefined : () => setShowForm(true)}
           />

@@ -18,8 +18,8 @@ const focusRing =
 const labelClass = 'mb-1 block text-xs font-medium text-neutral-500'
 
 const OPTIONS = [
-  { kind: 'paid_for_them', title: 'Paguei por ele', hint: 'Ele fica a dever-me (ex.: bilhete, almoço)' },
-  { kind: 'paid_for_me', title: 'Ele pagou por mim', hint: 'Fico a dever-lhe (ex.: creatina)' },
+  { kind: 'paid_for_them', title: 'Paguei eu', hint: 'Fica a dever-me (ex.: bilhete, almoço)' },
+  { kind: 'paid_for_me', title: 'Pagou por mim', hint: 'Fico a dever-lhe (ex.: creatina)' },
 ]
 
 // `prefill` (opcional) repete os valores de um movimento contestado.

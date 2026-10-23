@@ -12,10 +12,11 @@ const SIGNS = {
   repaid_to_them: 1, // devolvi-lhe
 }
 
+// Neutros em género: o amigo tanto pode ser "ele" como "ela".
 const LABELS = {
-  paid_for_them: 'paguei por ele',
-  paid_for_me: 'ele pagou por mim',
-  repaid_to_me: 'ele devolveu-me',
+  paid_for_them: 'paguei eu',
+  paid_for_me: 'pagou por mim',
+  repaid_to_me: 'devolveu-me',
   repaid_to_them: 'devolvi-lhe',
 }
 
