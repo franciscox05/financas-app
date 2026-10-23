@@ -72,6 +72,8 @@ const STATUS_H = 50
 // Zona do indicador "home" por baixo (safe-area do iPhone): sem ela a barra de navegação
 // da app ficava colada ao fundo e cortada pelos cantos redondos do ecrã.
 const HOME_H = 34
+// O telemóvel é mais largo do que as proporções da captura, sem ficar mais alto.
+const WIDEN = 1.06
 
 export const Pitch = ({ vertical, scheme, music }: Props) => (
   <AbsoluteFill style={{ backgroundColor: '#0a0a0b', fontFamily, color: '#fafafa' }}>
@@ -275,18 +277,21 @@ const PhoneStage = ({ vertical, scheme }: { vertical: boolean; scheme: string })
   const prev = phonePose(frame - 1, fps, vertical)
   const speed = Math.hypot(rotY - prev.rotY, rotX - prev.rotX)
 
-  const screenW = vertical ? 550 : 400
-  const k = screenW / CAPTURE_W
+  // A altura vem da largura de base; o telemóvel é só mais largo (WIDEN), e o conteúdo
+  // do ecrã estica na horizontal para o preencher (as capturas são de 390 px).
+  const baseW = vertical ? 520 : 380
+  const k = baseW / CAPTURE_W
+  const screenW = baseW * WIDEN
   const screenH = (CAPTURE_H + STATUS_H + HOME_H) * k
-  const bezel = screenW * 0.035
+  const bezel = baseW * 0.035
   const bodyW = screenW + bezel * 2
   const bodyH = screenH + bezel * 2
-  const radius = screenW * 0.16
-  const thickness = screenW * 0.055
+  const radius = baseW * 0.16
+  const thickness = baseW * 0.055
   const offsetY = (0.5 - focusY) * screenH * zoom
 
   const left = `${50 + side * 20}%`
-  const top = vertical ? '61.5%' : '50%'
+  const top = vertical ? '63%' : '50%'
 
   // Ângulo efetivo face à câmara (0 = de frente), para o reflexo e a sombra.
   const facing = ((((rotY % 360) + 540) % 360) - 180) // -180..180
@@ -432,16 +437,28 @@ const PhoneStage = ({ vertical, scheme }: { vertical: boolean; scheme: string })
                 position: 'relative',
                 width: screenW,
                 height: screenH,
-                borderRadius: screenW * 0.13,
+                borderRadius: baseW * 0.13,
                 overflow: 'hidden',
                 background: '#171717',
               }}
             >
-              <StatusBar scale={k} />
-              <div style={{ position: 'absolute', left: 0, right: 0, top: STATUS_H * k, height: CAPTURE_H * k }}>
-                <Screens scheme={scheme} />
-                <PushNotification scale={k} />
-                <Taps scale={k} />
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  width: baseW,
+                  height: screenH,
+                  transform: `scaleX(${WIDEN})`,
+                  transformOrigin: '0 0',
+                }}
+              >
+                <StatusBar scale={k} />
+                <div style={{ position: 'absolute', left: 0, right: 0, top: STATUS_H * k, height: CAPTURE_H * k }}>
+                  <Screens scheme={scheme} />
+                  <PushNotification scale={k} />
+                  <Taps scale={k} />
+                </div>
               </div>
               {/* Indicador "home" */}
               <div
@@ -460,11 +477,11 @@ const PhoneStage = ({ vertical, scheme }: { vertical: boolean; scheme: string })
               <div
                 style={{
                   position: 'absolute',
-                  top: screenW * 0.025,
+                  top: baseW * 0.025,
                   left: '50%',
                   transform: 'translateX(-50%)',
-                  width: screenW * 0.3,
-                  height: screenW * 0.085,
+                  width: baseW * 0.3,
+                  height: baseW * 0.085,
                   borderRadius: 999,
                   background: '#000',
                 }}
@@ -735,7 +752,7 @@ const Caption = ({
   const { durationInFrames } = useVideoConfig()
   const exit = interpolate(frame, [durationInFrames - 12, durationInFrames], [1, 0], clamp)
   const layout: React.CSSProperties = vertical
-    ? { left: 90, right: 90, top: 120, textAlign: 'center' }
+    ? { left: 90, right: 90, top: 150, textAlign: 'center' }
     : { [phoneSide > 0 ? 'left' : 'right']: 150, width: 820, top: '50%', transform: 'translateY(-50%)' }
   return (
     <div style={{ position: 'absolute', ...layout, opacity: exit }}>
