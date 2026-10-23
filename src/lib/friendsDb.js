@@ -230,6 +230,14 @@ export async function deleteEntry(entry) {
   if (error) throw error
 }
 
+// Rollback de uma entrada local (amigo não ligado) criada a meio de um gasto
+// dividido por várias pessoas que falhou a meio — delete direto pelo id, sem
+// mexer em nenhuma transação (essa é apagada à parte, é partilhada por todos).
+export async function deleteLocalEntryById(id) {
+  const { error } = await supabase.from('ledger_entries').delete().eq('id', id)
+  if (error) throw error
+}
+
 // Movimento (de um amigo) ligado a uma transação, se existir — para avisar antes de
 // editar/apagar a transação em Registo que isso também mexe no conta-corrente.
 export async function getLedgerEntryForTransaction(transactionId) {

@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { suggestAmount, suggestCategoryId } from '../lib/categorySuggest'
@@ -6,11 +6,102 @@ import { useToast } from '../context/toastContext'
 import { today } from '../lib/dates'
 import { createTransaction, deleteTransaction } from '../lib/db'
 import { eur } from '../lib/format'
-import { createFriend, createLinkedEntry, listFriendsWithBalance } from '../lib/friendsDb'
-import { createSharedEntry } from '../lib/linkedDb'
+import { createFriend, createLinkedEntry, deleteLocalEntryById, listFriendsWithBalance } from '../lib/friendsDb'
+import { cancelPendingEntry, createSharedEntry } from '../lib/linkedDb'
 import { notifyPendingChanged } from '../lib/pendingEvents'
 import { friendEntryKind, friendEntryMode } from '../lib/quickEntryFriend'
 import { defaultCategoryId } from '../lib/repaymentInput'
+
+const selectClass =
+  'w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100'
+
+// Seletor de amigo partilhado pelos dois fluxos (devolução única / divisão por
+// vários) — select normal + "+ Novo amigo..." inline, sem sair do formulário.
+function FriendPicker({ id, friends, value, onChange, onFriendCreated, disabled }) {
+  const toast = useToast()
+  const [newMode, setNewMode] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function handleCreate(e) {
+    e.preventDefault()
+    if (busy || !newName.trim()) return
+    setBusy(true)
+    try {
+      const created = await createFriend({ name: newName, phone: '', requestLink: false })
+      onFriendCreated(created)
+      onChange(created.id)
+      setNewMode(false)
+      setNewName('')
+    } catch (err) {
+      toast.error(err.message || 'Não foi possível adicionar. Tenta outra vez.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (newMode) {
+    return (
+      <div className="flex gap-2">
+        <input
+          type="text"
+          autoFocus
+          placeholder="Nome do amigo"
+          value={newName}
+          disabled={busy}
+          onChange={(e) => setNewName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleCreate(e)
+          }}
+          className={selectClass}
+        />
+        <button
+          type="button"
+          disabled={busy || !newName.trim()}
+          onClick={handleCreate}
+          className="min-h-9 shrink-0 rounded-lg bg-neutral-900 px-3 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+        >
+          {busy ? '...' : 'Adicionar'}
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            setNewMode(false)
+            setNewName('')
+          }}
+          className="min-h-9 shrink-0 rounded-lg border border-neutral-300 px-3 text-sm dark:border-neutral-700"
+        >
+          Cancelar
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <select
+      id={id}
+      value={value}
+      disabled={disabled}
+      onChange={(e) => {
+        if (e.target.value === '__new__') {
+          setNewMode(true)
+          return
+        }
+        onChange(e.target.value)
+      }}
+      className={selectClass}
+    >
+      <option value="">Escolhe um amigo</option>
+      {friends.map((f) => (
+        <option key={f.id} value={f.id}>
+          {f.name}
+        </option>
+      ))}
+      <option value="__new__">+ Novo amigo...</option>
+    </select>
+  )
+}
 
 export default function QuickEntryForm({ accounts, categories, transactions, onCreated }) {
   const toast = useToast()
@@ -27,16 +118,13 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
   const categoryTouchedRef = useRef(false)
   const amountTouchedRef = useRef(false)
 
-  // Amigo associado (gasto: "alguém te deve"; ganho: "um amigo devolveu-te").
   const [showFriend, setShowFriend] = useState(false)
-  const [friendId, setFriendId] = useState('')
-  const [debtAmount, setDebtAmount] = useState('')
   const [friends, setFriends] = useState([])
   const [friendsFailed, setFriendsFailed] = useState(false)
-  const [newFriendMode, setNewFriendMode] = useState(false)
-  const [newFriendName, setNewFriendName] = useState('')
-  const [newFriendBusy, setNewFriendBusy] = useState(false)
-  const [newFriendError, setNewFriendError] = useState('')
+  // Ganho: um só amigo devolveu-te o valor todo.
+  const [friendId, setFriendId] = useState('')
+  // Gasto: divide entre vários — cada linha é a parte de uma pessoa (a tua fica implícita).
+  const [friendShares, setFriendShares] = useState([{ friendId: '', amount: '' }])
 
   // Só carrega a lista quando o utilizador abre a secção.
   useEffect(() => {
@@ -73,12 +161,15 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
     ?.name?.toLowerCase()
     .includes('investiment')
 
+  const friendShareIds = friendShares.map((s) => s.friendId).join(',')
+  const hasAnyFriend = type === 'income' ? Boolean(friendId) : friendShares.some((s) => s.friendId)
+
   // Sugere categoria a partir do histórico quando o utilizador escreve uma nota,
   // desde que não tenha escolhido a categoria manualmente para esta transação,
   // nem tenha um amigo associado (nesse caso "Empréstimos"/"Devoluções" manda —
   // senão escrever a nota depois de escolher o amigo trocava a categoria de volta).
   useEffect(() => {
-    if (categoryTouchedRef.current || friendId) return
+    if (categoryTouchedRef.current || hasAnyFriend) return
     const id = suggestCategoryId(note, type, transactions ?? [])
     if (id && categoriesForType.some((c) => c.id === id)) {
       setCategoryId(id)
@@ -108,44 +199,47 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
   useEffect(() => {
     setShowFriend(false)
     setFriendId('')
-    setDebtAmount('')
-    setNewFriendMode(false)
-    setNewFriendName('')
+    setFriendShares([{ friendId: '', amount: '' }])
   }, [type])
 
-  // Ao escolher um amigo, salta para "Empréstimos"/"Devoluções" (se existirem e a
-  // categoria ainda não tiver sido escolhida à mão para esta transação).
+  // Ao escolher um amigo (devolução, ou qualquer linha da divisão), salta para
+  // "Empréstimos"/"Devoluções" (se existirem e a categoria ainda não tiver sido
+  // escolhida à mão para esta transação).
   useEffect(() => {
-    if (!friendId || categoryTouchedRef.current) return
+    if (!hasAnyFriend || categoryTouchedRef.current) return
     const id = defaultCategoryId(categories, friendEntryKind(type))
     if (id && categoriesForType.some((c) => c.id === id)) {
       setCategoryId(id)
       setSuggested(true)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [friendId])
+  }, [friendId, friendShareIds])
 
-  async function handleCreateFriend(e) {
-    e.preventDefault()
-    if (newFriendBusy) return
-    setNewFriendBusy(true)
-    setNewFriendError('')
-    try {
-      const created = await createFriend({ name: newFriendName, phone: '', requestLink: false })
-      setFriends((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name, 'pt')))
-      setFriendId(created.id)
-      setNewFriendMode(false)
-      setNewFriendName('')
-    } catch (err) {
-      setNewFriendError(err.message || 'Não foi possível adicionar. Tenta outra vez.')
-    } finally {
-      setNewFriendBusy(false)
-    }
+  const numericAmount = Number(amount)
+  const sharesTotal = friendShares.reduce((sum, s) => sum + (Number(s.amount) || 0), 0)
+  const sharesExceed = showFriend && type === 'expense' && sharesTotal > numericAmount + 0.001
+
+  function updateShare(index, patch) {
+    setFriendShares((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)))
+  }
+
+  function addShareRow() {
+    setFriendShares((prev) => [...prev, { friendId: '', amount: '' }])
+  }
+
+  function removeShareRow(index) {
+    setFriendShares((prev) => (prev.length === 1 ? [{ friendId: '', amount: '' }] : prev.filter((_, i) => i !== index)))
+  }
+
+  function splitEqually() {
+    const active = friendShares.filter((s) => s.friendId)
+    if (active.length === 0 || !numericAmount) return
+    const share = (numericAmount / active.length).toFixed(2)
+    setFriendShares((prev) => prev.map((s) => (s.friendId ? { ...s, amount: share } : s)))
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
-    const numericAmount = Number(amount)
     if (!numericAmount || numericAmount <= 0) {
       setError('Indica um valor válido.')
       return
@@ -159,38 +253,68 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       return
     }
 
-    const friend = showFriend ? friends.find((f) => f.id === friendId) : null
-    const numericDebtAmount = Number(debtAmount)
-    if (showFriend && !friend) {
+    // Ganho: amigo único, devolveu o valor todo.
+    const repaymentFriend = type === 'income' && showFriend ? friends.find((f) => f.id === friendId) : null
+    if (type === 'income' && showFriend && !repaymentFriend) {
       setError('Escolhe o amigo, ou fecha essa secção.')
       return
     }
-    if (friend && type === 'expense' && (!numericDebtAmount || numericDebtAmount <= 0)) {
-      setError('Indica quanto te deve (valor válido), ou fecha essa secção.')
-      return
-    }
 
-    const mode = friend ? friendEntryMode(type, friend.status) : null
-    const entryFields = friend && {
-      friendId: friend.id,
-      kind: friendEntryKind(type),
-      amount: type === 'income' ? numericAmount : numericDebtAmount,
-      note: note.trim(),
-      occurredOn,
+    // Gasto: uma ou várias pessoas, cada uma com a sua parte.
+    const activeShares = type === 'expense' && showFriend ? friendShares.filter((s) => s.friendId) : []
+    if (type === 'expense' && showFriend) {
+      if (activeShares.length === 0) {
+        setError('Escolhe pelo menos um amigo, ou fecha essa secção.')
+        return
+      }
+      if (activeShares.some((s) => !Number(s.amount) || Number(s.amount) <= 0)) {
+        setError('Indica quanto deve cada pessoa (valor válido).')
+        return
+      }
+      const ids = activeShares.map((s) => s.friendId)
+      if (new Set(ids).size !== ids.length) {
+        setError('Não podes repetir o mesmo amigo.')
+        return
+      }
+      if (sharesExceed) {
+        setError('A soma das partes não pode exceder o valor total.')
+        return
+      }
     }
 
     setSubmitting(true)
     setError('')
     try {
       let created = null
-      if (mode === 'shared-repayment') {
-        // Sem transação própria: é criada quando o amigo confirmar a devolução.
-        await createSharedEntry({
-          ...entryFields,
-          settlement: 'bank',
-          accountId,
-          categoryId: effectiveCategoryId,
-        })
+      if (repaymentFriend) {
+        const mode = friendEntryMode('income', repaymentFriend.status)
+        const fields = {
+          friendId: repaymentFriend.id,
+          kind: friendEntryKind('income'),
+          amount: numericAmount,
+          note: note.trim(),
+          occurredOn,
+        }
+        if (mode === 'shared-repayment') {
+          // Sem transação própria: é criada quando o amigo confirmar a devolução.
+          await createSharedEntry({ ...fields, settlement: 'bank', accountId, categoryId: effectiveCategoryId })
+          notifyPendingChanged()
+        } else {
+          created = await createTransaction({
+            amount: numericAmount,
+            type,
+            accountId,
+            categoryId: effectiveCategoryId,
+            occurredOn,
+            note: note.trim(),
+          })
+          try {
+            await createLinkedEntry({ ...fields, settlement: 'bank', transactionId: created.id })
+          } catch (err) {
+            await deleteTransaction(created.id).catch(() => {})
+            throw err
+          }
+        }
       } else {
         created = await createTransaction({
           amount: numericAmount,
@@ -200,24 +324,34 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
           occurredOn,
           note: note.trim(),
         })
-        if (friend) {
-          // Tudo ou nada: se o movimento do amigo falhar, apaga a transação.
-          try {
-            if (mode === 'shared-expense') await createSharedEntry({ ...entryFields, transactionId: created.id })
-            else {
-              await createLinkedEntry({
-                ...entryFields,
-                settlement: type === 'income' ? 'bank' : null,
-                transactionId: created.id,
-              })
+        // Tudo ou nada: se alguma parte falhar, desfaz as já criadas e a transação.
+        const createdSoFar = []
+        try {
+          for (const share of activeShares) {
+            const friend = friends.find((f) => f.id === share.friendId)
+            const mode = friendEntryMode('expense', friend.status)
+            const fields = {
+              friendId: friend.id,
+              kind: friendEntryKind('expense'),
+              amount: Number(share.amount),
+              note: note.trim(),
+              occurredOn,
+              transactionId: created.id,
             }
-          } catch (err) {
-            await deleteTransaction(created.id).catch(() => {})
-            throw err
+            const row = mode === 'shared-expense' ? await createSharedEntry(fields) : await createLinkedEntry(fields)
+            createdSoFar.push({ friend, id: row?.id ?? row })
+            if (mode === 'shared-expense') notifyPendingChanged()
           }
+        } catch (err) {
+          for (const done of createdSoFar) {
+            if (done.friend.status === 'connected') await cancelPendingEntry(done.id).catch(() => {})
+            else await deleteLocalEntryById(done.id).catch(() => {})
+          }
+          await deleteTransaction(created.id).catch(() => {})
+          throw err
         }
       }
-      if (mode?.startsWith('shared')) notifyPendingChanged()
+
       setAmount('')
       setNote('')
       setOccurredOn(today())
@@ -228,17 +362,17 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       amountTouchedRef.current = false
       setShowFriend(false)
       setFriendId('')
-      setDebtAmount('')
-      setNewFriendMode(false)
-      setNewFriendName('')
+      setFriendShares([{ friendId: '', amount: '' }])
       if (created) onCreated(created)
-      toast.success(
-        mode === 'shared-repayment'
-          ? `Já conta do teu lado. Enviado a ${friend.name} para confirmar também.`
-          : mode === 'shared-expense'
-            ? `Gasto de ${eur(numericAmount)} registado. Já conta do teu lado — enviado a ${friend.name} para confirmar também.`
-            : `${type === 'income' ? 'Ganho' : 'Gasto'} de ${eur(numericAmount)} registado.`,
-      )
+
+      if (repaymentFriend) {
+        toast.success(`Já conta do teu lado. Enviado a ${repaymentFriend.name} para confirmar também.`)
+      } else if (activeShares.length > 0) {
+        const names = activeShares.map((s) => friends.find((f) => f.id === s.friendId)?.name).join(', ')
+        toast.success(`Gasto de ${eur(numericAmount)} registado. Já conta do teu lado — dividido com ${names}.`)
+      } else {
+        toast.success(`${type === 'income' ? 'Ganho' : 'Gasto'} de ${eur(numericAmount)} registado.`)
+      }
     } catch (err) {
       toast.error(`Não foi possível registar: ${err.message}`)
     } finally {
@@ -375,110 +509,95 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       <div>
         <button
           type="button"
-          onClick={() => {
-            if (!showFriend && type === 'expense' && !debtAmount && amount) setDebtAmount(amount)
-            setShowFriend((v) => !v)
-            setNewFriendMode(false)
-            setNewFriendName('')
-          }}
+          onClick={() => setShowFriend((v) => !v)}
           className="-my-1 flex min-h-9 items-center gap-0.5 text-xs text-neutral-600 underline-offset-2 hover:underline dark:text-neutral-400"
         >
           {showFriend ? 'Fechar' : (
             <>
-              <Plus size={13} /> {type === 'expense' ? 'Alguém te deve por isto?' : 'Foi um amigo que te devolveu?'}
+              <Plus size={13} /> {type === 'expense' ? 'Dividir com amigos?' : 'Foi um amigo que te devolveu?'}
             </>
           )}
         </button>
 
-        {showFriend && (
-          <div className="mt-2 grid grid-cols-2 gap-2 rounded-lg border border-neutral-200 p-2 dark:border-neutral-800">
-            <div className="col-span-2 min-w-0">
-              <label htmlFor="quick-entry-friend" className="mb-1 block text-xs font-medium text-neutral-500">
-                {type === 'expense' ? 'Quem te deve' : 'Quem devolveu'}
-              </label>
-              {newFriendMode ? (
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    autoFocus
-                    placeholder="Nome do amigo"
-                    value={newFriendName}
-                    disabled={newFriendBusy}
-                    onChange={(e) => setNewFriendName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        handleCreateFriend(e)
-                      }
-                    }}
-                    className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+        {showFriend && type === 'income' && (
+          <div className="mt-2 grid grid-cols-1 gap-2 rounded-lg border border-neutral-200 p-2 dark:border-neutral-800">
+            <label htmlFor="quick-entry-friend" className="mb-1 block text-xs font-medium text-neutral-500">
+              Quem devolveu
+            </label>
+            <FriendPicker
+              id="quick-entry-friend"
+              friends={friends}
+              value={friendId}
+              onChange={setFriendId}
+              onFriendCreated={(f) => setFriends((prev) => [...prev, f].sort((a, b) => a.name.localeCompare(b.name, 'pt')))}
+            />
+            {friendsFailed && <p className="mt-1 text-xs text-red-600">Não foi possível carregar os amigos.</p>}
+            {friends.find((f) => f.id === friendId)?.status === 'connected' && (
+              <p className="mt-1 text-xs text-neutral-500">Ligado: só entra na conta quando ele confirmar.</p>
+            )}
+          </div>
+        )}
+
+        {showFriend && type === 'expense' && (
+          <div className="mt-2 space-y-2 rounded-lg border border-neutral-200 p-2 dark:border-neutral-800">
+            {friendShares.map((share, index) => (
+              <div key={index} className="flex items-start gap-2">
+                <div className="min-w-0 flex-1">
+                  <FriendPicker
+                    friends={friends.filter((f) => !friendShares.some((s, i) => i !== index && s.friendId === f.id))}
+                    value={share.friendId}
+                    onChange={(id) => updateShare(index, { friendId: id })}
+                    onFriendCreated={(f) => setFriends((prev) => [...prev, f].sort((a, b) => a.name.localeCompare(b.name, 'pt')))}
                   />
-                  <button
-                    type="button"
-                    disabled={newFriendBusy || !newFriendName.trim()}
-                    onClick={handleCreateFriend}
-                    className="min-h-9 shrink-0 rounded-lg bg-neutral-900 px-3 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
-                  >
-                    {newFriendBusy ? '...' : 'Adicionar'}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={newFriendBusy}
-                    onClick={() => {
-                      setNewFriendMode(false)
-                      setNewFriendName('')
-                      setNewFriendError('')
-                    }}
-                    className="min-h-9 shrink-0 rounded-lg border border-neutral-300 px-3 text-sm dark:border-neutral-700"
-                  >
-                    Cancelar
-                  </button>
                 </div>
-              ) : (
-                <select
-                  id="quick-entry-friend"
-                  value={friendId}
-                  onChange={(e) => {
-                    if (e.target.value === '__new__') {
-                      setNewFriendMode(true)
-                      setNewFriendError('')
-                      return
-                    }
-                    setFriendId(e.target.value)
-                  }}
-                  className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  placeholder="€"
+                  aria-label="Quanto deve"
+                  value={share.amount}
+                  onChange={(e) => updateShare(index, { amount: e.target.value })}
+                  className="w-20 min-w-0 shrink-0 rounded-lg border border-neutral-300 px-2 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeShareRow(index)}
+                  aria-label="Remover pessoa"
+                  className="flex min-h-9 shrink-0 items-center justify-center rounded-lg px-2 text-neutral-400 hover:text-red-600"
                 >
-                  <option value="">Escolhe um amigo</option>
-                  {friends.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.name}
-                    </option>
-                  ))}
-                  <option value="__new__">+ Novo amigo...</option>
-                </select>
-              )}
-              {newFriendError && <p className="mt-1 text-xs text-red-600">{newFriendError}</p>}
-              {friendsFailed && <p className="mt-1 text-xs text-red-600">Não foi possível carregar os amigos.</p>}
-              {friends.find((f) => f.id === friendId)?.status === 'connected' && (
-                <p className="mt-1 text-xs text-neutral-500">
-                  {type === 'expense'
-                    ? 'Ligado: o pedido vai para ele confirmar.'
-                    : 'Ligado: só entra na conta quando ele confirmar.'}
-                </p>
-              )}
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
+
+            {friendsFailed && <p className="text-xs text-red-600">Não foi possível carregar os amigos.</p>}
+
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button
+                type="button"
+                onClick={addShareRow}
+                className="flex min-h-9 items-center gap-1 rounded-lg border border-neutral-300 px-2.5 text-xs font-medium dark:border-neutral-700"
+              >
+                <Plus size={13} /> Adicionar pessoa
+              </button>
+              <button
+                type="button"
+                onClick={splitEqually}
+                disabled={!friendShares.some((s) => s.friendId) || !numericAmount}
+                className="min-h-9 rounded-lg border border-neutral-300 px-2.5 text-xs font-medium disabled:opacity-40 dark:border-neutral-700"
+              >
+                Dividir por igual
+              </button>
             </div>
-            {type === 'expense' && (
-              <input
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                min="0"
-                placeholder="Quanto te deve (€)"
-                aria-label="Quanto te deve (€)"
-                value={debtAmount}
-                onChange={(e) => setDebtAmount(e.target.value)}
-                className="col-span-2 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-              />
+
+            {numericAmount > 0 && (
+              <p className={`text-xs ${sharesExceed ? 'text-red-600' : 'text-neutral-500'}`}>
+                {sharesExceed
+                  ? 'A soma das partes excede o valor total.'
+                  : `Sobra para ti: ${eur(Math.max(0, numericAmount - sharesTotal))}`}
+              </p>
             )}
           </div>
         )}
