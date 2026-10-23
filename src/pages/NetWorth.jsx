@@ -227,6 +227,8 @@ export default function NetWorth() {
                 amount: Number(transfer.amount),
                 occurredOn: transfer.occurred_on,
                 note: transfer.note,
+                categoryId: transfer.category_id,
+                countsAsExpense: transfer.counts_as_expense,
               })
               await loadAll()
               toast.success('Transferência restaurada.')
@@ -475,9 +477,12 @@ export default function NetWorth() {
                   <span className="min-w-0 truncate text-neutral-600 dark:text-neutral-400">
                     {t.from_account?.name ?? 'Conta'} → {t.to_account?.name ?? 'Conta'} · {t.occurred_on}
                     {t.note ? ` · ${t.note}` : ''}
+                    {t.counts_as_expense ? ` · ${t.categories?.name ?? 'Gasto'} (conta como gasto)` : ''}
                   </span>
                   <div className="flex shrink-0 items-center gap-2">
-                    <span className="font-medium text-neutral-900 dark:text-neutral-100">
+                    <span
+                      className={`font-medium ${t.counts_as_expense ? 'text-red-600' : 'text-neutral-900 dark:text-neutral-100'}`}
+                    >
                       <Money value={Number(t.amount)} />
                     </span>
                     {confirmingTransferId === t.id ? (

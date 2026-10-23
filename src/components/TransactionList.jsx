@@ -40,6 +40,31 @@ const rowButtonClass =
 // Todas as linhas são só de leitura e clicáveis: abrem o modal de detalhe, que
 // trata de edição/apagar com as regras certas para cada tipo de movimento.
 function TransferRow({ tx, onOpen }) {
+  // "Conta como gasto" (ex. investimentos): mesma transferência, mas lê-se como
+  // um gasto normal — vermelho, categoria em vez da seta de conta a conta.
+  if (tx.counts_as_expense) {
+    return (
+      <li>
+        <button type="button" onClick={() => onOpen(tx)} className={rowButtonClass}>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+              {tx.note || tx.category_name || 'Investimento'}
+            </p>
+            <p className="flex items-center gap-1 truncate text-xs text-neutral-500">
+              {formatDate(tx.occurred_on)}
+              {tx.note && ` · ${tx.category_name ?? 'Sem categoria'}`} · {tx.account_name ?? 'Conta'}
+              <ArrowRightLeft size={11} aria-hidden="true" className="shrink-0" />
+              {tx.counter_account_name ?? 'Conta'}
+            </p>
+          </div>
+          <span className="shrink-0 text-sm font-semibold text-red-600">
+            <Money>{formatAmount(tx.amount, 'expense')}</Money>
+          </span>
+        </button>
+      </li>
+    )
+  }
+
   return (
     <li>
       <button type="button" onClick={() => onOpen(tx)} className={rowButtonClass}>

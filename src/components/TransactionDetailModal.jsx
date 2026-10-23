@@ -294,6 +294,8 @@ function TransferBody({ tx, titleId, onClose, onDeleted, onRestored }) {
                 amount: Number(tx.amount),
                 occurredOn: tx.occurred_on,
                 note: tx.note,
+                categoryId: tx.category_id,
+                countsAsExpense: tx.counts_as_expense,
               })
               onRestored()
               toast.success('Transferência restaurada.')
@@ -313,13 +315,20 @@ function TransferBody({ tx, titleId, onClose, onDeleted, onRestored }) {
   return (
     <div className="space-y-3">
       <ModalHeader titleId={titleId} icon={TYPE_ICON.transfer} onClose={onClose}>
-        {tx.note || 'Transferência'}
+        {tx.note || tx.category_name || 'Transferência'}
       </ModalHeader>
       <div className="rounded-lg bg-neutral-50 p-3 dark:bg-neutral-800/60">
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
           {tx.account_name ?? 'Conta'} → {tx.counter_account_name ?? 'Conta'}
         </p>
-        <p className="mt-1 text-xl font-semibold text-blue-500">{eur(tx.amount)}</p>
+        <p className={`mt-1 text-xl font-semibold ${tx.counts_as_expense ? 'text-red-600' : 'text-blue-500'}`}>
+          {eur(tx.amount)}
+        </p>
+        {tx.counts_as_expense && (
+          <p className="mt-1 text-xs text-neutral-500">
+            {tx.category_name ?? 'Sem categoria'} · conta como gasto do mês
+          </p>
+        )}
       </div>
 
       <div className="flex gap-2">

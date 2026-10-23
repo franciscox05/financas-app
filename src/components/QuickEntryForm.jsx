@@ -120,9 +120,13 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
   const amountTouchedRef = useRef(false)
 
   // Mover dinheiro entre as tuas próprias contas (ex. Conta à Ordem -> XTB):
-  // não é um Gasto/Ganho, por isso tem o seu próprio modo, sem categoria/amigo.
+  // por omissão não é um Gasto/Ganho, mas pode marcar-se para contar como gasto
+  // do mês (ex. investimentos) — uma só transferência, as duas contas atualizam
+  // sozinhas, e ainda assim entra no Balanço com categoria.
   const [showTransfer, setShowTransfer] = useState(false)
   const [transferToId, setTransferToId] = useState('')
+  const [transferCountsAsExpense, setTransferCountsAsExpense] = useState(false)
+  const [transferCategoryId, setTransferCategoryId] = useState('')
 
   const [showFriend, setShowFriend] = useState(false)
   const [friends, setFriends] = useState([])
@@ -209,6 +213,8 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
     setFriendShares([{ friendId: '', amount: '' }])
     setShowTransfer(false)
     setTransferToId('')
+    setTransferCountsAsExpense(false)
+    setTransferCategoryId('')
   }, [type])
 
   // Ao escolher um amigo (devolução, ou qualquer linha da divisão), salta para
@@ -280,6 +286,10 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
         setError('A conta de origem e destino têm de ser diferentes.')
         return
       }
+      if (transferCountsAsExpense && !transferCategoryId) {
+        setError('Escolhe a categoria do gasto.')
+        return
+      }
       setSubmitting(true)
       setError('')
       try {
@@ -289,6 +299,8 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
           amount: numericAmount,
           occurredOn,
           note: note.trim(),
+          categoryId: transferCountsAsExpense ? transferCategoryId : undefined,
+          countsAsExpense: transferCountsAsExpense,
         })
         setAmount('')
         setNote('')
@@ -297,8 +309,14 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
         setAmountSuggested(false)
         setShowTransfer(false)
         setTransferToId('')
+        setTransferCountsAsExpense(false)
+        setTransferCategoryId('')
         onTransferCreated?.()
-        toast.success(`Transferência de ${eur(numericAmount)} registada.`)
+        toast.success(
+          transferCountsAsExpense
+            ? `Gasto de ${eur(numericAmount)} registado. Saldo da conta destino atualizado.`
+            : `Transferência de ${eur(numericAmount)} registada.`,
+        )
       } catch (err) {
         toast.error(`Não foi possível transferir: ${err.message}`)
       } finally {
@@ -516,7 +534,8 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
         </button>
         {!showTransfer && isLikelyOwnTransfer && (
           <p className="-mt-2 mb-2 text-xs text-neutral-400">
-            Parece uma transferência entre as tuas contas — não conta como Gasto/Ganho.
+            Investimento? "Mover para outra conta tua?" com "Conta como gasto do mês" faz o mesmo que isto e
+            ainda atualiza o saldo da conta destino sozinho.
           </p>
         )}
       </div>
@@ -585,6 +604,43 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
           </select>
         </div>
       </div>
+
+      {showTransfer && type === 'expense' && (
+        <div>
+          <label className="flex min-h-9 items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
+            <input
+              type="checkbox"
+              checked={transferCountsAsExpense}
+              onChange={(e) => {
+                setTransferCountsAsExpense(e.target.checked)
+                if (!e.target.checked) setTransferCategoryId('')
+              }}
+              className="size-4 rounded border-neutral-300 dark:border-neutral-700"
+            />
+            Conta como gasto do mês (ex. investimentos)
+          </label>
+          {transferCountsAsExpense && (
+            <div className="mt-2 min-w-0">
+              <label className="mb-1 block text-xs font-medium text-neutral-500">Categoria</label>
+              <select
+                value={transferCategoryId}
+                onChange={(e) => setTransferCategoryId(e.target.value)}
+                className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              >
+                <option value="">Escolhe a categoria</option>
+                {categoriesForType.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-0.5 text-xs text-neutral-400">
+                Entra no Balanço como gasto; a conta destino atualiza-se sozinha, sem criar outra transação.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <div className="min-w-0">
@@ -718,7 +774,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
         disabled={submitting}
         className="min-h-12 w-full rounded-lg bg-neutral-900 py-3 font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
       >
-        {submitting ? 'A guardar...' : showTransfer ? 'Transferir' : 'Registar'}
+        {submitting ? 'A guardar...' : showTransfer && !transferCountsAsExpense ? 'Transferir' : 'Registar'}
       </button>
     </form>
   )

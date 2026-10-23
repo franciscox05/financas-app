@@ -107,15 +107,42 @@ export async function listMovementsPage({ limit, offset, type, accountId, catego
   return { rows: data, totalCount: count }
 }
 
+// Além de `transactions`, inclui transferências marcadas "conta como gasto"
+// (ex. investimentos: Conta à Ordem -> XTB) como se fossem um gasto normal —
+// só essas, as transferências neutras continuam de fora de propósito (ver
+// migração 20261104000000_transfers_count_as_expense.sql).
 export async function listTransactionsInRange({ from, to }) {
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('*, accounts(name), categories(name)')
-    .gte('occurred_on', from)
-    .lt('occurred_on', to)
-    .order('occurred_on', { ascending: true })
+  const [{ data, error }, { data: trData, error: trError }] = await Promise.all([
+    supabase
+      .from('transactions')
+      .select('*, accounts(name), categories(name)')
+      .gte('occurred_on', from)
+      .lt('occurred_on', to),
+    supabase
+      .from('transfers')
+      .select('*, accounts:accounts!from_account_id(name), categories(name)')
+      .eq('counts_as_expense', true)
+      .gte('occurred_on', from)
+      .lt('occurred_on', to),
+  ])
   if (error) throw error
-  return data
+  if (trError) throw trError
+
+  const transfersAsExpense = trData.map((t) => ({
+    id: t.id,
+    type: 'expense',
+    amount: t.amount,
+    account_id: t.from_account_id,
+    accounts: t.accounts,
+    category_id: t.category_id,
+    categories: t.categories,
+    note: t.note,
+    occurred_on: t.occurred_on,
+    created_at: t.created_at,
+    source: 'transfer',
+  }))
+
+  return [...data, ...transfersAsExpense].sort((a, b) => (a.occurred_on < b.occurred_on ? -1 : 1))
 }
 
 export async function createTransaction({ amount, type, accountId, categoryId, occurredOn, note }) {
@@ -503,20 +530,33 @@ export async function undoDebtPayment({ payment, debt }) {
 
 // --- Transferências entre contas próprias ----------------------------------
 // Movimentar dinheiro entre contas (ex.: Conta Corrente -> XTB) não é um
-// Gasto/Ganho real, por isso vive na sua própria tabela, fora de `transactions`
-// — nunca entra nos totais de Balanço/Dashboard/calendário. `accountBalance.js`
-// soma-a diretamente no saldo de cada conta envolvida.
+// Gasto/Ganho real por omissão, por isso vive na sua própria tabela, fora de
+// `transactions` — `accountBalance.js` soma-a diretamente no saldo de cada
+// conta envolvida. `counts_as_expense` é a exceção explícita (ex.
+// investimentos): continua a ser UMA transferência (as duas contas atualizam
+// sozinhas, sem duas entradas a desalinhar), mas `listTransactionsInRange`
+// inclui-a nos totais de Gasto como se fosse uma transação normal.
 export async function listTransfers() {
   const { data, error } = await supabase
     .from('transfers')
-    .select('*, from_account:accounts!from_account_id(name), to_account:accounts!to_account_id(name)')
+    .select(
+      '*, from_account:accounts!from_account_id(name), to_account:accounts!to_account_id(name), categories(name)',
+    )
     .order('occurred_on', { ascending: false })
     .order('created_at', { ascending: false })
   if (error) throw error
   return data
 }
 
-export async function createTransfer({ fromAccountId, toAccountId, amount, occurredOn, note }) {
+export async function createTransfer({
+  fromAccountId,
+  toAccountId,
+  amount,
+  occurredOn,
+  note,
+  categoryId,
+  countsAsExpense,
+}) {
   const { data: userData, error: userError } = await supabase.auth.getUser()
   if (userError) throw userError
 
@@ -529,8 +569,12 @@ export async function createTransfer({ fromAccountId, toAccountId, amount, occur
       amount,
       occurred_on: occurredOn,
       note: note || null,
+      category_id: countsAsExpense ? categoryId : null,
+      counts_as_expense: Boolean(countsAsExpense),
     })
-    .select('*, from_account:accounts!from_account_id(name), to_account:accounts!to_account_id(name)')
+    .select(
+      '*, from_account:accounts!from_account_id(name), to_account:accounts!to_account_id(name), categories(name)',
+    )
     .single()
   if (error) throw error
   return data
