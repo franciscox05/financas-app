@@ -1,8 +1,10 @@
-import { loadFont } from '@remotion/google-fonts/Inter'
 import {
   AbsoluteFill,
   Audio,
   Easing,
+  cancelRender,
+  continueRender,
+  delayRender,
   Img,
   Sequence,
   interpolate,
@@ -17,15 +19,42 @@ import {
   MUSIC_DROP,
   NOTIFICATION,
   ORBIT,
+  PHONE_SIDE,
   SCENES,
   SCREENS,
   SFX,
+  SIDE_KEYS,
   SPIN,
   TAPS,
   isRitaScreen,
 } from './timeline'
 
-const { fontFamily } = loadFont('normal', { weights: ['400', '600'], subsets: ['latin', 'latin-ext'] })
+// Inter servida de public/fonts (fonte variável, um ficheiro por subset): o render deixa de
+// depender do Google Fonts, que já o fez falhar a meio com a rede em baixo.
+const fontFamily = 'Inter'
+const FONT_FILES = [
+  {
+    file: 'inter-latin.woff2',
+    unicodeRange:
+      'U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD',
+  },
+  {
+    file: 'inter-latin-ext.woff2',
+    unicodeRange:
+      'U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF',
+  },
+]
+const fontHandle = delayRender('Inter local')
+Promise.all(
+  FONT_FILES.map(({ file, unicodeRange }) =>
+    new FontFace(fontFamily, `url(${staticFile(`fonts/${file}`)}) format('woff2')`, {
+      weight: '100 900',
+      unicodeRange,
+    })
+      .load()
+      .then((face) => document.fonts.add(face)),
+  ),
+).then(() => continueRender(fontHandle), (err) => cancelRender(err))
 
 // Faixa gerada por sfx-gen.mjs; passar music: '' para render sem música.
 export const pitchSchemaDefaults = { vertical: false, scheme: 'dark', music: 'music/groove.wav' }
@@ -41,6 +70,9 @@ const CAPTURE_W = 390
 const CAPTURE_H = 844
 // Barra de estado do iOS por cima da captura (a app corre em PWA com safe-area).
 const STATUS_H = 50
+// Zona do indicador "home" por baixo (safe-area do iPhone): sem ela a barra de navegação
+// da app ficava colada ao fundo e cortada pelos cantos redondos do ecrã.
+const HOME_H = 34
 
 export const Pitch = ({ vertical, scheme, music }: Props) => (
   <AbsoluteFill style={{ backgroundColor: '#0a0a0b', fontFamily, color: '#fafafa' }}>
@@ -55,6 +87,7 @@ export const Pitch = ({ vertical, scheme, music }: Props) => (
     <Sequence from={SCENES.split.from} durationInFrames={SCENES.split.duration}>
       <Caption
         vertical={vertical}
+        phoneSide={PHONE_SIDE.split}
         eyebrow="Dividir a conta"
         title="Pagas tu, divides por todos."
         subtitle="60 € de sushi a quatro? Um toque e cada um fica com os seus 15 €."
@@ -63,6 +96,7 @@ export const Pitch = ({ vertical, scheme, music }: Props) => (
     <Sequence from={SCENES.sync.from} durationInFrames={SCENES.sync.duration}>
       <Caption
         vertical={vertical}
+        phoneSide={PHONE_SIDE.sync}
         eyebrow="Amigos ligados"
         title="Chega-lhe ao telemóvel."
         subtitle="A Rita confirma e fica certo dos dois lados. Sem prints, sem discussões."
@@ -73,6 +107,7 @@ export const Pitch = ({ vertical, scheme, music }: Props) => (
     <Sequence from={SCENES.friends.from} durationInFrames={SCENES.friends.duration}>
       <Caption
         vertical={vertical}
+        phoneSide={PHONE_SIDE.friends}
         eyebrow="Amigos"
         title="Sabes sempre quem te deve."
         subtitle="O saldo de cada amigo, e um lembrete por WhatsApp num toque."
@@ -81,6 +116,7 @@ export const Pitch = ({ vertical, scheme, music }: Props) => (
     <Sequence from={SCENES.networth.from} durationInFrames={SCENES.networth.duration}>
       <Caption
         vertical={vertical}
+        phoneSide={PHONE_SIDE.networth}
         eyebrow="Património"
         title="Tudo num só sítio."
         subtitle="Banco, XTB, Trade Republic e poupança, mês a mês."
@@ -89,6 +125,7 @@ export const Pitch = ({ vertical, scheme, music }: Props) => (
     <Sequence from={SCENES.privacy.from} durationInFrames={SCENES.privacy.duration}>
       <Caption
         vertical={vertical}
+        phoneSide={PHONE_SIDE.privacy}
         eyebrow="Modo privacidade"
         title="Abre no metro."
         subtitle="Um toque e ninguém vê quanto tens."
@@ -111,7 +148,8 @@ const Backdrop = ({ vertical }: { vertical: boolean }) => {
   const onBeat = frame >= MUSIC_DROP && frame < SCENES.cta.from
   const pulse = onBeat ? Math.exp(-(((frame - MUSIC_DROP) % BEAT_FRAMES) / BEAT_FRAMES) * 5) : 0
   const glow = base * (0.85 + 0.35 * pulse)
-  const position = vertical ? '50% 68%' : '70% 50%'
+  const side = phoneSide(frame)
+  const position = vertical ? '50% 68%' : `${50 + side * 20}% 50%`
   return (
     <AbsoluteFill
       style={{
@@ -184,6 +222,10 @@ const ProblemScene = ({ vertical }: { vertical: boolean }) => {
 // oscilação lenta e a volta de 360° na troca Sofia → Rita (SPIN).
 // Pose do telemóvel num frame: câmara (zoom/foco) + ângulos. Função pura, para se poder
 // calcular também o frame anterior (velocidade) sem duplicar a lógica.
+// Lado do telemóvel (-1 esquerda .. 1 direita), a deslizar entre cenas.
+const phoneSide = (frame: number) =>
+  interpolate(frame, SIDE_KEYS.map((k) => k.at), SIDE_KEYS.map((k) => k.side), { ...clamp, easing: easeInOut })
+
 function phonePose(frame: number, fps: number, vertical: boolean) {
   const enter = spring({ frame: frame - SCENES.split.from, fps, config: { damping: 18, mass: 1.1, stiffness: 70 } })
   const leave = interpolate(frame, [SCENES.cta.from - 4, SCENES.cta.from + 20], [0, 1], { ...clamp, easing: easeInOut })
@@ -197,13 +239,19 @@ function phonePose(frame: number, fps: number, vertical: boolean) {
   // Ângulos: keyframes + oscilação (que some nos zooms, para o texto ficar parado).
   const orbitAt = ORBIT.map((k) => k.at)
   const calm = interpolate(zoom, [1, 1.25], [1, 0], clamp)
-  const amount = vertical ? 0.6 : 1
+  const amount = vertical ? 0.45 : 1
   const spin = interpolate(frame, [SPIN.from, SPIN.to], [0, 360], { ...clamp, easing: easeInOut })
+  // Ao atravessar o ecrã, inclina-se para o lado para onde vai (proporcional à velocidade).
+  // Em vertical o texto fica sempre centrado por cima, por isso o telemóvel não troca de
+  // lado: ficava descentrado em relação ao texto sem nada do outro lado a equilibrar.
+  const side = vertical ? 0 : phoneSide(frame)
+  const lean = vertical ? 0 : (side - phoneSide(frame - 1)) * 75
   const rotY =
     (interpolate(frame, orbitAt, ORBIT.map((k) => k.y), { ...clamp, easing: easeInOut }) +
       Math.sin(frame / 38) * 3.5 * calm) *
       amount +
     spin +
+    lean +
     (1 - enter) * -62 + // entra de lado...
     leave * 55 // ...e sai a rodar para o outro
   const rotX =
@@ -213,7 +261,7 @@ function phonePose(frame: number, fps: number, vertical: boolean) {
     (1 - enter) * 22
   const rotZ = (1 - enter) * -8 + Math.sin(frame / 71) * 0.8 * calm
   const depth = (1 - enter) * -700 - leave * 260
-  return { enter, leave, zoom, focusY, rotY, rotX, rotZ, depth }
+  return { enter, leave, zoom, focusY, rotY, rotX, rotZ, depth, side }
 }
 
 const PhoneStage = ({ vertical, scheme }: { vertical: boolean; scheme: string }) => {
@@ -224,14 +272,14 @@ const PhoneStage = ({ vertical, scheme }: { vertical: boolean; scheme: string })
 
   if (frame < start - 2 || frame > end + 24) return null
 
-  const { enter, leave, zoom, focusY, rotY, rotX, rotZ, depth } = phonePose(frame, fps, vertical)
+  const { enter, leave, zoom, focusY, rotY, rotX, rotZ, depth, side } = phonePose(frame, fps, vertical)
   // Velocidade de rotação (graus/frame): o vidro brilha mais enquanto o telemóvel se mexe.
   const prev = phonePose(frame - 1, fps, vertical)
   const speed = Math.hypot(rotY - prev.rotY, rotX - prev.rotX)
 
-  const screenW = vertical ? 540 : 380
+  const screenW = vertical ? 520 : 380
   const k = screenW / CAPTURE_W
-  const screenH = (CAPTURE_H + STATUS_H) * k
+  const screenH = (CAPTURE_H + STATUS_H + HOME_H) * k
   const bezel = screenW * 0.035
   const bodyW = screenW + bezel * 2
   const bodyH = screenH + bezel * 2
@@ -239,17 +287,19 @@ const PhoneStage = ({ vertical, scheme }: { vertical: boolean; scheme: string })
   const thickness = screenW * 0.055
   const offsetY = (0.5 - focusY) * screenH * zoom
 
-  const left = vertical ? '50%' : '70%'
-  const top = vertical ? '62%' : '50%'
+  const left = `${50 + side * 20}%`
+  const top = vertical ? '63%' : '50%'
 
   // Ângulo efetivo face à câmara (0 = de frente), para o reflexo e a sombra.
   const facing = ((((rotY % 360) + 540) % 360) - 180) // -180..180
   // Reflexo: uma luz fixa à frente, à esquerda e acima. Ao rodar o telemóvel, o ponto
   // onde a luz bate no vidro corre ao contrário do ângulo (rotY e rotX), atravessando o
-  // ecrã inteiro entre -25° e +25°; brilha mais com o ângulo e com a velocidade.
+  // ecrã inteiro entre -25° e +25°. Só aparece enquanto o telemóvel roda depressa (volta
+  // de 360°, viragens, deslizes de lado): parado ou a oscilar devagar o ecrã fica limpo,
+  // e mesmo no pico é um brilho discreto.
   const glareX = screenW * (0.5 - facing / 25) // centro da faixa (px)
   const glareY = screenH * (0.3 + rotX / 30)
-  const glareStrength = Math.min(0.42, 0.07 + (Math.abs(facing) / 25) * 0.12 + speed * 0.07)
+  const glareStrength = interpolate(speed, [0.35, 1.2, 6], [0, 0.07, 0.16], clamp)
   const bezelLight = 145 + facing * 3
 
   const face: React.CSSProperties = {
@@ -395,6 +445,19 @@ const PhoneStage = ({ vertical, scheme }: { vertical: boolean; scheme: string })
                 <PushNotification scale={k} />
                 <Taps scale={k} />
               </div>
+              {/* Indicador "home" */}
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: 8 * k,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: 134 * k,
+                  height: 5 * k,
+                  borderRadius: 999,
+                  background: 'rgba(250,250,250,0.85)',
+                }}
+              />
               {/* Dynamic Island */}
               <div
                 style={{
@@ -427,7 +490,7 @@ const PhoneStage = ({ vertical, scheme }: { vertical: boolean; scheme: string })
                   position: 'absolute',
                   inset: 0,
                   pointerEvents: 'none',
-                  background: `radial-gradient(ellipse ${screenW * 0.9}px ${screenH * 0.45}px at ${glareX}px ${glareY}px, rgba(255,255,255,${glareStrength * 0.35}), rgba(255,255,255,0) 70%)`,
+                  background: `radial-gradient(ellipse ${screenW * 0.9}px ${screenH * 0.45}px at ${glareX}px ${glareY}px, rgba(255,255,255,${glareStrength * 0.25}), rgba(255,255,255,0) 70%)`,
                   mixBlendMode: 'screen',
                 }}
               />
@@ -657,12 +720,14 @@ const RevealLine = ({
 
 const Caption = ({
   vertical,
+  phoneSide,
   eyebrow,
   title,
   subtitle,
   children,
 }: {
   vertical: boolean
+  phoneSide: number
   eyebrow: string
   title: string
   subtitle: string
@@ -673,7 +738,7 @@ const Caption = ({
   const exit = interpolate(frame, [durationInFrames - 12, durationInFrames], [1, 0], clamp)
   const layout: React.CSSProperties = vertical
     ? { left: 90, right: 90, top: 150, textAlign: 'center' }
-    : { left: 150, width: 820, top: '50%', transform: 'translateY(-50%)' }
+    : { [phoneSide > 0 ? 'left' : 'right']: 150, width: 820, top: '50%', transform: 'translateY(-50%)' }
   return (
     <div style={{ position: 'absolute', ...layout, opacity: exit }}>
       <RevealLine delay={6} size={26} weight={600} color={GREEN}>
