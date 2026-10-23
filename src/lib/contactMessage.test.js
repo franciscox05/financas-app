@@ -60,7 +60,7 @@ test('ledgerSummaryText: lista movimentos que contam e termina com o saldo', () 
   const entries = [
     { kind: 'paid_for_them', amount: 25, note: 'Empréstimo', occurred_on: '2026-10-20', status: 'confirmed' },
     { kind: 'repaid_to_me', amount: 25, note: '', occurred_on: '2026-10-20', status: 'confirmed' },
-    { kind: 'paid_for_them', amount: 999, occurred_on: '2026-10-19', status: 'declined' },
+    { kind: 'paid_for_them', amount: 999, occurred_on: '2026-10-19', status: 'declined', created_by: 'outro', user_id: 'eu' },
   ]
   const text = ledgerSummaryText({ friendName: 'Prima', entries, balance: 0 })
   assert.ok(text.includes('Conta-corrente com Prima'))

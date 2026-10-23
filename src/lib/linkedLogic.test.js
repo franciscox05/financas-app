@@ -21,17 +21,26 @@ const ME = 'me'
 const HIM = 'him'
 
 test('COUNTING_STATUSES', () => {
-  assert.deepEqual(COUNTING_STATUSES, ['confirmed', 'cancel_requested'])
+  assert.deepEqual(COUNTING_STATUSES, ['confirmed'])
 })
-test('balanceOf conta confirmed/cancel_requested, e pending só se criado por quem vê', () => {
+test('balanceOf conta confirmed sempre, pending/cancel_requested só do lado de quem agiu', () => {
   const entries = [
     { kind: 'paid_for_them', amount: 10, status: 'confirmed' },
     { kind: 'paid_for_them', amount: 5, status: 'pending', created_by: HIM, user_id: ME },
     { kind: 'paid_for_them', amount: 3, status: 'archived' },
-    { kind: 'paid_for_me', amount: 2, status: 'cancel_requested' },
+    // o OUTRO pediu a anulação: continua a contar do meu lado até eu responder.
+    { kind: 'paid_for_me', amount: 2, status: 'cancel_requested', cancel_requested_by: HIM, user_id: ME },
     { kind: 'paid_for_them', amount: 7, status: 'pending', created_by: ME, user_id: ME },
   ]
   assert.equal(balanceOf(entries) * 100, 1500)
+})
+test('balanceOf deixa de contar cancel_requested do lado de quem pediu a anulação', () => {
+  const entries = [
+    { kind: 'paid_for_them', amount: 10, status: 'confirmed' },
+    // EU pedi a anulação: já não conta do meu lado, mesmo sem resposta ainda.
+    { kind: 'paid_for_them', amount: 4, status: 'cancel_requested', cancel_requested_by: ME, user_id: ME },
+  ]
+  assert.equal(balanceOf(entries) * 100, 1000)
 })
 test('balanceOf trata movimentos sem estado como confirmados', () => {
   assert.equal(balanceOf([{ kind: 'paid_for_them', amount: 4 }]), 4)

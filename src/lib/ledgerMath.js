@@ -1,5 +1,3 @@
-import { COUNTING_STATUSES } from './linkedLogic.js'
-
 // Valores em cêntimos para evitar erros de vírgula flutuante (0.1 + 0.2 = 0.3).
 // Saldo positivo = o amigo deve-me; negativo = eu devo-lhe.
 const cents = (value) => Math.round(Number(value) * 100)
@@ -27,14 +25,17 @@ export function signedCents(kind, amount) {
   return SIGNS[kind] * cents(amount)
 }
 
-// Conta para o saldo: confirmado/anulação pedida (movimentos sem estado, antigos/locais,
-// contam como confirmados) — ou ainda pendente/contestado mas criado por quem está a ver
-// as suas próprias linhas. Quem cria um movimento partilhado já o vê contar do seu lado,
-// mesmo que o amigo recuse ("declined" é só um aviso, nunca reverte sozinho); só o saldo
-// da OUTRA pessoa é que espera pela confirmação dela.
+// Conta para o saldo: confirmado (movimentos sem estado, antigos/locais, contam como
+// confirmados) — ou ainda pendente/contestado/com anulação pedida mas do ponto de
+// vista de quem agiu. Quem cria um movimento partilhado já o vê contar do seu lado,
+// mesmo que o amigo recuse ("declined" é só um aviso, nunca reverte sozinho); quem
+// pede a anulação deixa de o ver contar do seu lado já (sem apagar nada a sério: se
+// o amigo recusar o pedido, volta a "confirmed" e reaparece sozinho); só o saldo da
+// OUTRA pessoa é que espera pela resposta dela, em ambos os casos.
 export function entryCounts(entry) {
   const status = entry.status ?? 'confirmed'
-  if (COUNTING_STATUSES.includes(status)) return true
+  if (status === 'confirmed') return true
+  if (status === 'cancel_requested') return entry.cancel_requested_by !== entry.user_id
   if (status === 'pending' || status === 'declined') return entry.created_by === entry.user_id
   return false
 }

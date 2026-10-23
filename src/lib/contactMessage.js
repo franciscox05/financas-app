@@ -1,7 +1,6 @@
 // Mensagem de lembrete e ligações de contacto (WhatsApp/SMS) para amigos.
 import { eur, shortDate } from './format.js'
-import { entryLabel, signedCents } from './ledgerMath.js'
-import { COUNTING_STATUSES } from './linkedLogic.js'
+import { entryCounts, entryLabel, signedCents } from './ledgerMath.js'
 
 // Só dígitos com indicativo, que é o que o wa.me exige. 9 dígitos assumem
 // Portugal (+351); "00" é o prefixo internacional equivalente a "+".
@@ -58,7 +57,7 @@ export function smsUrl(phone, text) {
 // para o saldo entram no resumo; `entries` já vem do mais recente ao mais antigo.
 export function ledgerSummaryText({ friendName, entries, balance }) {
   const lines = entries
-    .filter((e) => COUNTING_STATUSES.includes(e.status ?? 'confirmed'))
+    .filter(entryCounts)
     .map((e) => {
       const amount = signedCents(e.kind, e.amount) / 100
       const sign = amount >= 0 ? '+' : '-'

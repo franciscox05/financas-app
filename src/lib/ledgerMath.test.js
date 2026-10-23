@@ -62,6 +62,14 @@ test('entryCounts: pendente conta se eu criei, não conta se o outro criou', () 
   assert.equal(entryCounts({ status: 'declined', created_by: ME, user_id: ME }), true)
   assert.equal(entryCounts({ status: 'cancelled', created_by: ME, user_id: ME }), false)
 })
+test('entryCounts: anulação pedida conta para quem espera resposta, não para quem pediu', () => {
+  const ME = 'me'
+  const HIM = 'him'
+  // O outro pediu a anulação: continua a contar do meu lado até eu responder.
+  assert.equal(entryCounts({ status: 'cancel_requested', cancel_requested_by: HIM, user_id: ME }), true)
+  // Eu pedi a anulação: deixa de contar do meu lado já, mesmo sem resposta.
+  assert.equal(entryCounts({ status: 'cancel_requested', cancel_requested_by: ME, user_id: ME }), false)
+})
 test('balanceOf: um gasto partilhado pendente já conta do lado de quem o criou', () => {
   const ME = 'me'
   const HIM = 'him'

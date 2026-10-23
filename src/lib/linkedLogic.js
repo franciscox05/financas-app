@@ -1,9 +1,10 @@
 // Lógica pura dos amigos ligados (pedidos, movimentos partilhados), separada
 // da camada de dados para se poder testar sem Supabase.
 
-// Estados que entram no saldo; os restantes (pending, declined, cancelled,
-// archived) não contam.
-export const COUNTING_STATUSES = ['confirmed', 'cancel_requested']
+// Estados que entram no saldo sempre, para qualquer um dos dois lados; os
+// restantes (pending, declined, cancel_requested) só contam para quem agiu —
+// ver `entryCounts` em ledgerMath.js, que é a regra completa por linha.
+export const COUNTING_STATUSES = ['confirmed']
 
 // Mensagem do servidor quando o amigo já está ligado e o movimento tem de ser partilhado.
 export function isSharedGuardError(err) {
