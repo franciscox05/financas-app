@@ -112,6 +112,21 @@ export async function listEntries(friendId) {
   return data
 }
 
+// Um movimento + o amigo a que pertence, para o modal de detalhe em Registo
+// mostrar as mesmas ações (aceitar/contestar/cancelar/apagar) que já existem
+// na página do amigo, sem duplicar essa lógica.
+export async function getLedgerEntry(id) {
+  const { data: entry, error } = await supabase.from('ledger_entries').select('*').eq('id', id).single()
+  if (error) throw error
+  const { data: friend, error: friendError } = await supabase
+    .from('friends')
+    .select('*')
+    .eq('id', entry.friend_id)
+    .single()
+  if (friendError) throw friendError
+  return { entry, friend }
+}
+
 async function insertEntry(fields) {
   const userId = await getCurrentUserId()
   const { data, error } = await supabase

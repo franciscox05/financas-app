@@ -1,23 +1,14 @@
-import { ArrowRightLeft, Link2, Pencil, Search, Trash2, X } from 'lucide-react'
+import { ArrowRightLeft, Link2, Search, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { useToast } from '../context/toastContext'
-import {
-  createTransaction,
-  createTransfer,
-  deleteTransaction,
-  deleteTransfer,
-  listMovementsPage,
-  updateTransaction,
-} from '../lib/db'
+import { listMovementsPage } from '../lib/db'
 import { getLedgerEntriesForTransactions } from '../lib/friendsDb'
 import { addMonths, monthLabel, monthStart, toIsoDate } from '../lib/dates'
 import { entryLabel } from '../lib/ledgerMath'
-import { blocksTransactionEdit, transactionLinkedMessage } from '../lib/linkedLogic'
 import { parseSmartQuery } from '../lib/smartSearch'
 import { EmptyState, ErrorNotice, ListSkeleton, Pager } from './Feedback'
 import Money from './Money'
 import MonthPicker from './MonthPicker'
+import TransactionDetailModal from './TransactionDetailModal'
 import { eur } from '../lib/format'
 
 const PAGE_SIZE = 25
@@ -43,365 +34,79 @@ const LINKED_BADGE_TEXT = {
   cancel_requested: 'anulação pedida',
 }
 
-function TransferRow({ tx, onDeleted, onRestored }) {
-  const toast = useToast()
-  const [confirmingDelete, setConfirmingDelete] = useState(false)
-  const [busy, setBusy] = useState(false)
+const rowButtonClass =
+  'flex w-full min-h-14 items-center justify-between gap-3 rounded-lg py-2 text-left transition-colors duration-150 ease-out hover:bg-neutral-50 active:bg-neutral-100 dark:hover:bg-neutral-800/60 dark:active:bg-neutral-800'
 
-  async function handleDelete() {
-    setBusy(true)
-    try {
-      await deleteTransfer(tx.id)
-      onDeleted(tx.id)
-      toast.success('Transferência apagada.', {
-        action: {
-          label: 'Desfazer',
-          onClick: async () => {
-            try {
-              await createTransfer({
-                fromAccountId: tx.account_id,
-                toAccountId: tx.counter_account_id,
-                amount: Number(tx.amount),
-                occurredOn: tx.occurred_on,
-                note: tx.note,
-              })
-              onRestored()
-              toast.success('Transferência restaurada.')
-            } catch (err) {
-              toast.error(`Não foi possível desfazer: ${err.message}`)
-            }
-          },
-        },
-      })
-    } catch (err) {
-      setConfirmingDelete(false)
-      toast.error(`Não foi possível apagar: ${err.message}`)
-    } finally {
-      setBusy(false)
-    }
-  }
-
+// Todas as linhas são só de leitura e clicáveis: abrem o modal de detalhe, que
+// trata de edição/apagar com as regras certas para cada tipo de movimento.
+function TransferRow({ tx, onOpen }) {
   return (
-    <li className="flex items-center justify-between gap-3 py-2">
-      <div className="min-w-0">
-        <p className="flex items-center gap-1.5 truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
-          <ArrowRightLeft size={13} className="shrink-0 text-blue-500" />
-          {tx.note || 'Transferência'}
-        </p>
-        <p className="truncate text-xs text-neutral-500">
-          {formatDate(tx.occurred_on)} · {tx.account_name ?? 'Conta'} → {tx.counter_account_name ?? 'Conta'}
-        </p>
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
-        <span className="text-sm font-semibold text-blue-500">
+    <li>
+      <button type="button" onClick={() => onOpen(tx)} className={rowButtonClass}>
+        <div className="min-w-0">
+          <p className="flex items-center gap-1.5 truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+            <ArrowRightLeft size={13} className="shrink-0 text-blue-500" />
+            {tx.note || 'Transferência'}
+          </p>
+          <p className="truncate text-xs text-neutral-500">
+            {formatDate(tx.occurred_on)} · {tx.account_name ?? 'Conta'} → {tx.counter_account_name ?? 'Conta'}
+          </p>
+        </div>
+        <span className="shrink-0 text-sm font-semibold text-blue-500">
           <Money>{eur(tx.amount)}</Money>
         </span>
-        {confirmingDelete ? (
-          <span className="flex items-center gap-1">
-            <button
-              onClick={handleDelete}
-              disabled={busy}
-              className="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
-            >
-              Confirmar
-            </button>
-            <button
-              onClick={() => setConfirmingDelete(false)}
-              disabled={busy}
-              className="rounded border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700"
-            >
-              Cancelar
-            </button>
-          </span>
-        ) : (
-          <button
-            onClick={() => setConfirmingDelete(true)}
-            aria-label="Apagar"
-            className="rounded p-1 text-neutral-400 hover:text-red-600"
-          >
-            <Trash2 size={16} />
-          </button>
-        )}
-      </div>
+      </button>
     </li>
   )
 }
 
-// Movimento de amigo sem transação ligada (ex. "Descontado noutra coisa") — só
-// leitura aqui: edita-se/apaga-se na página do amigo, nunca em Registo.
-function LedgerMovementRow({ tx }) {
+function LedgerMovementRow({ tx, onOpen }) {
   return (
-    <li className="flex items-center justify-between gap-3 py-2">
-      <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
-          {tx.note || entryLabel(tx.ledger_kind)}
-        </p>
-        <Link
-          to={`/dividas/${tx.friend_id}`}
-          className="flex items-center gap-1 text-xs text-neutral-500 underline-offset-2 hover:underline"
-        >
-          {formatDate(tx.occurred_on)}
-          <Link2 size={11} aria-hidden="true" className="shrink-0" />
-          {tx.friend_name}
-          {LINKED_BADGE_TEXT[tx.ledger_status] ? ` · ${LINKED_BADGE_TEXT[tx.ledger_status]}` : ''}
-        </Link>
-      </div>
-      <span className={`shrink-0 text-sm font-semibold ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-        <Money>{formatAmount(tx.amount, tx.type)}</Money>
-      </span>
-    </li>
-  )
-}
-
-function TransactionRow({
-  tx,
-  categories,
-  accounts,
-  editing,
-  onEditStart,
-  onEditEnd,
-  linkedEntry,
-  onUpdated,
-  onDeleted,
-  onRestored,
-}) {
-  const toast = useToast()
-  const [confirmingDelete, setConfirmingDelete] = useState(false)
-  const [amount, setAmount] = useState(tx.amount)
-  const [categoryId, setCategoryId] = useState(tx.category_id)
-  const [accountId, setAccountId] = useState(tx.account_id)
-  const [note, setNote] = useState(tx.note ?? '')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-
-  const categoriesForType = categories.filter((c) => c.type === tx.type)
-
-  async function handleDelete() {
-    if (linkedEntry && blocksTransactionEdit(linkedEntry)) {
-      toast.error(transactionLinkedMessage(linkedEntry))
-      setConfirmingDelete(false)
-      return
-    }
-    setBusy(true)
-    setError('')
-    try {
-      await deleteTransaction(tx.id)
-      onDeleted(tx.id)
-      toast.success('Transação apagada.', {
-        action: {
-          label: 'Desfazer',
-          onClick: async () => {
-            try {
-              await createTransaction({
-                amount: Number(tx.amount),
-                type: tx.type,
-                accountId: tx.account_id,
-                categoryId: tx.category_id,
-                occurredOn: tx.occurred_on,
-                note: tx.note,
-              })
-              onRestored()
-              toast.success('Transação restaurada.')
-            } catch (err) {
-              toast.error(`Não foi possível desfazer: ${err.message}`)
-            }
-          },
-        },
-      })
-    } catch (err) {
-      setConfirmingDelete(false)
-      toast.error(`Não foi possível apagar: ${err.message}`)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function handleSave() {
-    const numericAmount = Number(amount)
-    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-      setError('Indica um valor superior a 0.')
-      return
-    }
-    if (!categoryId || !accountId) {
-      setError('Escolhe conta e categoria.')
-      return
-    }
-
-    setBusy(true)
-    setError('')
-    try {
-      const updated = await updateTransaction(tx.id, {
-        amount: numericAmount,
-        category_id: categoryId,
-        account_id: accountId,
-        note: note.trim() || null,
-      })
-      onUpdated({
-        ...tx,
-        ...updated,
-        category_name: categories.find((c) => c.id === updated.category_id)?.name,
-        account_name: accounts.find((a) => a.id === updated.account_id)?.name,
-      })
-      onEditEnd()
-      toast.success('Transação atualizada.')
-    } catch (err) {
-      toast.error(`Não foi possível guardar: ${err.message}`)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  function handleCancelEdit() {
-    setAmount(tx.amount)
-    setCategoryId(tx.category_id)
-    setAccountId(tx.account_id)
-    setNote(tx.note ?? '')
-    setError('')
-    onEditEnd()
-  }
-
-  if (editing) {
-    return (
-      <li className="space-y-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
-        {linkedEntry && (
-          <p className="flex items-start gap-1.5 rounded-lg bg-amber-50 p-2 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
-            <Link2 size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
-            <span>
-              Ligado a um movimento com{' '}
-              <Link to={`/dividas/${linkedEntry.friend_id}`} className="underline underline-offset-2">
-                {linkedEntry.friendName}
-              </Link>
-              . Mudar o valor aqui não atualiza esse movimento.
-            </span>
+    <li>
+      <button type="button" onClick={() => onOpen(tx)} className={rowButtonClass}>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+            {tx.note || entryLabel(tx.ledger_kind)}
           </p>
-        )}
-        <input
-          type="number"
-          step="0.01"
-          min="0"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          className="w-full rounded-lg border border-neutral-300 px-2 py-1 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-        />
-        <div className="grid grid-cols-2 gap-2">
-          <select
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            className="w-full rounded-lg border border-neutral-300 px-2 py-1 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-          >
-            {categoriesForType.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
-            className="w-full rounded-lg border border-neutral-300 px-2 py-1 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-          >
-            {accounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <input
-          type="text"
-          placeholder="Nota"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          className="w-full rounded-lg border border-neutral-300 px-2 py-1 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-        />
-        {error && (
-          <p role="alert" className="text-sm text-red-600">
-            {error}
+          <p className="flex items-center gap-1 text-xs text-neutral-500">
+            {formatDate(tx.occurred_on)}
+            <Link2 size={11} aria-hidden="true" className="shrink-0" />
+            {tx.friend_name}
+            {LINKED_BADGE_TEXT[tx.ledger_status] ? ` · ${LINKED_BADGE_TEXT[tx.ledger_status]}` : ''}
           </p>
-        )}
-        <div className="flex gap-2">
-          <button
-            onClick={handleSave}
-            disabled={busy}
-            className="flex-1 rounded-lg bg-neutral-900 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
-          >
-            {busy ? 'A guardar...' : 'Guardar'}
-          </button>
-          <button
-            onClick={handleCancelEdit}
-            disabled={busy}
-            className="flex-1 rounded-lg border border-neutral-300 py-1.5 text-sm dark:border-neutral-700"
-          >
-            Cancelar
-          </button>
         </div>
-      </li>
-    )
-  }
-
-  return (
-    <li className="flex items-center justify-between gap-3 py-2">
-      <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
-          {tx.note || tx.category_name || 'Sem nota'}
-        </p>
-        <p className="truncate text-xs text-neutral-500">
-          {formatDate(tx.occurred_on)}
-          {tx.note && ` · ${tx.category_name ?? 'Sem categoria'}`} · {tx.account_name ?? 'Sem conta'}
-        </p>
-        {linkedEntry && (
-          <Link
-            to={`/dividas/${linkedEntry.friend_id}`}
-            className="mt-0.5 inline-flex items-center gap-1 text-xs text-neutral-500 underline-offset-2 hover:underline"
-          >
-            <Link2 size={11} aria-hidden="true" />
-            {linkedEntry.friendName}
-            {LINKED_BADGE_TEXT[linkedEntry.status] ? ` · ${LINKED_BADGE_TEXT[linkedEntry.status]}` : ''}
-          </Link>
-        )}
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
-        <span
-          className={`text-sm font-semibold ${
-            tx.type === 'income' ? 'text-green-600' : 'text-red-600'
-          }`}
-        >
+        <span className={`shrink-0 text-sm font-semibold ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
           <Money>{formatAmount(tx.amount, tx.type)}</Money>
         </span>
-        <button
-          onClick={onEditStart}
-          aria-label="Editar"
-          className="rounded p-1 text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
-        >
-          <Pencil size={16} />
-        </button>
-        {confirmingDelete ? (
-          <span className="flex items-center gap-1">
-            <button
-              onClick={handleDelete}
-              disabled={busy}
-              className="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
-            >
-              Confirmar
-            </button>
-            <button
-              onClick={() => setConfirmingDelete(false)}
-              disabled={busy}
-              className="rounded border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700"
-            >
-              Cancelar
-            </button>
-          </span>
-        ) : (
-          <button
-            onClick={() => setConfirmingDelete(true)}
-            aria-label="Apagar"
-            className="rounded p-1 text-neutral-400 hover:text-red-600"
-          >
-            <Trash2 size={16} />
-          </button>
-        )}
-      </div>
+      </button>
+    </li>
+  )
+}
+
+function TransactionRow({ tx, linkedEntry, onOpen }) {
+  return (
+    <li>
+      <button type="button" onClick={() => onOpen(tx)} className={rowButtonClass}>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+            {tx.note || tx.category_name || 'Sem nota'}
+          </p>
+          <p className="truncate text-xs text-neutral-500">
+            {formatDate(tx.occurred_on)}
+            {tx.note && ` · ${tx.category_name ?? 'Sem categoria'}`} · {tx.account_name ?? 'Sem conta'}
+          </p>
+          {linkedEntry && (
+            <p className="mt-0.5 flex items-center gap-1 text-xs text-neutral-500">
+              <Link2 size={11} aria-hidden="true" />
+              {linkedEntry.friendName}
+              {LINKED_BADGE_TEXT[linkedEntry.status] ? ` · ${LINKED_BADGE_TEXT[linkedEntry.status]}` : ''}
+            </p>
+          )}
+        </div>
+        <span className={`shrink-0 text-sm font-semibold ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+          <Money>{formatAmount(tx.amount, tx.type)}</Money>
+        </span>
+      </button>
     </li>
   )
 }
@@ -515,8 +220,8 @@ export default function TransactionList({ categories, accounts, refreshToken, on
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  // Só uma transação de cada vez em edição: abrir outra fecha a anterior.
-  const [editingId, setEditingId] = useState(null)
+  // Um só modal de cada vez: abrir outro fecha o anterior (é só trocar o tx).
+  const [modalTx, setModalTx] = useState(null)
   // {transactionId: entry} para a página atual — um só pedido por página, não um por linha.
   const [linkedEntries, setLinkedEntries] = useState(new Map())
 
@@ -574,10 +279,10 @@ export default function TransactionList({ categories, accounts, refreshToken, on
     return { pageRows, count }
   }
 
-  // Mudar filtros, mês ou pesquisa volta sempre à primeira página e fecha a edição aberta.
+  // Mudar filtros, mês ou pesquisa volta sempre à primeira página e fecha o modal aberto.
   useEffect(() => {
     setPage(1)
-    setEditingId(null)
+    setModalTx(null)
   }, [filters.type, filters.accountId, filters.categoryId, debouncedQuery, selectedMonth, refreshToken])
 
   useEffect(() => {
@@ -590,7 +295,6 @@ export default function TransactionList({ categories, accounts, refreshToken, on
         if (cancelled) return
         setRows(pageRows)
         setTotalCount(count)
-        setEditingId(null)
       } catch (err) {
         if (!cancelled) setError(err.message)
       } finally {
@@ -677,29 +381,29 @@ export default function TransactionList({ categories, accounts, refreshToken, on
           <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
             {rows.map((tx) =>
               tx.source === 'transfer' ? (
-                <TransferRow key={tx.id} tx={tx} onDeleted={handleDeleted} onRestored={handleRestored} />
+                <TransferRow key={tx.id} tx={tx} onOpen={setModalTx} />
               ) : tx.source === 'ledger' ? (
-                <LedgerMovementRow key={tx.id} tx={tx} />
+                <LedgerMovementRow key={tx.id} tx={tx} onOpen={setModalTx} />
               ) : (
-                <TransactionRow
-                  key={tx.id}
-                  tx={tx}
-                  categories={categories}
-                  accounts={accounts}
-                  editing={editingId === tx.id}
-                  onEditStart={() => setEditingId(tx.id)}
-                  onEditEnd={() => setEditingId(null)}
-                  linkedEntry={linkedEntries.get(tx.id)}
-                  onUpdated={handleUpdated}
-                  onDeleted={handleDeleted}
-                  onRestored={handleRestored}
-                />
+                <TransactionRow key={tx.id} tx={tx} linkedEntry={linkedEntries.get(tx.id)} onOpen={setModalTx} />
               ),
             )}
           </ul>
           <Pager page={page} totalPages={Math.ceil(totalCount / PAGE_SIZE)} onChange={setPage} />
         </>
       )}
+
+      <TransactionDetailModal
+        tx={modalTx}
+        categories={categories}
+        accounts={accounts}
+        linkedEntry={modalTx ? linkedEntries.get(modalTx.id) : undefined}
+        onClose={() => setModalTx(null)}
+        onUpdated={handleUpdated}
+        onDeleted={handleDeleted}
+        onRestored={handleRestored}
+        onRowChanged={onRowChanged}
+      />
     </div>
   )
 }
