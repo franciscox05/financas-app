@@ -5,8 +5,8 @@
   "scripts": {
     "capture": "node capture.mjs",
     "studio": "remotion studio src/index.ts",
-    "render": "npm run sfx && remotion render src/index.ts Pitch out/pitch-16x9.mp4 --codec=h264 --crf=16",
-    "render:vertical": "npm run sfx && remotion render src/index.ts PitchVertical out/pitch-9x16.mp4 --codec=h264 --crf=16",
+    "render": "npm run sfx && remotion render src/index.ts Pitch out/raw/pitch-16x9.mp4 --codec=h264 --crf=14 --scale=2 && node master.mjs pitch-16x9 1920:1080",
+    "render:vertical": "npm run sfx && remotion render src/index.ts PitchVertical out/raw/pitch-9x16.mp4 --codec=h264 --crf=14 --scale=2 && node master.mjs pitch-9x16 1080:1920",
     "sfx": "node sfx-gen.mjs"
   },
   "devDependencies": {

@@ -182,16 +182,11 @@ const ProblemScene = ({ vertical }: { vertical: boolean }) => {
 // O telemóvel é um objeto 3D em CSS: frente (ecrã), costas e espessura feita de camadas
 // empilhadas em Z. O ângulo vem de ORBIT (de um lado para o outro entre cenas), mais uma
 // oscilação lenta e a volta de 360° na troca Sofia → Rita (SPIN).
-const PhoneStage = ({ vertical, scheme }: { vertical: boolean; scheme: string }) => {
-  const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
-  const start = SCENES.split.from
-  const end = SCENES.cta.from
-
-  if (frame < start - 2 || frame > end + 24) return null
-
-  const enter = spring({ frame: frame - start, fps, config: { damping: 18, mass: 1.1, stiffness: 70 } })
-  const leave = interpolate(frame, [end - 4, end + 20], [0, 1], { ...clamp, easing: easeInOut })
+// Pose do telemóvel num frame: câmara (zoom/foco) + ângulos. Função pura, para se poder
+// calcular também o frame anterior (velocidade) sem duplicar a lógica.
+function phonePose(frame: number, fps: number, vertical: boolean) {
+  const enter = spring({ frame: frame - SCENES.split.from, fps, config: { damping: 18, mass: 1.1, stiffness: 70 } })
+  const leave = interpolate(frame, [SCENES.cta.from - 4, SCENES.cta.from + 20], [0, 1], { ...clamp, easing: easeInOut })
 
   // Câmara: interpolação entre keyframes, com easing em cada troço.
   const at = CAMERA.map((k) => k.at)
@@ -218,6 +213,21 @@ const PhoneStage = ({ vertical, scheme }: { vertical: boolean; scheme: string })
     (1 - enter) * 22
   const rotZ = (1 - enter) * -8 + Math.sin(frame / 71) * 0.8 * calm
   const depth = (1 - enter) * -700 - leave * 260
+  return { enter, leave, zoom, focusY, rotY, rotX, rotZ, depth }
+}
+
+const PhoneStage = ({ vertical, scheme }: { vertical: boolean; scheme: string }) => {
+  const frame = useCurrentFrame()
+  const { fps } = useVideoConfig()
+  const start = SCENES.split.from
+  const end = SCENES.cta.from
+
+  if (frame < start - 2 || frame > end + 24) return null
+
+  const { enter, leave, zoom, focusY, rotY, rotX, rotZ, depth } = phonePose(frame, fps, vertical)
+  // Velocidade de rotação (graus/frame): o vidro brilha mais enquanto o telemóvel se mexe.
+  const prev = phonePose(frame - 1, fps, vertical)
+  const speed = Math.hypot(rotY - prev.rotY, rotX - prev.rotX)
 
   const screenW = vertical ? 540 : 380
   const k = screenW / CAPTURE_W
@@ -234,8 +244,13 @@ const PhoneStage = ({ vertical, scheme }: { vertical: boolean; scheme: string })
 
   // Ângulo efetivo face à câmara (0 = de frente), para o reflexo e a sombra.
   const facing = ((((rotY % 360) + 540) % 360) - 180) // -180..180
-  const glareX = 50 - facing * 2.2
-  const glareStrength = 0.1 + Math.min(1, Math.abs(facing) / 25) * 0.16
+  // Reflexo: uma luz fixa à frente, à esquerda e acima. Ao rodar o telemóvel, o ponto
+  // onde a luz bate no vidro corre ao contrário do ângulo (rotY e rotX), atravessando o
+  // ecrã inteiro entre -25° e +25°; brilha mais com o ângulo e com a velocidade.
+  const glareX = screenW * (0.5 - facing / 25) // centro da faixa (px)
+  const glareY = screenH * (0.3 + rotX / 30)
+  const glareStrength = Math.min(0.42, 0.07 + (Math.abs(facing) / 25) * 0.12 + speed * 0.07)
+  const bezelLight = 145 + facing * 3
 
   const face: React.CSSProperties = {
     position: 'absolute',
@@ -359,7 +374,8 @@ const PhoneStage = ({ vertical, scheme }: { vertical: boolean; scheme: string })
               ...face,
               transform: `translateZ(${thickness / 2 + 0.5}px)`,
               padding: bezel,
-              background: 'linear-gradient(145deg, #3a3a3c, #1c1c1e)',
+              // A moldura também apanha a luz: o lado claro muda com o ângulo.
+              background: `linear-gradient(${bezelLight}deg, #4a4a4e, #1c1c1e 55%, #2c2c30)`,
               boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.1)',
             }}
           >
@@ -392,15 +408,26 @@ const PhoneStage = ({ vertical, scheme }: { vertical: boolean; scheme: string })
                   background: '#000',
                 }}
               />
-              {/* Reflexo no vidro: faixa de luz que desliza com o ângulo. */}
+              {/* Reflexo no vidro: faixa inclinada + brilho difuso, os dois a seguir a luz. */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: -screenH * 0.2,
+                  height: screenH * 1.4,
+                  left: glareX - screenW * 0.35,
+                  width: screenW * 0.7,
+                  pointerEvents: 'none',
+                  transform: 'skewX(-20deg)',
+                  background: `linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,${glareStrength * 0.35}) 30%, rgba(255,255,255,${glareStrength}) 48%, rgba(255,255,255,${glareStrength * 0.25}) 62%, rgba(255,255,255,0) 100%)`,
+                  mixBlendMode: 'screen',
+                }}
+              />
               <div
                 style={{
                   position: 'absolute',
                   inset: 0,
                   pointerEvents: 'none',
-                  background: `linear-gradient(110deg, rgba(255,255,255,0) 35%, rgba(255,255,255,${glareStrength}) 47%, rgba(255,255,255,${glareStrength * 0.3}) 53%, rgba(255,255,255,0) 64%)`,
-                  backgroundSize: '260% 100%',
-                  backgroundPosition: `${glareX}% 0`,
+                  background: `radial-gradient(ellipse ${screenW * 0.9}px ${screenH * 0.45}px at ${glareX}px ${glareY}px, rgba(255,255,255,${glareStrength * 0.35}), rgba(255,255,255,0) 70%)`,
                   mixBlendMode: 'screen',
                 }}
               />
