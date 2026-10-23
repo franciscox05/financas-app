@@ -1,4 +1,4 @@
-import { ArrowRightLeft, Link2, Pencil, Search, Trash2 } from 'lucide-react'
+import { ArrowRightLeft, Link2, Pencil, Search, Trash2, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useToast } from '../context/toastContext'
@@ -440,8 +440,18 @@ function TransactionFilters({ filters, onChange, categories, accounts }) {
           onChange={(e) => onChange({ ...filters, query: e.target.value })}
           placeholder='Pesquisar: nota, ">20", "maio 2025"...'
           aria-label="Pesquisar transações"
-          className={`${fieldClass} pl-8`}
+          className={`${fieldClass} pl-8 ${filters.query ? 'pr-9' : ''}`}
         />
+        {filters.query && (
+          <button
+            type="button"
+            onClick={() => onChange({ ...filters, query: '' })}
+            aria-label="Limpar pesquisa"
+            className="absolute right-1.5 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
+          >
+            <X size={15} aria-hidden="true" />
+          </button>
+        )}
       </div>
 
       <div role="group" aria-label="Filtrar por tipo" className="grid grid-cols-3 gap-2">
@@ -623,14 +633,6 @@ export default function TransactionList({ categories, accounts, refreshToken, on
   const hasActiveFilters =
     filters.query.trim() !== '' || filters.type !== 'all' || filters.accountId !== '' || filters.categoryId !== ''
 
-  if (loading) {
-    return <ListSkeleton rows={5} />
-  }
-
-  if (error) {
-    return <ErrorNotice message={error} />
-  }
-
   return (
     <div className="space-y-3">
       <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
@@ -655,7 +657,11 @@ export default function TransactionList({ categories, accounts, refreshToken, on
         )}
       </div>
 
-      {rows.length === 0 ? (
+      {loading ? (
+        <ListSkeleton rows={5} />
+      ) : error ? (
+        <ErrorNotice message={error} />
+      ) : rows.length === 0 ? (
         <EmptyState
           title={hasActiveFilters ? 'Nenhuma transação corresponde à pesquisa' : `Sem transações em ${monthLabel(selectedMonth)}`}
           description={

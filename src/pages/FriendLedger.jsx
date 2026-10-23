@@ -1,6 +1,6 @@
 import { ArrowLeft, Pencil, Plus } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import CollapsibleSection from '../components/CollapsibleSection'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { EmptyState, ErrorNotice, PageSkeleton } from '../components/Feedback'
@@ -41,6 +41,7 @@ const STATE_TEXT = {
 export default function FriendLedger() {
   const { friendId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const toast = useToast()
 
   const [friend, setFriend] = useState(null)
@@ -199,12 +200,19 @@ export default function FriendLedger() {
       {error && <ErrorNotice message={error} onRetry={load} />}
 
       <header className="space-y-1">
-        <Link
-          to="/dividas"
+        <button
+          type="button"
+          // Volta exatamente para onde estavas (ex. a linha em Registo) quando vieste de
+          // dentro da app; só cai em /dividas se abriste esta página diretamente (sem
+          // histórico para trás).
+          onClick={() => {
+            if (location.key !== 'default') navigate(-1)
+            else navigate('/dividas')
+          }}
           className={`-ml-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm text-neutral-600 transition-colors duration-150 ease-out hover:text-neutral-900 motion-reduce:transition-none dark:text-neutral-300 dark:hover:text-neutral-100 ${focusRing}`}
         >
-          <ArrowLeft size={16} aria-hidden="true" /> Amigos
-        </Link>
+          <ArrowLeft size={16} aria-hidden="true" /> Voltar
+        </button>
 
         {editing ? (
           <form onSubmit={handleSaveName} className="space-y-2">
