@@ -42,7 +42,9 @@ function FriendPicker({ id, friends, value, onChange, onFriendCreated, disabled 
 
   if (newMode) {
     return (
-      <div className="flex gap-2">
+      // Wrap: o nome ocupa a linha toda e os botões descem — numa coluna estreita (linha
+      // da divisão) tudo na mesma linha sobrepunha-se ao campo do valor.
+      <div className="flex flex-wrap gap-2">
         <input
           type="text"
           autoFocus
@@ -53,7 +55,7 @@ function FriendPicker({ id, friends, value, onChange, onFriendCreated, disabled 
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleCreate(e)
           }}
-          className={selectClass}
+          className={`${selectClass} basis-full`}
         />
         <button
           type="button"
@@ -125,6 +127,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
   const [friendId, setFriendId] = useState('')
   // Gasto: divide entre vários — cada linha é a parte de uma pessoa (a tua fica implícita).
   const [friendShares, setFriendShares] = useState([{ friendId: '', amount: '' }])
+  const [splitNotice, setSplitNotice] = useState('')
 
   // Só carrega a lista quando o utilizador abre a secção.
   useEffect(() => {
@@ -220,22 +223,39 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
   const sharesExceed = showFriend && type === 'expense' && sharesTotal > numericAmount + 0.001
 
   function updateShare(index, patch) {
+    setSplitNotice('')
     setFriendShares((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)))
   }
 
   function addShareRow() {
+    setSplitNotice('')
     setFriendShares((prev) => [...prev, { friendId: '', amount: '' }])
   }
 
   function removeShareRow(index) {
+    setSplitNotice('')
     setFriendShares((prev) => (prev.length === 1 ? [{ friendId: '', amount: '' }] : prev.filter((_, i) => i !== index)))
   }
 
+  // Divide em partes iguais entre os amigos escolhidos E tu (és sempre uma das partes).
+  // Faz as contas em cêntimos: se não der certo, cada amigo fica com o arredondado para
+  // baixo e os cêntimos que sobram ficam na tua parte — e avisa, em vez de esconder.
   function splitEqually() {
-    const active = friendShares.filter((s) => s.friendId)
-    if (active.length === 0 || !numericAmount) return
-    const share = (numericAmount / active.length).toFixed(2)
-    setFriendShares((prev) => prev.map((s) => (s.friendId ? { ...s, amount: share } : s)))
+    if (friendShares.some((s) => !s.friendId)) {
+      setError('Escolhe o amigo em todas as linhas (ou remove as vazias) antes de dividir.')
+      return
+    }
+    setError('')
+    const people = friendShares.length + 1
+    const totalCents = Math.round(numericAmount * 100)
+    const shareCents = Math.floor(totalCents / people)
+    const yourCents = totalCents - shareCents * friendShares.length
+    setFriendShares((prev) => prev.map((s) => ({ ...s, amount: (shareCents / 100).toFixed(2) })))
+    setSplitNotice(
+      totalCents % people === 0
+        ? ''
+        : `${eur(totalCents / 100)} não divide em ${people} partes iguais: cada amigo fica com ${eur(shareCents / 100)} e a tua parte é ${eur(yourCents / 100)}.`,
+    )
   }
 
   async function handleSubmit(e) {
@@ -599,6 +619,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
                   : `Sobra para ti: ${eur(Math.max(0, numericAmount - sharesTotal))}`}
               </p>
             )}
+            {splitNotice && <p className="text-xs text-amber-600 dark:text-amber-500">{splitNotice}</p>}
           </div>
         )}
       </div>
