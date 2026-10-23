@@ -132,32 +132,52 @@ function TransactionFilters({ filters, onChange, categories, accounts }) {
     onChange({ ...filters, type, categoryId: stillValid ? filters.categoryId : '' })
   }
 
+  // O texto só vira pesquisa ao carregar Enter (ou ao limpar) — pesquisar a cada
+  // pausa recarregava a lista e fazia a página saltar enquanto se escrevia.
+  const [draft, setDraft] = useState(filters.query)
+  useEffect(() => {
+    setDraft(filters.query)
+  }, [filters.query])
+
+  function submitSearch(e) {
+    e.preventDefault()
+    onChange({ ...filters, query: draft })
+  }
+
   return (
     <div className="space-y-2.5">
-      <div className="relative">
+      <form onSubmit={submitSearch} className="relative">
         <Search
           size={15}
           className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400"
         />
         <input
           type="search"
-          value={filters.query}
-          onChange={(e) => onChange({ ...filters, query: e.target.value })}
-          placeholder='Pesquisar: nota, ">20", "maio 2025"...'
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value)
+            // Apagar tudo (inclui o "x" nativo do type=search) repõe a lista de imediato.
+            if (e.target.value === '' && filters.query !== '') onChange({ ...filters, query: '' })
+          }}
+          enterKeyHint="search"
+          placeholder="Pesquisar transações..."
           aria-label="Pesquisar transações"
-          className={`${fieldClass} pl-8 ${filters.query ? 'pr-9' : ''}`}
+          className={`${fieldClass} pl-8 ${draft ? 'pr-9' : ''}`}
         />
-        {filters.query && (
+        {draft && (
           <button
             type="button"
-            onClick={() => onChange({ ...filters, query: '' })}
+            onClick={() => {
+              setDraft('')
+              onChange({ ...filters, query: '' })
+            }}
             aria-label="Limpar pesquisa"
             className="absolute right-1.5 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
           >
             <X size={15} aria-hidden="true" />
           </button>
         )}
-      </div>
+      </form>
 
       <div role="group" aria-label="Filtrar por tipo" className="grid grid-cols-3 gap-2">
         {TYPE_OPTIONS.map((opt) => (
@@ -214,7 +234,6 @@ const EMPTY_FILTERS = { query: '', type: 'all', accountId: '', categoryId: '' }
 export default function TransactionList({ categories, accounts, refreshToken, onAddFirst, onRowChanged }) {
   const [filters, setFilters] = useState(EMPTY_FILTERS)
   const [selectedMonth, setSelectedMonth] = useState(() => monthStart(new Date()))
-  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [rows, setRows] = useState([])
   const [totalCount, setTotalCount] = useState(0)
   const [page, setPage] = useState(1)
@@ -225,13 +244,7 @@ export default function TransactionList({ categories, accounts, refreshToken, on
   // {transactionId: entry} para a página atual — um só pedido por página, não um por linha.
   const [linkedEntries, setLinkedEntries] = useState(new Map())
 
-  // Debounce do texto de pesquisa, para não disparar um pedido a cada tecla.
-  useEffect(() => {
-    const id = setTimeout(() => setDebouncedQuery(filters.query), 300)
-    return () => clearTimeout(id)
-  }, [filters.query])
-
-  const parsedSmart = useMemo(() => parseSmartQuery(debouncedQuery), [debouncedQuery])
+  const parsedSmart = useMemo(() => parseSmartQuery(filters.query), [filters.query])
 
   // Por omissão a lista fica presa ao mês selecionado (como o resto da app),
   // em vez de mostrar tudo desde sempre. Uma pesquisa com data explícita (ex.
@@ -283,7 +296,7 @@ export default function TransactionList({ categories, accounts, refreshToken, on
   useEffect(() => {
     setPage(1)
     setModalTx(null)
-  }, [filters.type, filters.accountId, filters.categoryId, debouncedQuery, selectedMonth, refreshToken])
+  }, [filters.type, filters.accountId, filters.categoryId, filters.query, selectedMonth, refreshToken])
 
   useEffect(() => {
     let cancelled = false
@@ -306,7 +319,7 @@ export default function TransactionList({ categories, accounts, refreshToken, on
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.type, filters.accountId, filters.categoryId, debouncedQuery, selectedMonth, refreshToken, page])
+  }, [filters.type, filters.accountId, filters.categoryId, filters.query, selectedMonth, refreshToken, page])
 
   function handleUpdated(updatedTx) {
     setRows((prev) => prev.map((r) => (r.id === updatedTx.id ? updatedTx : r)))
@@ -361,7 +374,9 @@ export default function TransactionList({ categories, accounts, refreshToken, on
         )}
       </div>
 
-      {loading ? (
+      {/* Skeleton só no primeiro carregamento: a trocar a lista por 5 linhas a cada
+          recarga a página encolhia e o scroll saltava. */}
+      {loading && rows.length === 0 ? (
         <ListSkeleton rows={5} />
       ) : error ? (
         <ErrorNotice message={error} />
@@ -378,7 +393,11 @@ export default function TransactionList({ categories, accounts, refreshToken, on
         />
       ) : (
         <>
-          <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+          <ul
+            className={`divide-y divide-neutral-200 transition-opacity duration-150 dark:divide-neutral-800 ${
+              loading ? 'opacity-60' : ''
+            }`}
+          >
             {rows.map((tx) =>
               tx.source === 'transfer' ? (
                 <TransferRow key={tx.id} tx={tx} onOpen={setModalTx} />
