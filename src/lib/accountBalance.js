@@ -5,15 +5,22 @@
 // tipo de conta (dinheiro ou investimento). Sem nenhum snapshot, soma todas
 // as transações da conta desde sempre (comportamento de sempre).
 //
-// O corte "já estava refletido no snapshot?" usa `created_at` (quando a
-// transação foi guardada), não `occurred_on` (a data do movimento). Se usasse
-// a data do movimento, qualquer transação com a MESMA data do snapshot seria
-// sempre ignorada — incluindo as que o utilizador regista depois de atualizar
-// o saldo, nesse mesmo dia, o que fazia esses registos não afetarem o saldo.
-// Com `created_at`, uma transação só é ignorada se já existia antes de o
-// snapshot ter sido criado (já estava embutida no valor que a pessoa indicou),
-// e qualquer transação nova a partir daí — seja de hoje ou um registo
-// histórico adicionado mais tarde — soma-se normalmente por cima.
+// "Já estava refletido no snapshot?" — o snapshot é o saldo real NESSE DIA:
+// - movimento com data ANTERIOR ao snapshot: já estava incluído no valor
+//   indicado, mesmo que só seja registado depois (ex.: um gasto esquecido de
+//   dia 10 registado depois de acertar o saldo no dia 19). Antes contava-se
+//   outra vez por cima e o saldo ficava a dobrar esse movimento.
+// - movimento com data POSTERIOR: conta sempre (mesmo que registado antes de
+//   um snapshot com data no passado, ex.: "saldo a 30/09" indicado a 05/10).
+// - MESMA data: decide `created_at` — registado antes do snapshot já estava
+//   incluído; registado depois (ex.: gasto da tarde depois de acertar de manhã)
+//   conta por cima.
+export function reflectedInSnapshot(movement, snapshot) {
+  if (!snapshot) return false
+  if (movement.occurred_on !== snapshot.snapshot_date) return movement.occurred_on < snapshot.snapshot_date
+  return new Date(movement.created_at) <= new Date(snapshot.created_at)
+}
+
 export function balanceAt(accountId, transactions, snapshots, asOfDate, transfers = []) {
   const latestSnapshot = snapshots
     .filter((s) => s.account_id === accountId && s.snapshot_date <= asOfDate)
@@ -26,8 +33,8 @@ export function balanceAt(accountId, transactions, snapshots, asOfDate, transfer
   for (const tx of transactions) {
     if (tx.account_id !== accountId) continue
     if (tx.occurred_on > asOfDate) continue
-    if (latestSnapshot && new Date(tx.created_at) <= new Date(latestSnapshot.created_at)) continue
-    total += tx.type === 'income' ? Number(tx.amount) : -Number(tx.amount)
+    if (reflectedInSnapshot(tx, latestSnapshot)) continue
+    total +=tx.type === 'income' ? Number(tx.amount) : -Number(tx.amount)
   }
   // Transferências entre contas próprias: não são Gasto/Ganho, mas movem
   // dinheiro de facto — contam no saldo das duas contas envolvidas, com o
@@ -35,7 +42,7 @@ export function balanceAt(accountId, transactions, snapshots, asOfDate, transfer
   for (const tr of transfers) {
     if (tr.from_account_id !== accountId && tr.to_account_id !== accountId) continue
     if (tr.occurred_on > asOfDate) continue
-    if (latestSnapshot && new Date(tr.created_at) <= new Date(latestSnapshot.created_at)) continue
+    if (reflectedInSnapshot(tr, latestSnapshot)) continue
     if (tr.from_account_id === accountId) total -= Number(tr.amount)
     if (tr.to_account_id === accountId) total += Number(tr.amount)
   }

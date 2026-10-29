@@ -4,17 +4,9 @@ import { Link, useParams } from 'react-router-dom'
 import { EmptyState, ErrorNotice, ListSkeleton, Pager } from '../components/Feedback'
 import Money from '../components/Money'
 import { listAccounts, listNetWorthSnapshots, listTransactionsPage, listTransfers } from '../lib/db'
-import { eur } from '../lib/format'
+import { eur, ptDate } from '../lib/format'
 
 const PAGE_SIZE = 20
-
-function formatDate(isoDate) {
-  return new Date(`${isoDate}T00:00:00`).toLocaleDateString('pt-PT', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
-}
 
 // Histórico de uma conta (só leitura): transações paginadas e, nas contas de
 // investimento, as atualizações de saldo registadas.
@@ -88,7 +80,7 @@ export default function AccountHistory() {
           <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
             {snapshots.slice((snapPage - 1) * PAGE_SIZE, snapPage * PAGE_SIZE).map((s) => (
               <li key={s.id} className="flex items-center justify-between py-2 text-sm">
-                <span className="text-neutral-500">{formatDate(s.snapshot_date)}</span>
+                <span className="text-neutral-500">{ptDate(s.snapshot_date)}</span>
                 <span className="font-semibold text-neutral-900 dark:text-neutral-100">
                   <Money value={Number(s.value)} />
                 </span>
@@ -108,7 +100,7 @@ export default function AccountHistory() {
               return (
                 <li key={t.id} className="flex items-center justify-between py-2 text-sm">
                   <span className="min-w-0 truncate text-neutral-500">
-                    {formatDate(t.occurred_on)} ·{' '}
+                    {ptDate(t.occurred_on)} ·{' '}
                     {isOutgoing ? `para ${t.to_account?.name ?? 'conta'}` : `de ${t.from_account?.name ?? 'conta'}`}
                   </span>
                   <span className={`shrink-0 font-semibold ${isOutgoing ? 'text-red-600' : 'text-green-600'}`}>
@@ -140,7 +132,7 @@ export default function AccountHistory() {
                       {tx.note || tx.categories?.name || 'Sem nota'}
                     </p>
                     <p className="truncate text-xs text-neutral-500">
-                      {formatDate(tx.occurred_on)}
+                      {ptDate(tx.occurred_on)}
                       {tx.note && ` · ${tx.categories?.name ?? 'Sem categoria'}`}
                     </p>
                   </div>

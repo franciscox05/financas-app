@@ -9,21 +9,13 @@ import { EmptyState, ErrorNotice, ListSkeleton, Pager } from './Feedback'
 import Money from './Money'
 import MonthPicker from './MonthPicker'
 import TransactionDetailModal from './TransactionDetailModal'
-import { eur } from '../lib/format'
+import { eur, ptDate } from '../lib/format'
 
 const PAGE_SIZE = 25
 
 function formatAmount(amount, type) {
   const sign = type === 'income' ? '+' : '-'
   return `${sign}${eur(amount)}`
-}
-
-function formatDate(isoDate) {
-  return new Date(`${isoDate}T00:00:00`).toLocaleDateString('pt-PT', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
 }
 
 // Texto extra junto ao nome do amigo na ligação — só para estados que valem a pena
@@ -51,7 +43,7 @@ function TransferRow({ tx, onOpen }) {
               {tx.note || tx.category_name || 'Investimento'}
             </p>
             <p className="flex items-center gap-1 truncate text-xs text-neutral-500">
-              {formatDate(tx.occurred_on)}
+              {ptDate(tx.occurred_on)}
               {tx.note && ` · ${tx.category_name ?? 'Sem categoria'}`} · {tx.account_name ?? 'Conta'}
               <ArrowRightLeft size={11} aria-hidden="true" className="shrink-0" />
               {tx.counter_account_name ?? 'Conta'}
@@ -74,7 +66,7 @@ function TransferRow({ tx, onOpen }) {
             {tx.note || 'Transferência'}
           </p>
           <p className="truncate text-xs text-neutral-500">
-            {formatDate(tx.occurred_on)} · {tx.account_name ?? 'Conta'} → {tx.counter_account_name ?? 'Conta'}
+            {ptDate(tx.occurred_on)} · {tx.account_name ?? 'Conta'} → {tx.counter_account_name ?? 'Conta'}
           </p>
         </div>
         <span className="shrink-0 text-sm font-semibold text-blue-500">
@@ -94,7 +86,7 @@ function LedgerMovementRow({ tx, onOpen }) {
             {tx.note || entryLabel(tx.ledger_kind)}
           </p>
           <p className="flex items-center gap-1 text-xs text-neutral-500">
-            {formatDate(tx.occurred_on)}
+            {ptDate(tx.occurred_on)}
             <Link2 size={11} aria-hidden="true" className="shrink-0" />
             {tx.friend_name}
             {LINKED_BADGE_TEXT[tx.ledger_status] ? ` · ${LINKED_BADGE_TEXT[tx.ledger_status]}` : ''}
@@ -117,7 +109,7 @@ function TransactionRow({ tx, linkedEntry, onOpen }) {
             {tx.note || tx.category_name || 'Sem nota'}
           </p>
           <p className="truncate text-xs text-neutral-500">
-            {formatDate(tx.occurred_on)}
+            {ptDate(tx.occurred_on)}
             {tx.note && ` · ${tx.category_name ?? 'Sem categoria'}`} · {tx.account_name ?? 'Sem conta'}
           </p>
           {linkedEntry && (

@@ -30,6 +30,12 @@ export function eurCompact(value, { signed = false } = {}) {
   return `${sign}${body}€`
 }
 
+// 'YYYY-MM-DD' -> '29/10/2026', sem passar por Date (sem desvios de fuso).
+export function ptDate(iso) {
+  const [year, month, day] = iso.split('-')
+  return `${day}/${month}/${year}`
+}
+
 const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 
 // 'YYYY-MM-DD' -> '19 out' (ou '19 out 2026' com `withYear`), sem passar por
