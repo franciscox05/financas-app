@@ -24,6 +24,7 @@ import { Trash2 } from 'lucide-react'
 import { ErrorNotice, Pager, Skeleton } from '../components/Feedback'
 import { useToast } from '../context/toastContext'
 import { balanceAt } from '../lib/accountBalance'
+import { parseBalanceValue } from '../lib/balanceInput'
 import { addMonths, endOfMonth, monthStart, shortMonthLabel, toIsoDate, today } from '../lib/dates'
 import Money from '../components/Money'
 import { usePrivacy } from '../context/privacyContext'
@@ -159,13 +160,13 @@ export default function NetWorth() {
 
   async function handleAddSnapshot(e) {
     e.preventDefault()
-    const numericValue = Number(snapValue)
+    const numericValue = parseBalanceValue(snapValue)
     if (!snapAccountId) {
       setFormError('Escolhe uma conta.')
       return
     }
-    if (Number.isNaN(numericValue) || numericValue < 0) {
-      setFormError('Indica um valor válido.')
+    if (numericValue === null) {
+      setFormError('Indica um valor válido (ex.: 150,27).')
       return
     }
     setSubmitting(true)
@@ -388,12 +389,10 @@ export default function NetWorth() {
           <div>
             <label className="mb-1 block text-xs font-medium text-neutral-500">Valor total nessa data</label>
             <input
-              type="number"
+              type="text"
               inputMode="decimal"
-              step="0.01"
-              min="0"
               required
-              placeholder="0.00 €"
+              placeholder="0,00 €"
               value={snapValue}
               onChange={(e) => setSnapValue(e.target.value)}
               className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
