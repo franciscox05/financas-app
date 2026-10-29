@@ -29,7 +29,7 @@ import { addMonths, endOfMonth, monthStart, shortMonthLabel, toIsoDate, today } 
 import Money from '../components/Money'
 import { usePrivacy } from '../context/privacyContext'
 import HiddenChartNotice from '../components/HiddenChartNotice'
-import { eur } from '../lib/format'
+import { eur, ptDate } from '../lib/format'
 
 const HISTORY_PAGE_SIZE = 10
 
@@ -294,7 +294,7 @@ export default function NetWorth() {
                 <p className="text-sm text-neutral-700 dark:text-neutral-300">{acc.name}</p>
                 {latest && (
                   <p className="text-xs text-neutral-400">
-                    atualizado {latest.snapshot_date}
+                    atualizado {ptDate(latest.snapshot_date)}
                   </p>
                 )}
               </div>
@@ -418,7 +418,7 @@ export default function NetWorth() {
               .map((s) => (
                 <li key={s.id} className="flex items-center justify-between py-2 text-sm">
                   <span className="text-neutral-600 dark:text-neutral-400">
-                    {s.snapshot_date} · {s.accounts?.name ?? 'Conta'}
+                    {ptDate(s.snapshot_date)} · {s.accounts?.name ?? 'Conta'}
                   </span>
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-neutral-900 dark:text-neutral-100">
