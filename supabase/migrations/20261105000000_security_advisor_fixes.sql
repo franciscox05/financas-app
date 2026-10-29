@@ -5,8 +5,16 @@
 --    authenticated. Só fazem sentido como triggers: o trigger dispara na mesma
 --    sem EXECUTE para estes papéis (o privilégio só é verificado ao criar o
 --    trigger), por isso basta retirar o EXECUTE.
+--    rls_auto_enable não vem das migrations (foi criada pelo dashboard do
+--    Supabase no projeto de produção), por isso só se mexe nela se existir —
+--    senão a migration falha numa base de dados nova (supabase start / db reset).
 revoke execute on function public.handle_new_user() from public, anon, authenticated;
-revoke execute on function public.rls_auto_enable() from public, anon, authenticated;
+do $$
+begin
+  if to_regprocedure('public.rls_auto_enable()') is not null then
+    revoke execute on function public.rls_auto_enable() from public, anon, authenticated;
+  end if;
+end $$;
 
 -- 2) search_path fixo nas funções que não o tinham (evita que um objeto com o
 --    mesmo nome noutro schema seja apanhado em vez do de public).
