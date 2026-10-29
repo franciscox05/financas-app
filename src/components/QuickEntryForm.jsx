@@ -9,7 +9,7 @@ import { createFriend, createLinkedEntry, deleteLocalEntryById, listFriendsWithB
 import { cancelPendingEntry, createSharedEntry } from '../lib/linkedDb'
 import { notifyPendingChanged } from '../lib/pendingEvents'
 import { friendEntryKind, friendEntryMode } from '../lib/quickEntryFriend'
-import { defaultCategoryId } from '../lib/repaymentInput'
+import { defaultCategoryId, overshootNote } from '../lib/repaymentInput'
 
 const selectClass =
   'w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100'
@@ -691,9 +691,22 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
               onFriendCreated={(f) => setFriends((prev) => [...prev, f].sort((a, b) => a.name.localeCompare(b.name, 'pt')))}
             />
             {friendsFailed && <p className="mt-1 text-xs text-red-600">Não foi possível carregar os amigos.</p>}
-            {friends.find((f) => f.id === friendId)?.status === 'connected' && (
+            {repaymentFriend?.status === 'connected' && (
               <p className="mt-1 text-xs text-neutral-500">Ligado: só entra na conta depois da confirmação.</p>
             )}
+            {repaymentFriend &&
+              numericAmount > 0 &&
+              (() => {
+                const note = overshootNote('repaid_to_me', repaymentFriend.balance, numericAmount)
+                if (!note) return null
+                const prefix = repaymentFriend.balance <= 0 ? `${repaymentFriend.name} não tem dívidas pendentes. ` : ''
+                return (
+                  <p className="mt-1 text-xs text-amber-600 dark:text-amber-500">
+                    {prefix}
+                    {note}.
+                  </p>
+                )
+              })()}
           </div>
         )}
 
