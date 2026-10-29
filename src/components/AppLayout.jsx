@@ -39,8 +39,11 @@ export default function AppLayout() {
           screenshot não mostra isto (captura o conteúdo completo, não o que
           fica fisicamente coberto), por isso só se vê ao vivo no aparelho.
           0.75rem não chegou; 1.5rem resolveu no 17 Pro mas ficou com
-          espaço a mais num 15 Pro — 1.1rem é o meio-termo a testar agora. */}
-      <header className="flex items-center justify-between gap-3 p-4 pt-[calc(max(1rem,env(safe-area-inset-top))+1.1rem)]">
+          espaço a mais num 15 Pro — 1.1rem é o meio-termo a testar agora.
+          Fixo no topo (sticky), como a BottomNav no fundo: ao fazer scroll o
+          conteúdo deixava de passar por trás do relógio/Dynamic Island. Sem
+          backdrop-blur pelo mesmo motivo da BottomNav (fantasma no Safari iOS). */}
+      <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-neutral-200 bg-neutral-50/95 p-4 pt-[calc(max(1rem,env(safe-area-inset-top))+1.1rem)] dark:border-neutral-800 dark:bg-neutral-900/95">
         <span className="flex items-center gap-1.5 text-sm font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
           <Wallet size={18} className="text-green-600" />
           FinancasApp
