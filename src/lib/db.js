@@ -226,21 +226,36 @@ export async function deletePushSubscription(endpoint) {
 // `transactions`, para o CSV ser um livro-razão completo de tudo o que
 // mexeu nas contas — antes as transferências ficavam de fora em silêncio.
 export async function listAllTransactionsForExport() {
-  const { data, error } = await supabase
-    .from('movements')
-    .select('occurred_on, source, type, amount, note, account_name, category_name, counter_account_name')
-    .order('occurred_on', { ascending: false })
-    .limit(10000)
-  if (error) throw error
-  return data
+  return fetchAllPages(() =>
+    supabase
+      .from('movements')
+      .select('occurred_on, source, type, amount, note, account_name, category_name, counter_account_name')
+      .order('occurred_on', { ascending: false })
+      .order('id'),
+  )
 }
 
 export async function listAllTransactionsForBalance() {
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('amount, type, occurred_on, account_id, created_at')
-  if (error) throw error
-  return data
+  return fetchAllPages(() =>
+    supabase.from('transactions').select('amount, type, occurred_on, account_id, created_at').order('id'),
+  )
+}
+
+// O Supabase (PostgREST, `max_rows = 1000`) devolve no máximo 1000 linhas por
+// pedido, em silêncio: o saldo e o CSV ficavam errados a partir das 1000
+// transações (confirmado com 1100 numa base local: o saldo ignorava 100).
+// Lê em páginas até vir uma incompleta. `build` tem de criar uma query nova a
+// cada chamada e com ordem estável (ex.: .order('id')), senão as páginas
+// podem repetir ou saltar linhas.
+const PAGE_SIZE = 1000
+async function fetchAllPages(build) {
+  const rows = []
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await build().range(from, from + PAGE_SIZE - 1)
+    if (error) throw error
+    rows.push(...data)
+    if (data.length < PAGE_SIZE) return rows
+  }
 }
 
 export async function listNetWorthSnapshots() {

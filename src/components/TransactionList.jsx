@@ -387,7 +387,7 @@ export default function TransactionList({ categories, accounts, refreshToken, on
       />
 
       <div className="flex items-center justify-between text-xs text-neutral-500" aria-live="polite">
-        <span>{totalCount} transações</span>
+        <span>{totalCount} {totalCount === 1 ? 'transação' : 'transações'}</span>
         {hasActiveFilters && (
           <button
             type="button"
