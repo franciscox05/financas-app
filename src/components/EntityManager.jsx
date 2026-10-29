@@ -1,8 +1,10 @@
 import { Pencil, PiggyBank, TrendingUp, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useToast } from '../context/toastContext'
+import { parseBalanceValue } from '../lib/balanceInput'
 import { MAX_NAME_LENGTH, validateName } from '../lib/names'
 import { eur } from '../lib/format'
+import ConfirmDialog from './ConfirmDialog'
 
 const inputClass =
   'w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100'
@@ -24,6 +26,7 @@ function ManageRow({
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [name, setName] = useState(item.name)
   const [newBalance, setNewBalance] = useState('')
+  const [pendingBalance, setPendingBalance] = useState(null) // valor validado à espera de confirmação
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -56,17 +59,26 @@ function ManageRow({
     setEditing(false)
   }
 
-  async function handleSaveBalance(e) {
+  // 1.º passo: valida o que foi escrito e pede confirmação (o acerto substitui
+  // o saldo calculado da conta — um engano aqui desalinha tudo a partir de hoje).
+  function handleSaveBalance(e) {
     e.preventDefault()
-    const numeric = Number(newBalance)
-    if (Number.isNaN(numeric) || numeric < 0) {
-      setError('Indica um valor válido.')
+    const value = parseBalanceValue(newBalance)
+    if (value === null) {
+      setError(newBalance.trim() === '' ? 'Escreve o saldo atual da conta (ex.: 150,27).' : 'Indica um valor válido (ex.: 150,27).')
       return
     }
-    setBusy(true)
     setError('')
+    setPendingBalance(value)
+  }
+
+  // 2.º passo: só grava depois de confirmado.
+  async function confirmSaveBalance() {
+    const value = pendingBalance
+    setPendingBalance(null)
+    setBusy(true)
     try {
-      await onQuickSnapshot(item, numeric)
+      await onQuickSnapshot(item, value)
       setNewBalance('')
       setUpdatingBalance(false)
     } catch {
@@ -207,26 +219,43 @@ function ManageRow({
       </div>
       {updatingBalance && (
         <form onSubmit={handleSaveBalance} className="mt-2 flex items-center gap-2">
+          {/* type="text" + inputMode="decimal": com type="number", no iOS em
+              português "150,27" chegava como '' e passava a 0. */}
           <input
             autoFocus
-            type="number"
-            step="0.01"
-            min="0"
+            type="text"
+            inputMode="decimal"
             placeholder="Valor atual (€)"
             value={newBalance}
-            onChange={(e) => setNewBalance(e.target.value)}
+            onChange={(e) => {
+              setNewBalance(e.target.value)
+              if (error) setError('')
+            }}
             aria-label={`Novo saldo de ${item.name}`}
+            aria-invalid={Boolean(error)}
             className={`${inputClass} flex-1`}
           />
           <button
             type="submit"
-            disabled={busy}
+            disabled={busy || newBalance.trim() === ''}
             className="rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
           >
             OK
           </button>
         </form>
       )}
+      <ConfirmDialog
+        open={pendingBalance !== null}
+        title={`Atualizar o saldo de "${item.name}"?`}
+        message={
+          pendingBalance === null
+            ? ''
+            : `${balance !== undefined ? `Passa de ${eur(balance)} para ${eur(pendingBalance)}.` : `Novo saldo: ${eur(pendingBalance)}.`} A partir de hoje a app usa este valor como saldo real da conta.`
+        }
+        confirmLabel="Atualizar saldo"
+        onConfirm={confirmSaveBalance}
+        onCancel={() => setPendingBalance(null)}
+      />
       {updatingBalance && error && (
         <p role="alert" className="mt-1 text-xs text-red-600">
           {error}
