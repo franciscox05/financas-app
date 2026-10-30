@@ -29,8 +29,8 @@ const ACCOUNT_GROUPS = [
 ]
 
 const CATEGORY_GROUPS = [
-  { type: 'expense', label: 'Gastos' },
-  { type: 'income', label: 'Ganhos' },
+  { type: 'expense', label: 'Gastos', activeClass: 'bg-red-600 text-white' },
+  { type: 'income', label: 'Ganhos', activeClass: 'bg-green-600 text-white' },
 ]
 
 const byName = (a, b) => a.name.localeCompare(b.name, 'pt')
@@ -143,6 +143,7 @@ export default function Manage() {
           items={categories}
           groups={CATEGORY_GROUPS}
           scope="group"
+          tabbed
           deleteWarning="Só é possível apagar se não tiver transações associadas. Regras de categorização desta categoria são apagadas juntamente."
           onCreate={async (values) => {
             const created = await createCategory(values)

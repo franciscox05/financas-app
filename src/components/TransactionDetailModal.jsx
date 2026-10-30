@@ -254,7 +254,7 @@ function TransactionBody({ tx, categories, accounts, linkedEntry, titleId, onClo
           setConfirmingDelete(true)
         }}
         disabled={busy}
-        className={dangerButton}
+        className={`${dangerButton} w-full`}
       >
         Apagar transação
       </button>
@@ -262,7 +262,7 @@ function TransactionBody({ tx, categories, accounts, linkedEntry, titleId, onClo
       <ConfirmDialog
         open={confirmingDelete}
         title="Apagar transação?"
-        message="Podes desfazer logo a seguir, enquanto o aviso estiver visível."
+        message={`${tx.note || tx.category_name || 'Esta transação'} · ${eur(tx.amount)}. Podes desfazer logo a seguir, enquanto o aviso estiver visível.`}
         confirmLabel="Apagar"
         onCancel={() => setConfirmingDelete(false)}
         onConfirm={handleDelete}
