@@ -18,6 +18,14 @@ registerSW({
   },
 })
 
+// No Android o toque longo chega como "contextmenu" e o CSS não o trava. Fica
+// de fora o rato (botão direito) e os campos de escrita (colar).
+if (window.matchMedia('(pointer: coarse)').matches) {
+  document.addEventListener('contextmenu', (e) => {
+    if (!e.target.closest('input, textarea, [contenteditable="true"]')) e.preventDefault()
+  })
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <PrivacyProvider>
