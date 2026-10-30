@@ -6,6 +6,7 @@ import { avatarInitials } from '../lib/avatar'
 import { notifyAvatarChanged } from '../lib/avatarEvents'
 import { getAvatarPath, getFullName, updateFullName, uploadAvatar } from '../lib/profileDb'
 import { supabase } from '../lib/supabase'
+import AvatarCropModal from './AvatarCropModal'
 
 const focusRing =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
@@ -28,6 +29,7 @@ export default function PersonalInfoSection() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [error, setError] = useState('')
   const [avatarError, setAvatarError] = useState('')
+  const [cropFile, setCropFile] = useState(null)
   const mounted = useRef(true)
   const fileInputRef = useRef(null)
 
@@ -70,14 +72,20 @@ export default function PersonalInfoSection() {
     }
   }
 
-  async function handleAvatarChange(e) {
+  function handleAvatarChange(e) {
     const file = e.target.files?.[0]
     e.target.value = '' // permite escolher o mesmo ficheiro outra vez depois
     if (!file || uploadingAvatar) return
+    setAvatarError('')
+    setCropFile(file)
+  }
+
+  async function handleCropped(blob) {
+    setCropFile(null)
     setUploadingAvatar(true)
     setAvatarError('')
     try {
-      const path = await uploadAvatar(file)
+      const path = await uploadAvatar(blob)
       if (mounted.current) {
         setAvatarPath(path)
         setAvatarVersion((v) => v + 1)
@@ -190,6 +198,8 @@ export default function PersonalInfoSection() {
           {avatarError}
         </p>
       )}
+
+      <AvatarCropModal file={cropFile} onCropped={handleCropped} onCancel={() => setCropFile(null)} />
     </section>
   )
 }

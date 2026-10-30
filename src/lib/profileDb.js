@@ -104,3 +104,11 @@ export async function deleteNote(id) {
   const { error } = await supabase.from('notes').delete().eq('id', id)
   if (error) throw error
 }
+
+export async function updateNote(id, body) {
+  const trimmed = body.trim()
+  if (!trimmed) throw new Error('Escreve algo para guardar.')
+  const { data, error } = await supabase.from('notes').update({ body: trimmed }).eq('id', id).select().single()
+  if (error) throw error
+  return data
+}
