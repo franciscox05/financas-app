@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
+import { clearAccountsAndCategoriesCache } from '../lib/db'
 import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext(null)
@@ -30,7 +31,10 @@ export function AuthProvider({ children }) {
         options: { data: { full_name: fullName } },
       }),
     signIn: (email, password) => supabase.auth.signInWithPassword({ email, password }),
-    signOut: () => supabase.auth.signOut(),
+    signOut: () => {
+      clearAccountsAndCategoriesCache()
+      return supabase.auth.signOut()
+    },
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

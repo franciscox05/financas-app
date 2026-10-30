@@ -16,18 +16,27 @@ export default function AppLayout() {
   const [avatarPath, setAvatarPath] = useState(null)
 
   // Pedidos e movimentos chegam ao vivo; ao voltar à app (iOS suspende o websocket em segundo
-  // plano) volta-se a ligar e recarrega-se o que se perdeu.
+  // plano) volta-se a ligar e recarrega-se o que se perdeu. `visibilitychange` sozinho não é
+  // fiável numa PWA iOS suspensa há muito tempo — `pageshow` cobre a restauração do bfcache e
+  // `focus` cobre voltar de outra app/aba sem um `visibilitychange` claro.
   useEffect(() => {
     let off = subscribeLiveUpdates(user.id)
-    function onVisible() {
-      if (document.visibilityState !== 'visible') return
+    function onResume() {
       off()
       off = subscribeLiveUpdates(user.id)
       notifyPendingChanged()
     }
+    function onVisible() {
+      if (document.visibilityState !== 'visible') return
+      onResume()
+    }
     document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onResume)
+    window.addEventListener('pageshow', onResume)
     return () => {
       document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onResume)
+      window.removeEventListener('pageshow', onResume)
       off()
     }
   }, [user.id])
