@@ -7,16 +7,33 @@ export async function getCurrentUserId() {
   return data.user.id
 }
 
+// Contas e categorias mudam raramente mas são lidas em quase todas as páginas (Dashboard,
+// Balanço, Património, Registo...) — um cache em memória evita repetir o pedido ao navegar entre
+// páginas na mesma sessão. Invalidado nas funções que criam/renomeiam/apagam contas ou categorias.
+let accountsCache = null
+let categoriesCache = null
+
 export async function listAccounts() {
+  if (accountsCache) return accountsCache
   const { data, error } = await supabase.from('accounts').select('*').order('name')
   if (error) throw error
+  accountsCache = data
   return data
 }
 
 export async function listCategories() {
+  if (categoriesCache) return categoriesCache
   const { data, error } = await supabase.from('categories').select('*').order('name')
   if (error) throw error
+  categoriesCache = data
   return data
+}
+
+// Chamado ao terminar sessão — sem isto, entrar com outra conta no mesmo dispositivo continuaria
+// a ver as contas/categorias da conta anterior até à primeira alteração.
+export function clearAccountsAndCategoriesCache() {
+  accountsCache = null
+  categoriesCache = null
 }
 
 export async function listTransactions({ limit = 50 } = {}) {
@@ -305,12 +322,14 @@ export async function createAccount({ name, type }) {
     .select()
     .single()
   if (error) throw error
+  accountsCache = null
   return data
 }
 
 export async function renameAccount(id, name) {
   const { data, error } = await supabase.from('accounts').update({ name }).eq('id', id).select().single()
   if (error) throw error
+  accountsCache = null
   return data
 }
 
@@ -322,6 +341,7 @@ export async function deleteAccount(id) {
     )
   }
   if (error) throw error
+  accountsCache = null
 }
 
 export async function createCategory({ name, type }) {
@@ -334,12 +354,14 @@ export async function createCategory({ name, type }) {
     .select()
     .single()
   if (error) throw error
+  categoriesCache = null
   return data
 }
 
 export async function renameCategory(id, name) {
   const { data, error } = await supabase.from('categories').update({ name }).eq('id', id).select().single()
   if (error) throw error
+  categoriesCache = null
   return data
 }
 
@@ -351,6 +373,7 @@ export async function updateCategorySavingsFlag(id, isSavings) {
     .select()
     .single()
   if (error) throw error
+  categoriesCache = null
   return data
 }
 
@@ -360,6 +383,7 @@ export async function deleteCategory(id) {
     throw new Error('Esta categoria ainda tem transações associadas.')
   }
   if (error) throw error
+  categoriesCache = null
 }
 
 export async function listCategoryRules() {
