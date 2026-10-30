@@ -89,12 +89,12 @@ function ManageRow({
   }
 
   async function handleDelete() {
+    setConfirmingDelete(false)
     setBusy(true)
     try {
       await onDelete(item)
     } finally {
       setBusy(false)
-      setConfirmingDelete(false)
     }
   }
 
@@ -184,37 +184,16 @@ function ManageRow({
           >
             <Pencil size={16} />
           </button>
-          {confirmingDelete ? (
-            <span className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={busy}
-                className="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
-              >
-                Confirmar
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirmingDelete(false)}
-                disabled={busy}
-                className="rounded border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700"
-              >
-                Cancelar
-              </button>
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setConfirmingDelete(true)}
-              disabled={!canDelete}
-              title={canDelete ? undefined : deleteHint}
-              aria-label={`Apagar ${item.name}`}
-              className="rounded p-1 text-neutral-400 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-neutral-400"
-            >
-              <Trash2 size={16} />
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setConfirmingDelete(true)}
+            disabled={!canDelete || busy}
+            title={canDelete ? undefined : deleteHint}
+            aria-label={`Apagar ${item.name}`}
+            className="rounded p-1 text-neutral-400 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-neutral-400"
+          >
+            <Trash2 size={16} />
+          </button>
         </div>
       </div>
       {updatingBalance && (
@@ -256,13 +235,18 @@ function ManageRow({
         onConfirm={confirmSaveBalance}
         onCancel={() => setPendingBalance(null)}
       />
+      <ConfirmDialog
+        open={confirmingDelete}
+        title={`Apagar "${item.name}"?`}
+        message={deleteWarning}
+        confirmLabel="Apagar"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmingDelete(false)}
+      />
       {updatingBalance && error && (
         <p role="alert" className="mt-1 text-xs text-red-600">
           {error}
         </p>
-      )}
-      {confirmingDelete && deleteWarning && (
-        <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{deleteWarning}</p>
       )}
     </li>
   )
@@ -276,8 +260,9 @@ export default function EntityManager({
   icon: Icon, // componente lucide-react opcional, visual de "hub" de definições
   noun, // ex.: 'conta', 'categoria'
   items,
-  groups, // [{ type, label }]
+  groups, // [{ type, label, activeClass? }]
   scope,
+  tabbed = false, // mostra um grupo de cada vez, em separadores como no Balanço
   deleteWarning,
   balances, // Map opcional item.id -> saldo atual (só para contas)
   onCreate,
@@ -293,6 +278,14 @@ export default function EntityManager({
   const [submitting, setSubmitting] = useState(false)
 
   const siblingsOf = (type) => (scope === 'all' ? items : items.filter((i) => i.type === type))
+  // Com separadores, o separador ativo é também o tipo do item a criar.
+  const activeGroup = groups.find((g) => g.type === newType)
+  const visibleGroups = tabbed ? [activeGroup] : groups
+
+  function selectType(type) {
+    setNewType(type)
+    setError('')
+  }
 
   async function handleCreate(e) {
     e.preventDefault()
@@ -380,12 +373,34 @@ export default function EntityManager({
         {Icon && <Icon size={14} aria-hidden="true" />} {title}
       </h2>
 
-      {groups.map((group) => {
+      {tabbed && (
+        <div role="group" aria-label={`Tipo de ${noun}`} className="grid grid-cols-2 gap-2">
+          {groups.map((group) => (
+            <button
+              key={group.type}
+              type="button"
+              aria-pressed={newType === group.type}
+              onClick={() => selectType(group.type)}
+              className={`rounded-lg py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100 ${
+                newType === group.type
+                  ? group.activeClass
+                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700'
+              }`}
+            >
+              {group.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {visibleGroups.map((group) => {
         const groupItems = items.filter((i) => i.type === group.type)
         const pool = scope === 'all' ? items : groupItems
         return (
           <div key={group.type}>
-            <h3 className="mb-1 text-xs uppercase tracking-wide text-neutral-400">{group.label}</h3>
+            {!tabbed && (
+              <h3 className="mb-1 text-xs uppercase tracking-wide text-neutral-400">{group.label}</h3>
+            )}
             {groupItems.length === 0 ? (
               <p className="py-2 text-sm text-neutral-500">Sem {noun}s deste tipo.</p>
             ) : (
@@ -415,27 +430,29 @@ export default function EntityManager({
         onSubmit={handleCreate}
         className="space-y-2 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800"
       >
-        <p className="text-xs font-medium text-neutral-500">Nova {noun}</p>
-        <div role="group" aria-label={`Tipo de ${noun}`} className="grid grid-cols-2 gap-1.5">
-          {groups.map((group) => (
-            <button
-              key={group.type}
-              type="button"
-              aria-pressed={newType === group.type}
-              onClick={() => {
-                setNewType(group.type)
-                setError('')
-              }}
-              className={`rounded-lg py-1.5 text-xs font-medium transition-colors ${
-                newType === group.type
-                  ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
-                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700'
-              }`}
-            >
-              {group.label}
-            </button>
-          ))}
-        </div>
+        <p className="text-xs font-medium text-neutral-500">
+          Nova {noun}
+          {tabbed && ` · ${activeGroup.label}`}
+        </p>
+        {!tabbed && (
+          <div role="group" aria-label={`Tipo de ${noun}`} className="grid grid-cols-2 gap-1.5">
+            {groups.map((group) => (
+              <button
+                key={group.type}
+                type="button"
+                aria-pressed={newType === group.type}
+                onClick={() => selectType(group.type)}
+                className={`rounded-lg py-1.5 text-xs font-medium transition-colors ${
+                  newType === group.type
+                    ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700'
+                }`}
+              >
+                {group.label}
+              </button>
+            ))}
+          </div>
+        )}
         <input
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
