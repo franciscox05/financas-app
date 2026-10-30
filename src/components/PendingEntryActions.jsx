@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useToast } from '../context/toastContext'
-import { cancelPendingEntry, getMirrorSettlement, requestCancel, respondCancel, respondEntry } from '../lib/linkedDb'
+import {
+  cancelPendingEntry,
+  getMirrorSettlement,
+  requestCancel,
+  respondCancel,
+  respondEntry,
+  retireDeclinedEntry,
+} from '../lib/linkedDb'
 import { canRequestCancel, canRespond, isCancelRequestForMe } from '../lib/linkedLogic'
 import { notifyPendingChanged } from '../lib/pendingEvents'
 import ConfirmDialog from './ConfirmDialog'
@@ -232,11 +239,26 @@ export default function PendingEntryActions({ entry, friend, viewerId, onChanged
     )
   }
 
-  if (entry.status === 'declined' && entry.created_by === viewerId && onResend && !entry.is_opening) {
+  if (entry.status === 'declined' && entry.created_by === viewerId && !entry.is_opening) {
     return (
-      <button type="button" onClick={() => onResend(entry)} className={secondaryButton}>
-        Corrigir e reenviar
-      </button>
+      <div className="space-y-2">
+        {errorLine}
+        <div className="flex gap-2">
+          {onResend && (
+            <button type="button" disabled={busy} onClick={() => onResend(entry)} className={secondaryButton}>
+              Corrigir e reenviar
+            </button>
+          )}
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => run(() => retireDeclinedEntry(entry.id), 'Movimento cancelado.')}
+            className={secondaryButton}
+          >
+            {busy ? 'A cancelar...' : 'Cancelar movimento'}
+          </button>
+        </div>
+      </div>
     )
   }
 

@@ -128,8 +128,10 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
         await createSharedEntry(fields)
         notifyPendingChanged()
         if (prefill?.id) {
-          await retireDeclinedEntry(prefill.id).catch(() => {
-            toast.error('Corrigido e reenviado, mas o movimento antigo continua a contar — apaga-o à mão na lista.')
+          await retireDeclinedEntry(prefill.id).catch((err) => {
+            toast.error(
+              `Corrigido e reenviado, mas o movimento antigo continua a contar: ${err.message} — cancela-o à mão na lista.`,
+            )
           })
         }
         successMessage = `Já conta do teu lado. Enviado a ${friend.name} para confirmar também.`

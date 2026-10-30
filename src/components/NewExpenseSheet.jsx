@@ -110,8 +110,10 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
         notifyPendingChanged()
         if (prefill?.id) {
           // O antigo (contestado) deixa de contar — senão o corrigido contava a dobrar.
-          await retireDeclinedEntry(prefill.id).catch(() => {
-            toast.error('Corrigido e reenviado, mas o movimento antigo continua a contar — apaga-o à mão na lista.')
+          await retireDeclinedEntry(prefill.id).catch((err) => {
+            toast.error(
+              `Corrigido e reenviado, mas o movimento antigo continua a contar: ${err.message} — cancela-o à mão na lista.`,
+            )
           })
         }
         toast.success(`Já conta do teu lado. Enviado a ${friend.name} para confirmar também.`)
