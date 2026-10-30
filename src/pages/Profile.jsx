@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import GoalsSection from '../components/GoalsSection'
 import MbwayPhoneSection from '../components/MbwayPhoneSection'
 import MyPhoneSection from '../components/MyPhoneSection'
-import NotesSection from '../components/NotesSection'
+import NotesCalendar from '../components/NotesCalendar'
 import PersonalInfoSection from '../components/PersonalInfoSection'
 import SignOutButton from '../components/SignOutButton'
 
@@ -49,7 +49,7 @@ export default function Profile() {
         <h2 className={cardTitleClass}>
           <StickyNote size={14} aria-hidden="true" /> Notas
         </h2>
-        <NotesSection />
+        <NotesCalendar />
       </section>
 
       <SignOutButton />

@@ -26,6 +26,17 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* Esconde a barra de scroll lateral em todo o lado (visual só) — o scroll por
+   touch/roda continua a funcionar normalmente, só o indicador desaparece. */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Edge legado */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
 @media (prefers-color-scheme: dark) {
   html,
   body,

@@ -1,4 +1,4 @@
-import { Save } from 'lucide-react'
+import { Save, Wand2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import CollapsibleSection from './CollapsibleSection'
 import { useToast } from '../context/toastContext'
@@ -100,6 +100,7 @@ export default function ReclassifySection({ accounts, categories }) {
   return (
     <CollapsibleSection
       title="Corrigir categorias em massa"
+      icon={Wand2}
       description="Escolhe um mês já registado (ex. depois de uma importação) para rever e corrigir a categoria/conta de várias transações com a mesma nota de uma só vez."
       open={showSection}
       onToggle={() => setShowSection((v) => !v)}
