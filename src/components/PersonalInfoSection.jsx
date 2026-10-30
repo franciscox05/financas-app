@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/toastContext'
 import { avatarInitials } from '../lib/avatar'
+import { notifyAvatarChanged } from '../lib/avatarEvents'
 import { getAvatarPath, getFullName, updateFullName, uploadAvatar } from '../lib/profileDb'
 import { supabase } from '../lib/supabase'
 
@@ -80,6 +81,7 @@ export default function PersonalInfoSection() {
       if (mounted.current) {
         setAvatarPath(path)
         setAvatarVersion((v) => v + 1)
+        notifyAvatarChanged()
         toast.success('Foto atualizada.')
       }
     } catch (err) {

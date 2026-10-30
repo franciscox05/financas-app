@@ -1,15 +1,19 @@
 import { UserCircle2, Wallet } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { onAvatarChanged } from '../lib/avatarEvents'
 import { subscribeLiveUpdates } from '../lib/liveUpdates'
 import { notifyPendingChanged } from '../lib/pendingEvents'
+import { getAvatarPath } from '../lib/profileDb'
+import { supabase } from '../lib/supabase'
 import BottomNav from './BottomNav'
 import NotificationToggle from './NotificationToggle'
 import PrivacyToggle from './PrivacyToggle'
 
 export default function AppLayout() {
   const { user } = useAuth()
+  const [avatarPath, setAvatarPath] = useState(null)
 
   // Pedidos e movimentos chegam ao vivo; ao voltar à app (iOS suspende o websocket em segundo
   // plano) volta-se a ligar e recarrega-se o que se perdeu.
@@ -28,6 +32,29 @@ export default function AppLayout() {
     }
   }, [user.id])
 
+  // Foto de perfil no cabeçalho: busca-se ao montar e volta a buscar-se quando
+  // o Perfil avisa que mudou (AppLayout fica montado durante toda a sessão,
+  // nunca recarrega sozinho ao navegar). Falha silenciosa: sem foto, fica o
+  // ícone genérico de sempre.
+  useEffect(() => {
+    let cancelled = false
+    function load() {
+      getAvatarPath()
+        .then((path) => {
+          if (!cancelled) setAvatarPath(path)
+        })
+        .catch(() => {})
+    }
+    load()
+    const off = onAvatarChanged(load)
+    return () => {
+      cancelled = true
+      off()
+    }
+  }, [user.id])
+
+  const avatarUrl = avatarPath && supabase.storage.from('avatars').getPublicUrl(avatarPath).data.publicUrl
+
   return (
     // O +1px torna o documento sempre ligeiramente "scrollável". No iOS (PWA),
     // quando a página não faz scroll o ecrã útil encolhe e a barra fixa fica
@@ -43,7 +70,7 @@ export default function AppLayout() {
           Fixo no topo (sticky), como a BottomNav no fundo: ao fazer scroll o
           conteúdo deixava de passar por trás do relógio/Dynamic Island. Sem
           backdrop-blur pelo mesmo motivo da BottomNav (fantasma no Safari iOS). */}
-      <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-neutral-200 bg-neutral-50/95 p-4 pt-[calc(max(1rem,env(safe-area-inset-top))+1.1rem)] dark:border-neutral-800 dark:bg-neutral-900/95">
+      <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-neutral-200 bg-neutral-50 p-4 pt-[calc(max(1rem,env(safe-area-inset-top))+1.1rem)] dark:border-neutral-800 dark:bg-neutral-900">
         <span className="flex items-center gap-1.5 text-sm font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
           <Wallet size={18} className="text-green-600" />
           FinancasApp
@@ -53,16 +80,20 @@ export default function AppLayout() {
           <Link
             to="/perfil"
             aria-label="Perfil"
-            className="flex size-9 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100"
+            className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-neutral-500 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100"
           >
-            <UserCircle2 size={20} aria-hidden="true" />
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="size-9 rounded-full object-cover" />
+            ) : (
+              <UserCircle2 size={20} aria-hidden="true" />
+            )}
           </Link>
           <PrivacyToggle />
           <NotificationToggle />
         </div>
       </header>
 
-      <main className="mx-auto max-w-md space-y-6 px-4 pb-[calc(5rem+env(safe-area-inset-bottom))]">
+      <main className="mx-auto max-w-md space-y-6 px-4 pt-4 pb-[calc(5rem+env(safe-area-inset-bottom))]">
         <Outlet />
       </main>
 
