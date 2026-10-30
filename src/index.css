@@ -26,6 +26,32 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* Só em ecrãs táteis: segurar uma ligação, imagem ou texto não abre a
+   pré-visualização nem o menu do sistema, nem seleciona texto. Os campos de
+   escrita mantêm o comportamento normal, para se poder selecionar e colar. */
+@media (pointer: coarse) {
+  html,
+  a,
+  button,
+  img {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  img {
+    -webkit-user-drag: none;
+  }
+
+  input,
+  textarea,
+  [contenteditable='true'] {
+    -webkit-touch-callout: default;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
+
 /* Esconde a barra de scroll lateral em todo o lado (visual só) — o scroll por
    touch/roda continua a funcionar normalmente, só o indicador desaparece. */
 * {
