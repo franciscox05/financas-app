@@ -273,6 +273,7 @@ function ManageRow({
 // 'all' = todos os itens, 'group' = só os do mesmo tipo.
 export default function EntityManager({
   title,
+  icon: Icon, // componente lucide-react opcional, visual de "hub" de definições
   noun, // ex.: 'conta', 'categoria'
   items,
   groups, // [{ type, label }]
@@ -375,7 +376,9 @@ export default function EntityManager({
 
   return (
     <section className="space-y-4">
-      <h2 className="text-sm font-semibold text-neutral-500">{title}</h2>
+      <h2 className="flex items-center gap-1.5 text-sm font-semibold text-neutral-500">
+        {Icon && <Icon size={14} aria-hidden="true" />} {title}
+      </h2>
 
       {groups.map((group) => {
         const groupItems = items.filter((i) => i.type === group.type)

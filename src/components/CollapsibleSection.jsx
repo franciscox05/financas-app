@@ -2,8 +2,9 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 
 // Cabeçalho + corpo recolhível com estilo uniforme — usado nas ferramentas
 // avançadas da Gestão (Importar, Corrigir categorias, Regras), para não
-// parecerem "escondidas" de formas diferentes em cada uma.
-export default function CollapsibleSection({ title, description, open, onToggle, children }) {
+// parecerem "escondidas" de formas diferentes em cada uma. `icon` é opcional
+// (componente lucide-react), para o visual de "hub" de definições.
+export default function CollapsibleSection({ title, description, icon: Icon, open, onToggle, children }) {
   return (
     <section className="space-y-3">
       <button
@@ -12,7 +13,10 @@ export default function CollapsibleSection({ title, description, open, onToggle,
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-3 rounded-xl border border-neutral-200 px-4 py-3 text-left transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-800/60"
       >
-        <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">{title}</span>
+        <span className="flex items-center gap-2 text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+          {Icon && <Icon size={16} className="shrink-0 text-neutral-400" aria-hidden="true" />}
+          {title}
+        </span>
         {open ? (
           <ChevronUp size={16} className="shrink-0 text-neutral-400" />
         ) : (

@@ -168,6 +168,7 @@ export default function ImportSection({ accounts, categories }) {
   return (
     <CollapsibleSection
       title="Importar histórico"
+      icon={Upload}
       description='Cola o texto de um mês (linhas no formato "Dia N -valor€ descrição"). O resto do texto (resumos, totais) é ignorado automaticamente.'
       open={showSection}
       onToggle={() => setShowSection((v) => !v)}

@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from 'lucide-react'
+import { ListFilter, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import CollapsibleSection from './CollapsibleSection'
 import { useToast } from '../context/toastContext'
@@ -88,6 +88,7 @@ export default function CategoryRulesSection({ categories }) {
   return (
     <CollapsibleSection
       title="Regras de categorização"
+      icon={ListFilter}
       description='Associa uma palavra a uma categoria (ex. "gas" → Transporte). Aplica-se a qualquer nota que contenha essa palavra — "gasolina", "gasóleo" ou "gasolina bmw" caem todas na mesma categoria, mesmo escritas de forma diferente mês a mês. Usado automaticamente ao importar histórico — não recategoriza transações já existentes nem as registadas manualmente (usa "Corrigir categorias em massa" para essas).'
       open={showSection}
       onToggle={() => setShowSection((v) => !v)}
