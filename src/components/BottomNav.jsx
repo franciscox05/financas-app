@@ -51,9 +51,10 @@ export default function BottomNav() {
       // Sem backdrop-blur de propósito: um filtro de blur num elemento fixed
       // é a combinação clássica que causa um "fantasma"/duplicação visual no
       // Safari iOS durante o scroll elástico em certos aparelhos (reportado
-      // num iPhone 17 Pro, não reproduzido num 15 Pro) — o fundo a 95% de
-      // opacidade já dá contraste suficiente sem precisar do blur.
-      className="fixed inset-x-0 bottom-0 z-10 border-t border-neutral-200 bg-white/95 pb-[env(safe-area-inset-bottom)] dark:border-neutral-800 dark:bg-neutral-900/95"
+      // num iPhone 17 Pro, não reproduzido num 15 Pro). Fundo 100% opaco
+      // (sem /95) — a transparência deixava o conteúdo transparecer ao
+      // fazer scroll, mesmo ponto corrigido no cabeçalho (Fase 1 do UI/UX).
+      className="fixed inset-x-0 bottom-0 z-20 border-t border-neutral-200 bg-white pb-[env(safe-area-inset-bottom)] dark:border-neutral-800 dark:bg-neutral-900"
       aria-label="Navegação principal"
     >
       <div className="mx-auto flex max-w-md">
