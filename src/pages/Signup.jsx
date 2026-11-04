@@ -17,7 +17,11 @@ export default function Signup() {
     setError('')
     const { data, error: signUpError } = await signUp(email, password, fullName)
     if (signUpError) {
-      setError(signUpError.message)
+      setError(
+        signUpError.code === 'weak_password'
+          ? 'A password tem de ter pelo menos 8 caracteres, com minúsculas, maiúsculas e números.'
+          : signUpError.message,
+      )
       setStatus('error')
       return
     }
@@ -67,8 +71,12 @@ export default function Signup() {
           onChange={(e) => setPassword(e.target.value)}
           className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
         />
+        {/* Regras definidas no Supabase (Auth → Email); iguais às da página de nova password. */}
+        <p className="-mt-2 text-xs text-neutral-500">
+          Pelo menos 8 caracteres, com minúsculas, maiúsculas e números.
+        </p>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error &&<p className="text-sm text-red-600">{error}</p>}
 
         <button
           type="submit"
