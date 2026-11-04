@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-PT">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -7,9 +7,12 @@
          "screenshot" da página na hora de instalar, em vez de usar um
          ícone limpo — o que pode ficar com um ar desfocado/estranho. -->
     <link rel="apple-touch-icon" href="/pwa-192x192.png" />
+    <!-- Sem user-scalable=no: o zoom com dois dedos tem de funcionar (acessibilidade). O
+         maximum-scale fica porque no iOS só trava o zoom automático ao tocar num campo com letra
+         < 16px (vários usam text-sm); o iOS ignora-o no gesto de pinça. -->
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover"
     />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

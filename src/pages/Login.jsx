@@ -44,6 +44,12 @@ export default function Login() {
           className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
         />
 
+        <p className="-mt-2 text-right text-sm">
+          <Link to="/recuperar-password" className="text-neutral-500 hover:text-green-600">
+            Esqueci-me da password
+          </Link>
+        </p>
+
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <button
