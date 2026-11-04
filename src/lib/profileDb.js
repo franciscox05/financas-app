@@ -21,10 +21,11 @@ const EXT_BY_TYPE = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'we
 // Caminho fixo "{userId}/avatar.ext" (upsert: substitui a anterior, mesmo que
 // tivesse outra extensão — apaga-se a antiga só se a extensão mudar).
 export async function uploadAvatar(file) {
-  if (!file.type.startsWith('image/')) throw new Error('Escolhe uma imagem.')
+  // Só os tipos que o bucket aceita (ver migração 20261109000000): `image/*` deixava passar SVG.
+  const ext = EXT_BY_TYPE[file.type]
+  if (!ext) throw new Error('Escolhe uma imagem JPG, PNG, WebP ou GIF.')
   if (file.size > MAX_AVATAR_BYTES) throw new Error('A imagem não pode passar de 5 MB.')
   const userId = await getCurrentUserId()
-  const ext = EXT_BY_TYPE[file.type] ?? 'jpg'
   const path = `${userId}/avatar.${ext}`
 
   const previous = await getAvatarPath()
