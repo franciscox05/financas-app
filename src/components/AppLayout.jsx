@@ -1,19 +1,31 @@
-import { UserCircle2, Wallet } from 'lucide-react'
+import { RefreshCw, UserCircle2, Wallet } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link, Outlet } from 'react-router-dom'
+import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { onAvatarChanged } from '../lib/avatarEvents'
-import { subscribeLiveUpdates } from '../lib/liveUpdates'
-import { notifyPendingChanged } from '../lib/pendingEvents'
+import { clearAccountsAndCategoriesCache } from '../lib/db'
+import { refreshLiveData, subscribeLiveUpdates } from '../lib/liveUpdates'
 import { getAvatarPath } from '../lib/profileDb'
 import { supabase } from '../lib/supabase'
+import { PULL_THRESHOLD, usePullToRefresh } from '../lib/usePullToRefresh'
 import BottomNav from './BottomNav'
+import ErrorBoundary from './ErrorBoundary'
 import NotificationToggle from './NotificationToggle'
 import PrivacyToggle from './PrivacyToggle'
 
 export default function AppLayout() {
   const { user } = useAuth()
+  const location = useLocation()
   const [avatarPath, setAvatarPath] = useState(null)
+  // Incrementar remonta a página atual: cada página volta a pedir os seus dados ao montar, por
+  // isso puxar para atualizar funciona em todas sem cada uma ter de saber recarregar-se.
+  const [reloadKey, setReloadKey] = useState(0)
+  const { pull, refreshing } = usePullToRefresh(() => {
+    clearAccountsAndCategoriesCache()
+    refreshLiveData()
+    setReloadKey((k) => k + 1)
+  })
+  const pullReady = refreshing || pull >= PULL_THRESHOLD
 
   // Pedidos e movimentos chegam ao vivo; ao voltar à app (iOS suspende o websocket em segundo
   // plano) volta-se a ligar e recarrega-se o que se perdeu. `visibilitychange` sozinho não é
@@ -24,7 +36,7 @@ export default function AppLayout() {
     function onResume() {
       off()
       off = subscribeLiveUpdates(user.id)
-      notifyPendingChanged()
+      refreshLiveData()
     }
     function onVisible() {
       if (document.visibilityState !== 'visible') return
@@ -102,8 +114,27 @@ export default function AppLayout() {
         </div>
       </header>
 
+      {/* Indicador do "puxar para atualizar": cresce com o dedo (sem transição, segue o gesto) e
+          só anima ao largar. O ícone roda com a distância e fica verde quando já basta largar. */}
+      <div
+        role="status"
+        className={`flex items-end justify-center overflow-hidden ${pull === 0 ? 'transition-[height] duration-200 ease-out' : ''}`}
+        style={{ height: pull }}
+      >
+        <span className="mb-2 flex size-8 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-neutral-200 dark:bg-neutral-800 dark:ring-neutral-700">
+          <RefreshCw
+            size={16}
+            className={`${pullReady ? 'text-green-600' : 'text-neutral-400'} ${refreshing ? 'motion-safe:animate-spin' : ''}`}
+            style={refreshing ? undefined : { transform: `rotate(${(pull / PULL_THRESHOLD) * 270}deg)` }}
+          />
+          <span className="sr-only">{refreshing ? 'A atualizar…' : ''}</span>
+        </span>
+      </div>
+
       <main className="mx-auto max-w-md space-y-6 px-4 pt-4 pb-[calc(5rem+env(safe-area-inset-bottom))]">
-        <Outlet />
+        <ErrorBoundary key={`${location.pathname}:${reloadKey}`}>
+          <Outlet />
+        </ErrorBoundary>
       </main>
 
       <BottomNav />

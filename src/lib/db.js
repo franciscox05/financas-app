@@ -36,6 +36,12 @@ export function clearAccountsAndCategoriesCache() {
   categoriesCache = null
 }
 
+// Os saldos das contas mudam também por ação do amigo (aceitar um movimento partilhado que
+// liquida numa conta), não só pelas mutações desta aba — chamado ao chegar uma mudança ao vivo.
+export function invalidateAccountsCache() {
+  accountsCache = null
+}
+
 export async function listTransactions({ limit = 50 } = {}) {
   const { data, error } = await supabase
     .from('transactions')
