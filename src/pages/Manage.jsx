@@ -1,5 +1,6 @@
 import { Settings2, SlidersHorizontal, Tags, Wallet } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import BankStatementImportSection from '../components/BankStatementImportSection'
 import CategoryRulesSection from '../components/CategoryRulesSection'
 import EntityManager from '../components/EntityManager'
 import { ErrorNotice, ListSkeleton } from '../components/Feedback'
@@ -170,6 +171,7 @@ export default function Manage() {
           <SlidersHorizontal size={14} aria-hidden="true" /> Ferramentas avançadas
         </h2>
         <CategoryRulesSection categories={categories} />
+        <BankStatementImportSection accounts={accounts} categories={categories} />
         <ImportSection accounts={accounts} categories={categories} />
         <ReclassifySection accounts={accounts} categories={categories} />
       </div>
