@@ -191,11 +191,72 @@ button {
   overscroll-behavior: contain;
 }
 
+/* Ecrãs de entrada/recuperação (AuthUI.jsx): cada passo entra a subir ligeiramente. */
+@keyframes auth-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-step {
+  animation: auth-step-in 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Alertas: aparecem a descer; os de erro dão um abanão curto e amortecido para se notar que algo
+   falhou sem ser agressivo. */
+@keyframes auth-alert-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes auth-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(1px); }
+}
+
+.auth-alert {
+  animation: auth-alert-in 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.auth-alert-error {
+  animation:
+    auth-alert-in 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    auth-shake 360ms ease-out 120ms;
+}
+
+/* Cursor a piscar na caixa ativa do código. */
+@keyframes otp-caret {
+  0%, 45% { opacity: 1; }
+  55%, 100% { opacity: 0; }
+}
+
+.otp-caret {
+  animation: otp-caret 1s step-end infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .toast-in,
   .toast-out,
   .modal-overlay,
-  .modal-sheet {
+  .modal-sheet,
+  .auth-step,
+  .auth-alert,
+  .auth-alert-error,
+  .otp-caret {
     animation: none;
   }
 }

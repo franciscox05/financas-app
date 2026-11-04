@@ -1,7 +1,16 @@
+import { MailCheck } from 'lucide-react'
 import { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import AuthBrand from '../components/AuthBrand'
+import { AuthAlert, AuthScreen, PasswordChecklist, PasswordField, PrimaryButton, SecondaryButton, TextField } from '../components/AuthUI'
 import { useAuth } from '../context/AuthContext'
+import { checkPassword, passwordErrorMessage } from '../lib/passwordRules'
+
+function signUpErrorMessage(error) {
+  if (error.code === 'user_already_exists') return 'Já existe uma conta com esse email. Entra ou recupera a password.'
+  if (error.code === 'weak_password') return passwordErrorMessage(error)
+  if (error.status === 429) return 'Demasiadas tentativas seguidas. Espera um minuto e tenta outra vez.'
+  return 'Não foi possível criar a conta. Tenta outra vez.'
+}
 
 export default function Signup() {
   const { signUp } = useAuth()
@@ -10,18 +19,16 @@ export default function Signup() {
   const [password, setPassword] = useState('')
   const [status, setStatus] = useState('idle') // idle | loading | sent | loggedIn | error
   const [error, setError] = useState('')
+  const ready = fullName.trim() && email.trim() && checkPassword(password).valid
 
   async function handleSubmit(e) {
     e.preventDefault()
+    if (!ready) return
     setStatus('loading')
     setError('')
-    const { data, error: signUpError } = await signUp(email, password, fullName)
+    const { data, error: signUpError } = await signUp(email.trim(), password, fullName.trim())
     if (signUpError) {
-      setError(
-        signUpError.code === 'weak_password'
-          ? 'A password tem de ter pelo menos 8 caracteres, com minúsculas, maiúsculas e números.'
-          : signUpError.message,
-      )
+      setError(signUpErrorMessage(signUpError))
       setStatus('error')
       return
     }
@@ -33,63 +40,52 @@ export default function Signup() {
 
   if (status === 'sent') {
     return (
-      <div className="flex min-h-svh items-center justify-center bg-neutral-50 px-4 dark:bg-neutral-900">
-        <p className="max-w-sm text-center text-neutral-600 dark:text-neutral-300">
-          Conta criada. Verifica o email <strong>{email}</strong> para confirmar antes de entrares.
-        </p>
-      </div>
+      <AuthScreen
+        stepKey="sent"
+        icon={<MailCheck size={26} />}
+        title="Confirma o teu email"
+        subtitle={`Conta criada. Enviámos um email para ${email.trim()} — confirma-o antes de entrares.`}
+      >
+        <SecondaryButton to="/login">Ir para o início de sessão</SecondaryButton>
+      </AuthScreen>
     )
   }
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-neutral-50 px-4 dark:bg-neutral-900">
-      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
-        <AuthBrand title="Criar conta" />
-
-        <input
-          type="text"
-          required
-          placeholder="Nome"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-        />
-        <input
+    <AuthScreen stepKey="signup" title="Criar conta" onSubmit={handleSubmit}>
+      <div className="space-y-3">
+        <TextField label="Nome" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+        <TextField
+          label="Email"
           type="email"
-          required
-          placeholder="Email"
+          autoComplete="email"
+          inputMode="email"
+          placeholder="nome@gmail.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
         />
-        <input
-          type="password"
-          required
-          minLength={8}
-          placeholder="Password"
+        <PasswordField
+          label="Password"
+          autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
         />
-        {/* Regras definidas no Supabase (Auth → Email); iguais às da página de nova password. */}
-        <p className="-mt-2 text-xs text-neutral-500">
-          Pelo menos 8 caracteres, com minúsculas, maiúsculas e números.
-        </p>
+      </div>
 
-        {error &&<p className="text-sm text-red-600">{error}</p>}
+      <PasswordChecklist password={password} />
 
-        <button
-          type="submit"
-          disabled={status === 'loading'}
-          className="w-full rounded-lg bg-green-600 py-2 font-medium text-white disabled:opacity-50"
-        >
-          {status === 'loading' ? 'A criar...' : 'Criar conta'}
-        </button>
+      <AuthAlert key={error}>{error}</AuthAlert>
 
-        <p className="text-center text-sm text-neutral-500">
-          Já tens conta? <Link to="/login" className="text-green-600">Entrar</Link>
-        </p>
-      </form>
-    </div>
+      <PrimaryButton loading={status === 'loading'} loadingText="A criar..." disabled={!ready}>
+        Criar conta
+      </PrimaryButton>
+
+      <p className="text-center text-sm text-neutral-500">
+        Já tens conta?{' '}
+        <Link to="/login" className="font-medium text-green-600 hover:text-green-700">
+          Entrar
+        </Link>
+      </p>
+    </AuthScreen>
   )
 }

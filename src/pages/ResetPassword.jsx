@@ -1,105 +1,52 @@
+import { CheckCircle2, Link2Off, Loader2 } from 'lucide-react'
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import AuthBrand from '../components/AuthBrand'
+import { useNavigate } from 'react-router-dom'
+import { AuthScreen, PrimaryButton, SecondaryButton } from '../components/AuthUI'
+import NewPasswordStep from '../components/NewPasswordStep'
 import { useAuth } from '../context/AuthContext'
-import { supabase } from '../lib/supabase'
 
-const MIN_LENGTH = 8 // igual ao registo (Signup.jsx)
-
-// Destino do link do email de recuperação. O supabase-js lê o token do URL e abre uma sessão
-// temporária; com ela, `updateUser` troca a password. Sem sessão o link expirou ou já foi usado.
+// Destino do link de recuperação, para emails antigos (antes do código de 6 dígitos) ou se o
+// template do Supabase voltar a ter o link. O supabase-js lê o token do URL e abre a sessão.
 export default function ResetPassword() {
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading } = useAuth()
   const navigate = useNavigate()
-  const [password, setPassword] = useState('')
-  const [confirm, setConfirm] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [done, setDone] = useState(false)
 
-  async function handleSubmit(e) {
-    e.preventDefault()
-    setError('')
-    if (password !== confirm) {
-      setError('As passwords não coincidem.')
-      return
-    }
-    setLoading(true)
-    const { error: updateError } = await supabase.auth.updateUser({ password })
-    setLoading(false)
-    if (updateError) {
-      setError(
-        updateError.code === 'same_password'
-          ? 'A nova password tem de ser diferente da anterior.'
-          : updateError.code === 'weak_password'
-            ? `A password tem de ter pelo menos ${MIN_LENGTH} caracteres, com minúsculas, maiúsculas e números.`
-            : updateError.message,
-      )
-      return
-    }
-    navigate('/', { replace: true })
+  if (loading) {
+    return (
+      <AuthScreen stepKey="loading" icon={<Loader2 size={26} className="motion-safe:animate-spin" />} title="A validar o link..." />
+    )
   }
 
-  const inputClass =
-    'w-full rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100'
+  if (done) {
+    return (
+      <AuthScreen
+        stepKey="done"
+        icon={<CheckCircle2 size={28} />}
+        title="Password alterada"
+        subtitle="Se tens a FinancasApp instalada no ecrã principal, podes fechar este separador e entrar lá com a nova password."
+        onSubmit={(e) => {
+          e.preventDefault()
+          navigate('/', { replace: true })
+        }}
+      >
+        <PrimaryButton>Continuar aqui</PrimaryButton>
+      </AuthScreen>
+    )
+  }
 
-  return (
-    <div className="flex min-h-svh items-center justify-center bg-neutral-50 px-4 dark:bg-neutral-900">
-      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
-        <AuthBrand title="Nova password" />
+  if (!user) {
+    return (
+      <AuthScreen
+        stepKey="expired"
+        icon={<Link2Off size={26} />}
+        title="Este link já não é válido"
+        subtitle="Os links de recuperação só funcionam uma vez e expiram passado algum tempo. Pede um código novo."
+      >
+        <SecondaryButton to="/recuperar-password">Pedir um código novo</SecondaryButton>
+      </AuthScreen>
+    )
+  }
 
-        {authLoading ? (
-          <p className="text-center text-sm text-neutral-500">A validar o link...</p>
-        ) : !user ? (
-          <>
-            <p className="text-sm text-neutral-500">
-              Este link expirou ou já foi usado. Pede um novo para definires a password.
-            </p>
-            <Link
-              to="/recuperar-password"
-              className="block w-full rounded-lg bg-green-600 py-2 text-center font-medium text-white"
-            >
-              Pedir novo link
-            </Link>
-          </>
-        ) : (
-          <>
-            {/* Regras definidas no Supabase (Auth → Email): mín. 8, minúsculas, maiúsculas e dígitos. */}
-            <p className="text-sm text-neutral-500">
-              Pelo menos {MIN_LENGTH} caracteres, com minúsculas, maiúsculas e números.
-            </p>
-            <input
-              type="password"
-              required
-              minLength={MIN_LENGTH}
-              autoComplete="new-password"
-              placeholder="Nova password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={inputClass}
-            />
-            <input
-              type="password"
-              required
-              minLength={MIN_LENGTH}
-              autoComplete="new-password"
-              placeholder="Repetir nova password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              className={inputClass}
-            />
-
-            {error && <p className="text-sm text-red-600">{error}</p>}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-green-600 py-2 font-medium text-white disabled:opacity-50"
-            >
-              {loading ? 'A guardar...' : 'Guardar password'}
-            </button>
-          </>
-        )}
-      </form>
-    </div>
-  )
+  return <NewPasswordStep onDone={() => setDone(true)} />
 }

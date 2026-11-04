@@ -1,5 +1,5 @@
 import { RefreshCw, UserCircle2, Wallet } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { onAvatarChanged } from '../lib/avatarEvents'
@@ -7,7 +7,7 @@ import { clearAccountsAndCategoriesCache } from '../lib/db'
 import { refreshLiveData, subscribeLiveUpdates } from '../lib/liveUpdates'
 import { getAvatarPath } from '../lib/profileDb'
 import { supabase } from '../lib/supabase'
-import { PULL_THRESHOLD, usePullToRefresh } from '../lib/usePullToRefresh'
+import { usePullToRefresh } from '../lib/usePullToRefresh'
 import BottomNav from './BottomNav'
 import ErrorBoundary from './ErrorBoundary'
 import NotificationToggle from './NotificationToggle'
@@ -20,12 +20,17 @@ export default function AppLayout() {
   // Incrementar remonta a página atual: cada página volta a pedir os seus dados ao montar, por
   // isso puxar para atualizar funciona em todas sem cada uma ter de saber recarregar-se.
   const [reloadKey, setReloadKey] = useState(0)
-  const { pull, refreshing } = usePullToRefresh(() => {
-    clearAccountsAndCategoriesCache()
-    refreshLiveData()
-    setReloadKey((k) => k + 1)
-  })
-  const pullReady = refreshing || pull >= PULL_THRESHOLD
+  const contentRef = useRef(null)
+  const indicatorRef = useRef(null)
+  const { refreshing, armed } = usePullToRefresh(
+    () => {
+      clearAccountsAndCategoriesCache()
+      refreshLiveData()
+      setReloadKey((k) => k + 1)
+    },
+    { contentRef, indicatorRef },
+  )
+  const pullReady = refreshing || armed
 
   // Pedidos e movimentos chegam ao vivo; ao voltar à app (iOS suspende o websocket em segundo
   // plano) volta-se a ligar e recarrega-se o que se perdeu. `visibilitychange` sozinho não é
@@ -114,24 +119,34 @@ export default function AppLayout() {
         </div>
       </header>
 
-      {/* Indicador do "puxar para atualizar": cresce com o dedo (sem transição, segue o gesto) e
-          só anima ao largar. O ícone roda com a distância e fica verde quando já basta largar. */}
-      <div
-        role="status"
-        className={`flex items-end justify-center overflow-hidden ${pull === 0 ? 'transition-[height] duration-200 ease-out' : ''}`}
-        style={{ height: pull }}
-      >
-        <span className="mb-2 flex size-8 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-neutral-200 dark:bg-neutral-800 dark:ring-neutral-700">
-          <RefreshCw
-            size={16}
-            className={`${pullReady ? 'text-green-600' : 'text-neutral-400'} ${refreshing ? 'motion-safe:animate-spin' : ''}`}
-            style={refreshing ? undefined : { transform: `rotate(${(pull / PULL_THRESHOLD) * 270}deg)` }}
-          />
+      {/* Indicador do "puxar para atualizar". Contentor com altura 0 (não empurra nada); o hook
+          move o indicador e o <main> só com transform, direto no DOM, a cada frame. Fica por baixo
+          do cabeçalho (z-10 < z-20), por isso parece sair de trás dele. O ícone roda com o dedo
+          (--ptr-rotate) e fica verde, com um pequeno "pop", quando já basta largar. */}
+      <div className="relative z-10 h-0" role="status">
+        <div
+          ref={indicatorRef}
+          className="absolute top-0 left-1/2 flex size-9 items-center justify-center rounded-full bg-white opacity-0 shadow-md ring-1 ring-neutral-200 will-change-transform dark:bg-neutral-800 dark:ring-neutral-700"
+          style={{ transform: 'translate3d(-50%, -36px, 0) scale(0.5)' }}
+        >
+          <span
+            className={`flex transition-transform duration-200 ease-out ${pullReady ? 'scale-110' : 'scale-100'}`}
+          >
+            <RefreshCw
+              size={17}
+              strokeWidth={2.25}
+              className={`transition-colors duration-200 ${pullReady ? 'text-green-600' : 'text-neutral-400'} ${refreshing ? 'motion-safe:animate-spin' : ''}`}
+              style={refreshing ? undefined : { transform: 'rotate(var(--ptr-rotate, 0deg))' }}
+            />
+          </span>
           <span className="sr-only">{refreshing ? 'A atualizar…' : ''}</span>
-        </span>
+        </div>
       </div>
 
-      <main className="mx-auto max-w-md space-y-6 px-4 pt-4 pb-[calc(5rem+env(safe-area-inset-bottom))]">
+      <main
+        ref={contentRef}
+        className="mx-auto max-w-md space-y-6 px-4 pt-4 pb-[calc(5rem+env(safe-area-inset-bottom))]"
+      >
         <ErrorBoundary key={`${location.pathname}:${reloadKey}`}>
           <Outlet />
         </ErrorBoundary>
