@@ -243,6 +243,12 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# Recuperar password com código de 6 dígitos (escrito dentro da app, ver ForgotPassword.jsx).
+# Em produção o template é colado em Auth → Emails → Reset password (exige SMTP próprio).
+[auth.email.template.recovery]
+subject = "O teu código da FinancasApp: {{ .Token }}"
+content_path = "./supabase/templates/recovery.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"
