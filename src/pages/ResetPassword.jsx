@@ -31,7 +31,7 @@ export default function ResetPassword() {
         updateError.code === 'same_password'
           ? 'A nova password tem de ser diferente da anterior.'
           : updateError.code === 'weak_password'
-            ? 'Essa password é demasiado fraca ou já apareceu numa fuga de dados. Escolhe outra.'
+            ? `A password tem de ter pelo menos ${MIN_LENGTH} caracteres, com minúsculas, maiúsculas e números.`
             : updateError.message,
       )
       return
@@ -63,12 +63,16 @@ export default function ResetPassword() {
           </>
         ) : (
           <>
+            {/* Regras definidas no Supabase (Auth → Email): mín. 8, minúsculas, maiúsculas e dígitos. */}
+            <p className="text-sm text-neutral-500">
+              Pelo menos {MIN_LENGTH} caracteres, com minúsculas, maiúsculas e números.
+            </p>
             <input
               type="password"
               required
               minLength={MIN_LENGTH}
               autoComplete="new-password"
-              placeholder={`Nova password (mín. ${MIN_LENGTH} caracteres)`}
+              placeholder="Nova password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className={inputClass}
