@@ -1,18 +1,19 @@
 import { UserCircle2, Wallet } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link, Outlet } from 'react-router-dom'
+import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { onAvatarChanged } from '../lib/avatarEvents'
-import { subscribeLiveUpdates } from '../lib/liveUpdates'
-import { notifyPendingChanged } from '../lib/pendingEvents'
+import { refreshLiveData, subscribeLiveUpdates } from '../lib/liveUpdates'
 import { getAvatarPath } from '../lib/profileDb'
 import { supabase } from '../lib/supabase'
 import BottomNav from './BottomNav'
+import ErrorBoundary from './ErrorBoundary'
 import NotificationToggle from './NotificationToggle'
 import PrivacyToggle from './PrivacyToggle'
 
 export default function AppLayout() {
   const { user } = useAuth()
+  const location = useLocation()
   const [avatarPath, setAvatarPath] = useState(null)
 
   // Pedidos e movimentos chegam ao vivo; ao voltar à app (iOS suspende o websocket em segundo
@@ -24,7 +25,7 @@ export default function AppLayout() {
     function onResume() {
       off()
       off = subscribeLiveUpdates(user.id)
-      notifyPendingChanged()
+      refreshLiveData()
     }
     function onVisible() {
       if (document.visibilityState !== 'visible') return
@@ -103,7 +104,9 @@ export default function AppLayout() {
       </header>
 
       <main className="mx-auto max-w-md space-y-6 px-4 pt-4 pb-[calc(5rem+env(safe-area-inset-bottom))]">
-        <Outlet />
+        <ErrorBoundary key={location.pathname}>
+          <Outlet />
+        </ErrorBoundary>
       </main>
 
       <BottomNav />
