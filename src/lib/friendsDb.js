@@ -173,7 +173,6 @@ export async function createRepayment({
   kind,
   amount,
   note,
-  friendName,
   occurredOn,
   settlement,
   accountId,
@@ -189,7 +188,7 @@ export async function createRepayment({
       accountId,
       categoryId,
       occurredOn,
-      note: repaymentNote(note, friendName),
+      note: repaymentNote(note),
     })
   }
 

@@ -136,7 +136,7 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
         }
         successMessage = `Já conta do teu lado. Enviado a ${friend.name} para confirmar também.`
       } else {
-        await createRepayment({ ...fields, friendName: friend.name })
+        await createRepayment(fields)
         successMessage = 'Devolução guardada.'
       }
 
@@ -155,7 +155,7 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
           }
           try {
             if (shared) await createSharedEntry(forgiveFields)
-            else await createRepayment({ ...forgiveFields, friendName: friend.name })
+            else await createRepayment(forgiveFields)
             successMessage += ` Perdoaste ${eur(forgive.amount)} de diferença.`
           } catch {
             toast.error('Guardado, mas não foi possível perdoar a diferença — regista-a à mão se for preciso.')

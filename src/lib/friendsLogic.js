@@ -53,12 +53,11 @@ export function checkRepaymentInput({ settlement, accountId, categoryId }) {
 }
 
 // Nota da transação bancária de uma devolução: a que o utilizador escreveu ou,
-// em falta dela, o nome do amigo.
-export function repaymentNote(note, friendName) {
+// em falta dela, um rótulo genérico — o nome do amigo já aparece como tag na
+// lista de Registo, não precisa de se repetir no título da transação.
+export function repaymentNote(note) {
   const written = String(note ?? '').trim()
-  if (written) return written
-  const name = String(friendName ?? '').trim()
-  return name ? `Conta-corrente: ${name}` : 'Conta-corrente com amigo'
+  return written || 'Liquidação de dívida'
 }
 
 // names.js é partilhado com contas/categorias e fala em "item"; para amigos
