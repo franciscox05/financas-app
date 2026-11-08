@@ -1,6 +1,5 @@
 import { ChevronRight } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import {
   Area,
   AreaChart,
@@ -26,6 +25,7 @@ import { useToast } from '../context/toastContext'
 import { balanceAt, groupHasReliableBaseline } from '../lib/accountBalance'
 import { parseBalanceValue } from '../lib/balanceInput'
 import { addMonths, endOfMonth, monthStart, shortMonthLabel, toIsoDate, today } from '../lib/dates'
+import AccountDetailModal from '../components/AccountDetailModal'
 import Card, { SectionCard } from '../components/Card'
 import Money from '../components/Money'
 import { usePrivacy } from '../context/privacyContext'
@@ -62,6 +62,7 @@ export default function NetWorth() {
   const [transfers, setTransfers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [selectedAccount, setSelectedAccount] = useState(null) // abre o AccountDetailModal
 
   const [snapAccountId, setSnapAccountId] = useState('')
   const [snapValue, setSnapValue] = useState('')
@@ -297,48 +298,70 @@ export default function NetWorth() {
         </p>
       </Card>
 
-      {ACCOUNT_SEGMENTS.map((segment) => {
-        const segmentAccounts = segment.type === 'cash' ? cashAccounts : investmentAccounts
-        if (segmentAccounts.length === 0) return null
-        const subtotal = segment.type === 'cash' ? cashBalance : investmentTotal
-        return (
-          <SectionCard
-            key={segment.type}
-            title={segment.label}
-            hint={segment.hint}
-            aside={
-              <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                <Money value={subtotal} />
-              </span>
-            }
-          >
-            <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
-              {segmentAccounts.map((acc) => {
-                const latest = latestByAccount.get(acc.id)
-                return (
-                  <li key={acc.id}>
-                    <Link
-                      to={`/patrimonio/conta/${acc.id}`}
-                      className="flex min-h-12 w-full items-center justify-between gap-3 py-2.5 text-left transition-transform active:scale-[0.99]"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm text-neutral-700 dark:text-neutral-300">{acc.name}</p>
-                        {latest && (
-                          <p className="text-xs text-neutral-400">atualizado {ptDate(latest.snapshot_date)}</p>
-                        )}
-                      </div>
-                      <span className="flex shrink-0 items-center gap-1.5 font-semibold text-neutral-900 dark:text-neutral-100">
-                        <Money value={balanceByAccountId.get(acc.id) ?? 0} />
-                        <ChevronRight size={14} className="text-neutral-400" aria-hidden="true" />
-                      </span>
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
-          </SectionCard>
-        )
-      })}
+      {/* Um só cartão para as duas naturezas de dinheiro (Liquidez/Investimento),
+          separadas por uma divisória interna em vez de dois cartões — pedido
+          do Francisco depois de testar no telemóvel. A ordem das contas dentro
+          de cada bloco já vem de `accounts` (listAccounts ordena por
+          `sort_order`), por isso o arrastar definido em Gestão continua a
+          valer aqui sem nada extra. */}
+      {accounts.length > 0 && (
+        <Card>
+          {ACCOUNT_SEGMENTS.filter(
+            (segment) => (segment.type === 'cash' ? cashAccounts : investmentAccounts).length > 0,
+          ).map((segment, visibleIndex) => {
+            const segmentAccounts = segment.type === 'cash' ? cashAccounts : investmentAccounts
+            const subtotal = segment.type === 'cash' ? cashBalance : investmentTotal
+            return (
+              <div
+                key={segment.type}
+                // O divisor só aparece a partir do 2.º bloco VISÍVEL — se não
+                // houver contas de liquidez, o de investimento é o primeiro a
+                // mostrar-se e não deve ter uma linha solta por cima.
+                className={visibleIndex > 0 ? 'mt-3 border-t border-neutral-200 pt-3 dark:border-neutral-800' : ''}
+              >
+                <div className="mb-1 flex items-baseline justify-between gap-2">
+                  <h3 className="text-sm font-semibold text-neutral-500">{segment.label}</h3>
+                  <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                    <Money value={subtotal} />
+                  </span>
+                </div>
+                <p className="mb-2 text-xs text-neutral-400">{segment.hint}</p>
+                <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+                  {segmentAccounts.map((acc) => {
+                    const latest = latestByAccount.get(acc.id)
+                    return (
+                      <li key={acc.id}>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAccount(acc)}
+                          className="flex min-h-12 w-full items-center justify-between gap-3 py-2.5 text-left transition-transform active:scale-[0.99]"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm text-neutral-700 dark:text-neutral-300">{acc.name}</p>
+                            {latest && (
+                              <p className="text-xs text-neutral-400">atualizado {ptDate(latest.snapshot_date)}</p>
+                            )}
+                          </div>
+                          <span className="flex shrink-0 items-center gap-1.5 font-semibold text-neutral-900 dark:text-neutral-100">
+                            <Money value={balanceByAccountId.get(acc.id) ?? 0} />
+                            <ChevronRight size={14} className="text-neutral-400" aria-hidden="true" />
+                          </span>
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            )
+          })}
+        </Card>
+      )}
+
+      <AccountDetailModal
+        account={selectedAccount}
+        balance={selectedAccount ? balanceByAccountId.get(selectedAccount.id) ?? 0 : 0}
+        onClose={() => setSelectedAccount(null)}
+      />
 
       <SectionCard title="Evolução (últimos 6 meses)">
         <div className="h-56 w-full">

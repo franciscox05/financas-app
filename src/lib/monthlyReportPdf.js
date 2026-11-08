@@ -5,11 +5,19 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { eur } from './format.js'
-import { netSavings, topExpenses } from './monthlyReport.js'
+import {
+  averageDailyExpense,
+  expenseByAccount,
+  netSavings,
+  peakExpenseDay,
+  savingsRate,
+  topExpenses,
+} from './monthlyReport.js'
 
 const PAGE_WIDTH = 210 // A4, mm
 const MARGIN = 14
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2
+const SECTION_GAP = 9 // espaço vertical entre secções, consistente em todo o documento
 
 // Paleta alinhada com o resto da app (Balance.jsx / NetWorth.jsx).
 const INK = '#171717' // neutral-900 — texto principal, barra de cabeçalho
@@ -21,6 +29,11 @@ const ACCENT = '#2a78d6' // azul de marca (linha do gráfico de património)
 
 function formatIssueDate() {
   return new Date().toLocaleDateString('pt-PT', { day: '2-digit', month: 'long', year: 'numeric' })
+}
+
+// "16 out" — usado no dia de pico de despesa e na tabela de maiores despesas.
+function formatShortDate(iso) {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })
 }
 
 // Cabeçalho: barra escura com a marca à esquerda e o mês de referência à
@@ -49,23 +62,17 @@ function drawHeader(doc, monthLabel) {
   doc.setTextColor('#d4d4d4')
   doc.text(`Emitido em ${formatIssueDate()}`, PAGE_WIDTH - MARGIN, 19, { align: 'right' })
 
-  return 38 // próximo y livre
+  return 38 + SECTION_GAP // próximo y livre
 }
 
-// Grelha de 4 KPIs, cada um num cartão próprio com rótulo + valor — o mesmo
-// papel visual dos 3 cartões do Balanço, só que em PDF.
-function drawKpiGrid(doc, startY, { income, expense, saldo, rate }) {
+// Uma linha de cartões iguais, com rótulo + valor (+ legenda opcional, para a
+// poupança mostrar logo a percentagem ao lado do euro, sem o utilizador ter
+// de ir descobrir a conta — era essa a confusão do "15%" sem origem visível.
+function drawStatCards(doc, startY, cards, { cardHeight = 24 } = {}) {
   const gap = 4
-  const cardWidth = (CONTENT_WIDTH - gap * 3) / 4
-  const cardHeight = 22
-  const kpis = [
-    { label: 'Rendimento Total', value: eur(income), color: INCOME },
-    { label: 'Despesas Totais', value: eur(expense), color: EXPENSE },
-    { label: 'Saldo Líquido', value: eur(saldo), color: saldo >= 0 ? INCOME : EXPENSE },
-    { label: 'Taxa de Poupança', value: rate === null ? '—' : `${rate}%`, color: ACCENT },
-  ]
+  const cardWidth = (CONTENT_WIDTH - gap * (cards.length - 1)) / cards.length
 
-  kpis.forEach((kpi, i) => {
+  cards.forEach((card, i) => {
     const x = MARGIN + i * (cardWidth + gap)
     doc.setDrawColor(LINE)
     doc.setLineWidth(0.3)
@@ -74,15 +81,22 @@ function drawKpiGrid(doc, startY, { income, expense, saldo, rate }) {
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(7.5)
     doc.setTextColor(MUTED)
-    doc.text(kpi.label, x + 3, startY + 7, { maxWidth: cardWidth - 6 })
+    doc.text(card.label, x + 3.5, startY + 7, { maxWidth: cardWidth - 7 })
 
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(11.5)
-    doc.setTextColor(kpi.color)
-    doc.text(kpi.value, x + 3, startY + 16.5, { maxWidth: cardWidth - 6 })
+    doc.setFontSize(card.caption ? 11.5 : 12.5)
+    doc.setTextColor(card.color ?? INK)
+    doc.text(card.value, x + 3.5, startY + 15.5, { maxWidth: cardWidth - 7 })
+
+    if (card.caption) {
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7.5)
+      doc.setTextColor(MUTED)
+      doc.text(card.caption, x + 3.5, startY + 21, { maxWidth: cardWidth - 7 })
+    }
   })
 
-  return startY + cardHeight + 10
+  return startY + cardHeight + SECTION_GAP
 }
 
 function drawSectionTitle(doc, startY, title) {
@@ -90,25 +104,25 @@ function drawSectionTitle(doc, startY, title) {
   doc.setFontSize(10.5)
   doc.setTextColor(INK)
   doc.text(title, MARGIN, startY)
-  return startY + 5
+  return startY + 6
 }
 
-// Tabela de categorias com valor + % do total — mesma lógica de
-// `categorySection` em monthlyReport.js, formatada para autoTable.
-function categoryTable(doc, startY, title, breakdown, total, accentColor) {
+// Tabela de "nome + valor + % do total" — serve categorias e, com o mesmo
+// formato de linha ({ name, amount }), também a origem por conta.
+function breakdownTable(doc, startY, title, breakdown, total, accentColor, { nameHeader = 'Categoria' } = {}) {
   if (breakdown.length === 0) return startY
   const y = drawSectionTitle(doc, startY, title)
   autoTable(doc, {
     startY: y,
     margin: { left: MARGIN, right: MARGIN },
-    head: [['Categoria', 'Valor', '% do total']],
+    head: [[nameHeader, 'Valor', '% do total']],
     body: breakdown.map((c) => [
       c.name,
       eur(c.amount),
       total > 0 ? `${Math.round((c.amount / total) * 100)}%` : '—',
     ]),
     theme: 'plain',
-    styles: { fontSize: 9, cellPadding: { top: 2, bottom: 2, left: 0, right: 2 } },
+    styles: { fontSize: 9, cellPadding: { top: 2.5, bottom: 2.5, left: 0, right: 2 } },
     headStyles: { textColor: MUTED, fontStyle: 'normal', fontSize: 8 },
     columnStyles: {
       0: { cellWidth: 'auto' },
@@ -121,7 +135,7 @@ function categoryTable(doc, startY, title, breakdown, total, accentColor) {
       }
     },
   })
-  return doc.lastAutoTable.finalY + 8
+  return doc.lastAutoTable.finalY + SECTION_GAP
 }
 
 function topExpensesTable(doc, startY, transactions) {
@@ -133,13 +147,13 @@ function topExpensesTable(doc, startY, transactions) {
     margin: { left: MARGIN, right: MARGIN },
     head: [['Data', 'Descrição', 'Categoria', 'Valor']],
     body: rows.map((r) => [
-      new Date(`${r.occurred_on}T00:00:00`).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' }),
+      formatShortDate(r.occurred_on),
       r.note || '(sem nota)',
       r.categories?.name ?? 'Sem categoria',
       eur(Number(r.amount)),
     ]),
     theme: 'striped',
-    styles: { fontSize: 9, cellPadding: 2.5 },
+    styles: { fontSize: 9, cellPadding: 3 },
     headStyles: { fillColor: INK, textColor: '#ffffff', fontSize: 8 },
     alternateRowStyles: { fillColor: '#fafafa' },
     columnStyles: {
@@ -147,7 +161,7 @@ function topExpensesTable(doc, startY, transactions) {
       3: { halign: 'right', fontStyle: 'bold', textColor: EXPENSE, cellWidth: 26 },
     },
   })
-  return doc.lastAutoTable.finalY + 8
+  return doc.lastAutoTable.finalY + SECTION_GAP
 }
 
 // Rodapé em todas as páginas: paginação + nota de confidencialidade — só
@@ -172,14 +186,49 @@ function drawFooters(doc) {
 export function buildMonthlyReportPdf(data) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const saldo = netSavings(data.income, data.expense)
-  const rate = data.income > 0 ? Math.round((saldo / data.income) * 100) : null
+  const rate = savingsRate(data.income, data.expense)
+  const avgPerDay = averageDailyExpense(data.expense, data.monthKey)
+  const peakDay = peakExpenseDay(data.transactions)
+  const accountBreakdown = expenseByAccount(data.transactions)
 
   let y = drawHeader(doc, data.monthLabel)
-  y = drawKpiGrid(doc, y, { income: data.income, expense: data.expense, saldo, rate })
-  y = categoryTable(doc, y, 'Despesas por Categoria', data.expenseByCategory, data.expense, EXPENSE)
+
+  // KPIs: a poupança já traz a % do rendimento como legenda, logo ao lado do
+  // valor em euros — não é preciso ir a outro sítio descobrir de onde veio.
+  y = drawStatCards(doc, y, [
+    { label: 'Rendimento Total', value: eur(data.income), color: INCOME },
+    { label: 'Despesas Totais', value: eur(data.expense), color: EXPENSE },
+    {
+      label: 'Poupança Líquida',
+      value: eur(saldo),
+      color: saldo >= 0 ? INCOME : EXPENSE,
+      caption: rate === null ? 'sem receitas no mês' : `${rate}% do rendimento`,
+    },
+  ])
+
+  // Ritmo de gasto: dois números que o resumo simples nunca mostrava — quanto
+  // se gasta "a um ritmo normal" por dia, e o dia que destoou mais desse ritmo.
+  y = drawSectionTitle(doc, y, 'Ritmo de Gasto')
+  y = drawStatCards(
+    doc,
+    y,
+    [
+      { label: 'Gasto médio por dia', value: eur(avgPerDay), color: INK },
+      {
+        label: 'Pico de despesa',
+        value: peakDay ? eur(peakDay.amount) : '—',
+        color: peakDay ? EXPENSE : MUTED,
+        caption: peakDay ? `dia ${formatShortDate(peakDay.date)}` : 'sem despesas no mês',
+      },
+    ],
+    { cardHeight: peakDay ? 24 : 18 },
+  )
+
+  y = breakdownTable(doc, y, 'Despesas por Categoria', data.expenseByCategory, data.expense, EXPENSE)
   if (data.incomeByCategory.length > 0) {
-    y = categoryTable(doc, y, 'Receitas por Categoria', data.incomeByCategory, data.income, INCOME)
+    y = breakdownTable(doc, y, 'Receitas por Categoria', data.incomeByCategory, data.income, INCOME)
   }
+  y = breakdownTable(doc, y, 'Origem por Conta', accountBreakdown, data.expense, ACCENT, { nameHeader: 'Conta' })
   topExpensesTable(doc, y, data.transactions)
 
   drawFooters(doc)

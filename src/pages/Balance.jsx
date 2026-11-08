@@ -211,6 +211,7 @@ export default function Balance() {
   const report = useMemo(
     () => ({
       monthLabel: monthLabel(selectedMonth),
+      monthKey: monthKey(selectedMonth),
       income: selectedBucket?.income ?? 0,
       expense: selectedBucket?.expense ?? 0,
       savingsAmount,
