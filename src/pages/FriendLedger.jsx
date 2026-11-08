@@ -21,6 +21,7 @@ import { hasOpenBalance } from '../lib/friendsLogic'
 import { balanceOf, describeBalance, lifetimeTotals, suggestedRepayment } from '../lib/ledgerMath'
 import { hasPendingOpening, privateConfirmedEntries } from '../lib/linkedLogic'
 import { onPendingChanged } from '../lib/pendingEvents'
+import Card from '../components/Card'
 
 const inputClass =
   'min-h-11 w-full rounded-lg border border-neutral-300 px-3 py-2 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 motion-reduce:transition-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus-visible:outline-neutral-100'
@@ -299,7 +300,7 @@ export default function FriendLedger() {
         <OpeningBalanceOffer friend={friend} balance={privateBalance} onShared={() => load({ silent: true })} />
       )}
 
-      <div className="rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
+      <Card>
         <p className="text-xs text-neutral-500">Neste momento</p>
         <p className={`text-2xl font-semibold tracking-tight ${STATE_TEXT[state]}`}>
           {state === 'even' ? (
@@ -310,7 +311,7 @@ export default function FriendLedger() {
             </>
           )}
         </p>
-      </div>
+      </Card>
 
       {balance > 0 && <ReminderButtons friend={friend} balance={balance} entries={entries} />}
 
@@ -407,7 +408,7 @@ export default function FriendLedger() {
         />
       )}
 
-      <section className="space-y-2">
+      <Card as="section" className="space-y-2">
         <h3 className="text-sm font-semibold text-neutral-500">Movimentos</h3>
         {entries.length > 0 && <ShareSummaryButtons friend={friend} balance={balance} entries={entries} />}
         {entries.length === 0 ? (
@@ -430,9 +431,9 @@ export default function FriendLedger() {
             ))}
           </ul>
         )}
-      </section>
+      </Card>
 
-      <section className="border-t border-neutral-200 pt-4 dark:border-neutral-800">
+      <section className="pt-2">
         {canDeleteFriend ? (
           <button
             type="button"

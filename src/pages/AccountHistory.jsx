@@ -5,6 +5,7 @@ import { EmptyState, ErrorNotice, ListSkeleton, Pager } from '../components/Feed
 import Money from '../components/Money'
 import { listAccounts, listNetWorthSnapshots, listTransactionsPage, listTransfers } from '../lib/db'
 import { eur, ptDate } from '../lib/format'
+import Card from '../components/Card'
 
 const PAGE_SIZE = 20
 
@@ -75,7 +76,7 @@ export default function AccountHistory() {
       {error && <ErrorNotice message={error} />}
 
       {snapshots.length > 0 && (
-        <section className="space-y-1">
+        <Card as="section" className="space-y-1">
           <h3 className="text-sm font-semibold text-neutral-500">Atualizações de saldo</h3>
           <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
             {snapshots.slice((snapPage - 1) * PAGE_SIZE, snapPage * PAGE_SIZE).map((s) => (
@@ -88,11 +89,11 @@ export default function AccountHistory() {
             ))}
           </ul>
           <Pager page={snapPage} totalPages={Math.ceil(snapshots.length / PAGE_SIZE)} onChange={setSnapPage} />
-        </section>
+        </Card>
       )}
 
       {transfers.length > 0 && (
-        <section className="space-y-1">
+        <Card as="section" className="space-y-1">
           <h3 className="text-sm font-semibold text-neutral-500">Transferências</h3>
           <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
             {transfers.slice((transferPage - 1) * PAGE_SIZE, transferPage * PAGE_SIZE).map((t) => {
@@ -111,10 +112,10 @@ export default function AccountHistory() {
             })}
           </ul>
           <Pager page={transferPage} totalPages={Math.ceil(transfers.length / PAGE_SIZE)} onChange={setTransferPage} />
-        </section>
+        </Card>
       )}
 
-      <section className="space-y-1">
+      <Card as="section" className="space-y-1">
         <h3 className="text-sm font-semibold text-neutral-500">
           Transações{totalCount ? ` (${totalCount})` : ''}
         </h3>
@@ -149,7 +150,7 @@ export default function AccountHistory() {
             <Pager page={page} totalPages={totalPages} onChange={setPage} />
           </>
         )}
-      </section>
+      </Card>
     </div>
   )
 }

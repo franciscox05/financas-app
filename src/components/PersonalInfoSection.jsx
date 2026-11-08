@@ -7,6 +7,7 @@ import { notifyAvatarChanged } from '../lib/avatarEvents'
 import { getAvatarPath, getFullName, updateFullName, uploadAvatar } from '../lib/profileDb'
 import { supabase } from '../lib/supabase'
 import AvatarCropModal from './AvatarCropModal'
+import { CARD_CLASS } from './Card'
 
 const focusRing =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
@@ -103,7 +104,7 @@ export default function PersonalInfoSection() {
     avatarPath && `${supabase.storage.from('avatars').getPublicUrl(avatarPath).data.publicUrl}?v=${avatarVersion}`
 
   return (
-    <section className="rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
+    <section className={CARD_CLASS}>
       <div className="flex items-center gap-4">
         <div className="relative shrink-0">
           {avatarUrl ? (

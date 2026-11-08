@@ -28,6 +28,7 @@ import { balanceOfAt, receivablesAndPayables } from '../lib/ledgerMath'
 import { balanceAt, groupHasReliableBaseline } from '../lib/accountBalance'
 import { parseBalanceValue } from '../lib/balanceInput'
 import { addMonths, endOfMonth, monthStart, shortMonthLabel, toIsoDate, today } from '../lib/dates'
+import Card, { SectionCard } from '../components/Card'
 import Money from '../components/Money'
 import { usePrivacy } from '../context/privacyContext'
 import HiddenChartNotice from '../components/HiddenChartNotice'
@@ -352,7 +353,7 @@ export default function NetWorth() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-3 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
+      <Card className="space-y-3">
         <div
           role="group"
           aria-label="Como contar o património"
@@ -387,10 +388,10 @@ export default function NetWorth() {
               : 'só o que está nas tuas contas'}
           </p>
         </div>
-      </div>
+      </Card>
 
       {hasFriendPositions && view === 'net' && (
-        <div className="rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
+        <Card>
           <div className="mb-2 flex items-center gap-2">
             <Users size={14} className="text-neutral-400" aria-hidden="true" />
             <h3 className="text-sm font-semibold text-neutral-500">Dívidas de amigos</h3>
@@ -413,7 +414,7 @@ export default function NetWorth() {
             Não entra no total acima. Muda para <strong className="font-medium">Global</strong> para
             o somar ao património.
           </p>
-        </div>
+        </Card>
       )}
 
       {ACCOUNT_SEGMENTS.map((segment) => {
@@ -421,44 +422,46 @@ export default function NetWorth() {
         if (segmentAccounts.length === 0) return null
         const subtotal = segment.type === 'cash' ? cashBalance : investmentTotal
         return (
-          <section key={segment.type}>
-            <div className="mb-2 flex items-baseline justify-between gap-2">
-              <h3 className="text-sm font-semibold text-neutral-500">{segment.label}</h3>
+          <SectionCard
+            key={segment.type}
+            title={segment.label}
+            hint={segment.hint}
+            aside={
               <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
                 <Money value={subtotal} />
               </span>
-            </div>
-            <p className="mb-2 text-xs text-neutral-400">{segment.hint}</p>
-            <div className="grid grid-cols-1 gap-2">
+            }
+          >
+            <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
               {segmentAccounts.map((acc) => {
                 const latest = latestByAccount.get(acc.id)
                 return (
-                  <Link
-                    key={acc.id}
-                    to={`/patrimonio/conta/${acc.id}`}
-                    className="flex w-full items-center justify-between rounded-xl border border-neutral-200 p-3 text-left transition-transform active:scale-[0.99] dark:border-neutral-800"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm text-neutral-700 dark:text-neutral-300">{acc.name}</p>
-                      {latest && (
-                        <p className="text-xs text-neutral-400">atualizado {ptDate(latest.snapshot_date)}</p>
-                      )}
-                    </div>
-                    <span className="flex shrink-0 items-center gap-1.5 font-semibold text-neutral-900 dark:text-neutral-100">
-                      <Money value={balanceByAccountId.get(acc.id) ?? 0} />
-                      <ChevronRight size={14} className="text-neutral-400" aria-hidden="true" />
-                    </span>
-                  </Link>
+                  <li key={acc.id}>
+                    <Link
+                      to={`/patrimonio/conta/${acc.id}`}
+                      className="flex min-h-12 w-full items-center justify-between gap-3 py-2.5 text-left transition-transform active:scale-[0.99]"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm text-neutral-700 dark:text-neutral-300">{acc.name}</p>
+                        {latest && (
+                          <p className="text-xs text-neutral-400">atualizado {ptDate(latest.snapshot_date)}</p>
+                        )}
+                      </div>
+                      <span className="flex shrink-0 items-center gap-1.5 font-semibold text-neutral-900 dark:text-neutral-100">
+                        <Money value={balanceByAccountId.get(acc.id) ?? 0} />
+                        <ChevronRight size={14} className="text-neutral-400" aria-hidden="true" />
+                      </span>
+                    </Link>
+                  </li>
                 )
               })}
-            </div>
-          </section>
+            </ul>
+          </SectionCard>
         )
       })}
 
-      <section>
-        <h3 className="mb-2 text-sm font-semibold text-neutral-500">Evolução (últimos 6 meses)</h3>
-        <div className="h-56 w-full rounded-xl border border-neutral-200 p-2 dark:border-neutral-800">
+      <SectionCard title="Evolução (últimos 6 meses)">
+        <div className="h-56 w-full">
           {hidden ? (
             <HiddenChartNotice />
           ) : (
@@ -502,7 +505,7 @@ export default function NetWorth() {
           )}
         </div>
         {missingMonths > 0 && !hidden && (
-          <div className="mt-2 flex items-start gap-2 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
+          <div className="mt-3 flex items-start gap-2 border-t border-neutral-200 pt-3 dark:border-neutral-800">
             <Info size={14} className="mt-0.5 shrink-0 text-neutral-400" aria-hidden="true" />
             <p className="text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">
               {missingMonths === 1 ? 'Falta 1 mês' : `Faltam ${missingMonths} meses`} na linha: antes
@@ -514,18 +517,13 @@ export default function NetWorth() {
             </p>
           </div>
         )}
-      </section>
+      </SectionCard>
 
-      <section>
-        <h3 className="mb-1.5 text-sm font-semibold text-neutral-500">Atualizar saldo de uma conta</h3>
-        <p className="mb-3 text-xs leading-relaxed text-neutral-400">
-          Regista quanto tens numa conta numa data — só afeta o património a partir desse dia,
-          nunca os meses anteriores.
-        </p>
-        <form
-          onSubmit={handleAddSnapshot}
-          className="space-y-4 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
-        >
+      <SectionCard
+        title="Atualizar saldo de uma conta"
+        hint="Regista quanto tens numa conta numa data — só afeta o património a partir desse dia, nunca os meses anteriores."
+      >
+        <form onSubmit={handleAddSnapshot} className="space-y-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-neutral-500">Conta</label>
             <select
@@ -570,11 +568,10 @@ export default function NetWorth() {
             {submitting ? 'A guardar...' : 'Guardar atualização'}
           </button>
         </form>
-      </section>
+      </SectionCard>
 
       {snapshots.length > 0 && (
-        <section>
-          <h3 className="mb-2 text-sm font-semibold text-neutral-500">Histórico de atualizações de saldo</h3>
+        <SectionCard title="Histórico de atualizações de saldo">
           <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
             {snapshots
               .slice((historyPage - 1) * HISTORY_PAGE_SIZE, historyPage * HISTORY_PAGE_SIZE)
@@ -620,17 +617,14 @@ export default function NetWorth() {
             totalPages={Math.ceil(snapshots.length / HISTORY_PAGE_SIZE)}
             onChange={setHistoryPage}
           />
-        </section>
+        </SectionCard>
       )}
 
       {transfers.length > 0 && (
-        <section>
-          <h3 className="mb-1.5 text-sm font-semibold text-neutral-500">Transferências entre contas</h3>
-          <p className="mb-3 text-xs leading-relaxed text-neutral-400">
-            Para mover dinheiro entre as tuas contas (ex.: Conta Corrente → XTB ao investir), usa a
-            opção "Mover para outra conta tua?" no Registo. Aqui fica o histórico, para apagar ou
-            desfazer.
-          </p>
+        <SectionCard
+          title="Transferências entre contas"
+          hint={'Para mover dinheiro entre as tuas contas (ex.: Conta Corrente → XTB ao investir), usa a opção "Mover para outra conta tua?" no Registo. Aqui fica o histórico, para apagar ou desfazer.'}
+        >
           <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
             {transfers
               .slice((transferHistoryPage - 1) * HISTORY_PAGE_SIZE, transferHistoryPage * HISTORY_PAGE_SIZE)
@@ -680,7 +674,7 @@ export default function NetWorth() {
             totalPages={Math.ceil(transfers.length / HISTORY_PAGE_SIZE)}
             onChange={setTransferHistoryPage}
           />
-        </section>
+        </SectionCard>
       )}
 
     </div>

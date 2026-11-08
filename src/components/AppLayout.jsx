@@ -85,7 +85,7 @@ export default function AppLayout() {
     // O +1px torna o documento sempre ligeiramente "scrollável". No iOS (PWA),
     // quando a página não faz scroll o ecrã útil encolhe e a barra fixa fica
     // a meio do ecrã (só acontecia em páginas curtas, como as Dívidas).
-    <div className="min-h-[calc(100lvh+1px)] bg-neutral-50 dark:bg-neutral-900">
+    <div className="min-h-[calc(100lvh+1px)] bg-neutral-50 dark:bg-neutral-950">
       {/* Folga extra além do que o iOS reporta como safe-area-inset-top: num
           ecrã (iPhone 17 Pro) o cabeçalho ficava tapado pela zona da
           câmara/Dynamic Island mesmo respeitando o mínimo reportado — um

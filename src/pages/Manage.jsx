@@ -2,6 +2,7 @@ import { Settings2, SlidersHorizontal, Tags, Wallet } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import BankStatementImportSection from '../components/BankStatementImportSection'
 import CategoryRulesSection from '../components/CategoryRulesSection'
+import { CARD_CLASS } from '../components/Card'
 import EntityManager from '../components/EntityManager'
 import { ErrorNotice, ListSkeleton } from '../components/Feedback'
 import ImportSection from '../components/ImportSection'
@@ -94,7 +95,9 @@ export default function Manage() {
     return <ErrorNotice message={error} onRetry={load} />
   }
 
-  const cardClass = 'rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900'
+  // Mesmo raio e mesmo fundo que os cartões do resto da app (ver Card.jsx) —
+  // este usava rounded-2xl e destoava de todas as outras páginas.
+  const cardClass = CARD_CLASS
 
   return (
     <div className="space-y-6">

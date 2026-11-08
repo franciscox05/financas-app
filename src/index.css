@@ -63,11 +63,14 @@ body {
   display: none; /* Chrome, Safari */
 }
 
+/* Um tom abaixo dos cartoes (neutral-900, #171717): com a pagina e o cartao na
+   mesma cor, cada bloco dependia so de uma borda de 1px para se distinguir.
+   Hierarquia: pagina #0a0a0a < cartao #171717 < campo de escrita #262626. */
 @media (prefers-color-scheme: dark) {
   html,
   body,
   #root {
-    background-color: #171717;
+    background-color: #0a0a0a;
   }
 }
 

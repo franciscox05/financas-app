@@ -1,5 +1,6 @@
 import { ArrowLeft, Phone, Target, StickyNote } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import Card from '../components/Card'
 import GoalsSection from '../components/GoalsSection'
 import MbwayPhoneSection from '../components/MbwayPhoneSection'
 import MyPhoneSection from '../components/MyPhoneSection'
@@ -10,7 +11,9 @@ import SignOutButton from '../components/SignOutButton'
 const focusRing =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
 
-const cardClass = 'space-y-3 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800'
+// Mesmo contentor e mesma hierarquia de título em todos os blocos da página —
+// antes o Perfil usava cartões sem fundo e a Gestão usava rounded-2xl com
+// fundo, duas caixas diferentes para o mesmo papel.
 const cardTitleClass =
   'flex items-center gap-1.5 text-sm font-semibold text-neutral-500'
 
@@ -30,27 +33,27 @@ export default function Profile() {
 
       <PersonalInfoSection />
 
-      <section className={cardClass}>
+      <Card as="section" className="space-y-3">
         <h2 className={cardTitleClass}>
           <Phone size={14} aria-hidden="true" /> Contactos para Amigos
         </h2>
         <MyPhoneSection />
         <MbwayPhoneSection />
-      </section>
+      </Card>
 
-      <section className={cardClass}>
+      <Card as="section" className="space-y-3">
         <h2 className={cardTitleClass}>
           <Target size={14} aria-hidden="true" /> Objetivos
         </h2>
         <GoalsSection />
-      </section>
+      </Card>
 
-      <section className={cardClass}>
+      <Card as="section" className="space-y-3">
         <h2 className={cardTitleClass}>
           <StickyNote size={14} aria-hidden="true" /> Notas
         </h2>
         <NotesCalendar />
-      </section>
+      </Card>
 
       <SignOutButton />
     </div>
