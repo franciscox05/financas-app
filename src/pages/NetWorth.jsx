@@ -42,6 +42,13 @@ const LINE_COLOR = '#2a78d6'
 // deves). A escolha fica no dispositivo, como o modo privacidade.
 const VIEW_STORAGE_KEY = 'financasapp:networth-view'
 
+// Divisão visual pedida pelo Francisco: liquidez e investimento são dinheiros
+// com naturezas diferentes e deixam de aparecer numa lista corrida só.
+const ACCOUNT_SEGMENTS = [
+  { type: 'cash', label: 'Liquidez', hint: 'Contas à ordem, poupança e dinheiro físico' },
+  { type: 'investment', label: 'Investimento', hint: 'Valor atualizado pelos saldos que registas' },
+]
+
 const VIEW_OPTIONS = [
   { value: 'net', label: 'Líquido' },
   { value: 'global', label: 'Global' },
@@ -409,44 +416,45 @@ export default function NetWorth() {
         </div>
       )}
 
-      <section className="grid grid-cols-1 gap-2">
-        {cashAccounts.map((acc) => (
-          <Link
-            key={acc.id}
-            to={`/patrimonio/conta/${acc.id}`}
-            className="flex w-full items-center justify-between rounded-xl border border-neutral-200 p-3 text-left transition-transform active:scale-[0.99] dark:border-neutral-800"
-          >
-            <span className="text-sm text-neutral-700 dark:text-neutral-300">{acc.name}</span>
-            <span className="flex items-center gap-1.5 font-semibold text-neutral-900 dark:text-neutral-100">
-              <Money value={balanceByAccountId.get(acc.id) ?? 0} />
-              <ChevronRight size={14} className="text-neutral-400" aria-hidden="true" />
-            </span>
-          </Link>
-        ))}
-        {investmentAccounts.map((acc) => {
-          const latest = latestByAccount.get(acc.id)
-          return (
-            <Link
-              key={acc.id}
-              to={`/patrimonio/conta/${acc.id}`}
-              className="flex w-full items-center justify-between rounded-xl border border-neutral-200 p-3 text-left transition-transform active:scale-[0.99] dark:border-neutral-800"
-            >
-              <div>
-                <p className="text-sm text-neutral-700 dark:text-neutral-300">{acc.name}</p>
-                {latest && (
-                  <p className="text-xs text-neutral-400">
-                    atualizado {ptDate(latest.snapshot_date)}
-                  </p>
-                )}
-              </div>
-              <span className="flex items-center gap-1.5 font-semibold text-neutral-900 dark:text-neutral-100">
-                <Money value={balanceByAccountId.get(acc.id) ?? 0} />
-                <ChevronRight size={14} className="text-neutral-400" aria-hidden="true" />
+      {ACCOUNT_SEGMENTS.map((segment) => {
+        const segmentAccounts = segment.type === 'cash' ? cashAccounts : investmentAccounts
+        if (segmentAccounts.length === 0) return null
+        const subtotal = segment.type === 'cash' ? cashBalance : investmentTotal
+        return (
+          <section key={segment.type}>
+            <div className="mb-2 flex items-baseline justify-between gap-2">
+              <h3 className="text-sm font-semibold text-neutral-500">{segment.label}</h3>
+              <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                <Money value={subtotal} />
               </span>
-            </Link>
-          )
-        })}
-      </section>
+            </div>
+            <p className="mb-2 text-xs text-neutral-400">{segment.hint}</p>
+            <div className="grid grid-cols-1 gap-2">
+              {segmentAccounts.map((acc) => {
+                const latest = latestByAccount.get(acc.id)
+                return (
+                  <Link
+                    key={acc.id}
+                    to={`/patrimonio/conta/${acc.id}`}
+                    className="flex w-full items-center justify-between rounded-xl border border-neutral-200 p-3 text-left transition-transform active:scale-[0.99] dark:border-neutral-800"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm text-neutral-700 dark:text-neutral-300">{acc.name}</p>
+                      {latest && (
+                        <p className="text-xs text-neutral-400">atualizado {ptDate(latest.snapshot_date)}</p>
+                      )}
+                    </div>
+                    <span className="flex shrink-0 items-center gap-1.5 font-semibold text-neutral-900 dark:text-neutral-100">
+                      <Money value={balanceByAccountId.get(acc.id) ?? 0} />
+                      <ChevronRight size={14} className="text-neutral-400" aria-hidden="true" />
+                    </span>
+                  </Link>
+                )
+              })}
+            </div>
+          </section>
+        )
+      })}
 
       <section>
         <h3 className="mb-2 text-sm font-semibold text-neutral-500">Evolução (últimos 6 meses)</h3>

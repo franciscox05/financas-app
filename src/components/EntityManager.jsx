@@ -1,4 +1,4 @@
-import { Pencil, PiggyBank, TrendingUp, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Pencil, PiggyBank, TrendingUp, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { parseBalanceValue } from '../lib/balanceInput'
@@ -20,6 +20,9 @@ function ManageRow({
   onDelete,
   onToggleSavings,
   onQuickSnapshot,
+  onMove, // (direction) => void; ausente = esta lista não é reordenável
+  canMoveUp,
+  canMoveDown,
 }) {
   const [editing, setEditing] = useState(false)
   const [updatingBalance, setUpdatingBalance] = useState(false)
@@ -147,6 +150,28 @@ function ManageRow({
           )}
         </span>
         <div className="flex shrink-0 items-center gap-2">
+          {onMove && (
+            <span className="flex items-center">
+              <button
+                type="button"
+                onClick={() => onMove('up')}
+                disabled={!canMoveUp}
+                aria-label={`Mover ${item.name} para cima`}
+                className="rounded p-1 text-neutral-400 hover:text-neutral-900 disabled:opacity-25 dark:hover:text-neutral-100"
+              >
+                <ChevronUp size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => onMove('down')}
+                disabled={!canMoveDown}
+                aria-label={`Mover ${item.name} para baixo`}
+                className="rounded p-1 text-neutral-400 hover:text-neutral-900 disabled:opacity-25 dark:hover:text-neutral-100"
+              >
+                <ChevronDown size={16} />
+              </button>
+            </span>
+          )}
           {onToggleSavings && item.type === 'expense' && (
             <button
               type="button"
@@ -270,6 +295,7 @@ export default function EntityManager({
   onDelete,
   onToggleSavings,
   onQuickSnapshot,
+  onReorder, // (groupItems, id, 'up'|'down') => Promise; só as contas usam
 }) {
   const toast = useToast()
   const [newName, setNewName] = useState('')
@@ -354,6 +380,16 @@ export default function EntityManager({
     }
   }
 
+  // A troca é com a vizinha VISÍVEL (dentro do mesmo grupo), não com a vizinha
+  // na ordem global: é o que o utilizador vê e espera mexer.
+  async function handleMove(groupItems, id, direction) {
+    try {
+      await onReorder(groupItems, id, direction)
+    } catch (err) {
+      toast.error(`Não foi possível reordenar: ${err.message}`)
+    }
+  }
+
   async function handleToggleSavings(item, value) {
     try {
       await onToggleSavings(item, value)
@@ -405,10 +441,13 @@ export default function EntityManager({
               <p className="py-2 text-sm text-neutral-500">Sem {noun}s deste tipo.</p>
             ) : (
               <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
-                {groupItems.map((item) => (
+                {groupItems.map((item, index) => (
                   <ManageRow
                     key={item.id}
                     item={item}
+                    onMove={onReorder ? (direction) => handleMove(groupItems, item.id, direction) : undefined}
+                    canMoveUp={index > 0}
+                    canMoveDown={index < groupItems.length - 1}
                     siblings={siblingsOf(group.type)}
                     canDelete={pool.length > 1}
                     deleteHint={`Tem de existir pelo menos uma ${noun}${scope === 'group' ? ' deste tipo' : ''}.`}

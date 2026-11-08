@@ -13,9 +13,10 @@ import { useNavigate } from 'react-router-dom'
 import MonthCalendar from '../components/MonthCalendar'
 import CategoryDrilldownModal from '../components/CategoryDrilldownModal'
 import MonthPicker from '../components/MonthPicker'
+import MonthlyReportButtons from '../components/MonthlyReportButtons'
 import { EmptyState, ErrorNotice, ListSkeleton, Skeleton } from '../components/Feedback'
 import { listCategories, listTransactionsInRange } from '../lib/db'
-import { addMonths, monthKey, monthStart, shortMonthLabel, toIsoDate } from '../lib/dates'
+import { addMonths, monthKey, monthLabel, monthStart, shortMonthLabel, toIsoDate } from '../lib/dates'
 import Money from '../components/Money'
 import { usePrivacy } from '../context/privacyContext'
 import HiddenChartNotice from '../components/HiddenChartNotice'
@@ -203,6 +204,27 @@ export default function Balance() {
     Gastos: Number(b.expense.toFixed(2)),
   }))
 
+  // Tudo o que o relatório precisa já está calculado para o ecrã — exportar não
+  // faz pedidos novos nem recalcula nada por outro caminho (um relatório que
+  // discordasse do que está no ecrã seria pior do que não existir).
+  const report = useMemo(
+    () => ({
+      monthLabel: monthLabel(selectedMonth),
+      income: selectedBucket?.income ?? 0,
+      expense: selectedBucket?.expense ?? 0,
+      savingsAmount,
+      expenseByCategory: categoryBreakdown,
+      incomeByCategory: incomeBreakdown,
+      transactions: selectedBucket?.txs ?? [],
+      evolution: sixMonthData.map((b) => ({
+        label: shortMonthLabel(b.date),
+        income: b.income,
+        expense: b.expense,
+      })),
+    }),
+    [selectedMonth, selectedBucket, savingsAmount, categoryBreakdown, incomeBreakdown, sixMonthData],
+  )
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -362,6 +384,8 @@ export default function Balance() {
           )}
         </div>
       </section>
+
+      <MonthlyReportButtons report={report} monthKey={monthKey(selectedMonth)} />
     </div>
   )
 }

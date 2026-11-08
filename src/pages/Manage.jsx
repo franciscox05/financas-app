@@ -21,6 +21,7 @@ import {
   listTransfers,
   renameAccount,
   renameCategory,
+  swapAccountOrder,
   updateCategorySavingsFlag,
 } from '../lib/db'
 
@@ -35,6 +36,11 @@ const CATEGORY_GROUPS = [
 ]
 
 const byName = (a, b) => a.name.localeCompare(b.name, 'pt')
+
+// As contas seguem a ordem manual (`sort_order`, definida com as setas nesta
+// página); o nome é só o desempate, como em `listAccounts`.
+const byAccountOrder = (a, b) =>
+  (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name, 'pt')
 
 export default function Manage() {
   const [accounts, setAccounts] = useState([])
@@ -113,18 +119,22 @@ export default function Manage() {
           deleteWarning="Só é possível apagar se não tiver transações, transferências, atualizações de saldo ou dívidas associadas."
           onCreate={async (values) => {
             const created = await createAccount(values)
-            setAccounts((prev) => [...prev, created].sort(byName))
+            setAccounts((prev) => [...prev, created].sort(byAccountOrder))
             return created
           }}
           onRename={async (item, name) => {
             const updated = await renameAccount(item.id, name)
-            setAccounts((prev) => prev.map((a) => (a.id === item.id ? updated : a)).sort(byName))
+            setAccounts((prev) => prev.map((a) => (a.id === item.id ? updated : a)).sort(byAccountOrder))
           }}
           onDelete={async (item) => {
             await deleteAccount(item.id)
             setAccounts((prev) => prev.filter((a) => a.id !== item.id))
           }}
           balances={accountBalances}
+          onReorder={async (groupItems, id, direction) => {
+            await swapAccountOrder(groupItems, id, direction)
+            setAccounts(await listAccounts())
+          }}
           onQuickSnapshot={async (item, value) => {
             const created = await createSnapshot({
               accountId: item.id,

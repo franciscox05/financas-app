@@ -13,9 +13,11 @@ export async function getCurrentUserId() {
 let accountsCache = null
 let categoriesCache = null
 
+// Ordem manual primeiro (`sort_order`, definida em Gestão) e o nome só como
+// desempate — ver migration 20261110020000_accounts_sort_order.sql.
 export async function listAccounts() {
   if (accountsCache) return accountsCache
-  const { data, error } = await supabase.from('accounts').select('*').order('name')
+  const { data, error } = await supabase.from('accounts').select('*').order('sort_order').order('name')
   if (error) throw error
   accountsCache = data
   return data
@@ -339,14 +341,44 @@ export async function createAccount({ name, type }) {
   const { data: userData, error: userError } = await supabase.auth.getUser()
   if (userError) throw userError
 
+  // Entra no fim da ordem manual, não no início (o default 0 da coluna punha
+  // cada conta nova à frente de todas as outras).
+  const existing = await listAccounts()
+  const nextOrder = existing.reduce((max, a) => Math.max(max, a.sort_order ?? 0), 0) + 1
+
   const { data, error } = await supabase
     .from('accounts')
-    .insert({ user_id: userData.user.id, name, type })
+    .insert({ user_id: userData.user.id, name, type, sort_order: nextOrder })
     .select()
     .single()
   if (error) throw error
   accountsCache = null
   return data
+}
+
+// Troca uma conta com a vizinha, para cima ou para baixo. Dois updates em vez
+// de reescrever a lista toda: é o suficiente para botões de setas e não toca em
+// nada que não mude. `accounts` é a lista já na ordem mostrada ao utilizador.
+export async function swapAccountOrder(accounts, id, direction) {
+  const index = accounts.findIndex((a) => a.id === id)
+  const target = index + (direction === 'up' ? -1 : 1)
+  if (index < 0 || target < 0 || target >= accounts.length) return
+
+  const a = accounts[index]
+  const b = accounts[target]
+  // Se as posições estiverem empatadas (dados antigos), usa o índice da lista
+  // para garantir que a troca produz valores diferentes.
+  const aOrder = a.sort_order ?? index + 1
+  const bOrder = b.sort_order ?? target + 1
+  const [newA, newB] = aOrder === bOrder ? [target + 1, index + 1] : [bOrder, aOrder]
+
+  const results = await Promise.all([
+    supabase.from('accounts').update({ sort_order: newA }).eq('id', a.id),
+    supabase.from('accounts').update({ sort_order: newB }).eq('id', b.id),
+  ])
+  const failed = results.find((r) => r.error)
+  if (failed) throw failed.error
+  accountsCache = null
 }
 
 export async function renameAccount(id, name) {
