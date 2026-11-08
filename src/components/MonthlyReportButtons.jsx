@@ -48,10 +48,15 @@ export default function MonthlyReportButtons({ report, monthKey }) {
 
   return (
     <div className="space-y-2 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
-      <h3 className="text-sm font-semibold text-neutral-500">Relatório do mês</h3>
+      {/* O mês exportado é sempre o que está ativo no MonthPicker no topo do
+          ecrã — nunca "hoje". Nomeá-lo aqui explicitamente evita a dúvida de
+          gerar o relatório a pensar que é de um mês e descarregar de outro;
+          trocar de mês é mexer no MonthPicker já visível em cima, não precisa
+          de um segundo seletor duplicado aqui. */}
+      <h3 className="text-sm font-semibold text-neutral-500">Relatório de {report.monthLabel}</h3>
       <p className="text-xs leading-relaxed text-neutral-400">
         Extrato em PDF com os KPIs do mês, despesas e receitas por categoria e as maiores despesas —
-        pronto a guardar ou partilhar.
+        pronto a guardar ou partilhar. Para exportar outro mês, muda-o no seletor no topo do ecrã.
       </p>
       <div className="flex gap-2 pt-1">
         <button type="button" onClick={handleDownloadPdf} disabled={generating} className={primaryClass}>

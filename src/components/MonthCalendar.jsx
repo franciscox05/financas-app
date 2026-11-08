@@ -84,7 +84,7 @@ export default function MonthCalendar({ monthDate, transactions }) {
 
   return (
     <Card as="section" className="space-y-3">
-      <h3 className="text-sm font-semibold text-neutral-500">Calendário do mês</h3>
+      <h3 className="text-center text-sm font-semibold text-neutral-500">Calendário do mês</h3>
 
       <div className="space-y-3">
         <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-neutral-400">
