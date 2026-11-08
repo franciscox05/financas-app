@@ -1,4 +1,4 @@
-import { FileSpreadsheet, TriangleAlert, Upload } from 'lucide-react'
+import { ArrowLeftRight, FileSpreadsheet, TriangleAlert, Upload } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import CollapsibleSection from './CollapsibleSection'
 import { useToast } from '../context/toastContext'
@@ -11,6 +11,11 @@ import { eur } from '../lib/format'
 const selectClass =
   'w-full rounded-lg border border-neutral-300 px-3 py-2.5 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100'
 const inputClass = selectClass
+
+const ROW_TYPES = [
+  { value: 'expense', label: 'Gasto' },
+  { value: 'income', label: 'Ganho' },
+]
 
 export default function BankStatementImportSection({ accounts, categories }) {
   const toast = useToast()
@@ -25,6 +30,7 @@ export default function BankStatementImportSection({ accounts, categories }) {
   const [rows, setRows] = useState(null) // linhas prontas para revisão (fase 3)
   const [defaultAccountId, setDefaultAccountId] = useState('')
   const [bulkCategoryId, setBulkCategoryId] = useState('')
+  const [categoryRules, setCategoryRules] = useState([])
   const [importing, setImporting] = useState(false)
 
   const needsManualMapping = detection && !detection.confident && !manualColumns
@@ -65,6 +71,8 @@ export default function BankStatementImportSection({ accounts, categories }) {
       const existingKeys = new Set(
         existing.map((t) => `${t.occurred_on}|${Number(t.amount)}|${normalize(t.note || '')}`),
       )
+
+      setCategoryRules(rules)
 
       const account = accounts.find((a) => a.type === 'cash')?.id ?? accounts[0]?.id ?? ''
       setDefaultAccountId(account)
@@ -113,6 +121,30 @@ export default function BankStatementImportSection({ accounts, categories }) {
   function applyDefaultAccountToAll(accountId) {
     setDefaultAccountId(accountId)
     setRows((prev) => prev.map((r) => ({ ...r, accountId })))
+  }
+
+  // Trocar Gasto/Ganho tem de re-sugerir a categoria: as categorias são de um
+  // tipo só, e manter a antiga deixaria a linha com uma categoria de gastos num
+  // ganho (o <select> ficava vazio e a gravação era rejeitada).
+  function changeRowType(index, type) {
+    setRows((prev) =>
+      prev.map((r) =>
+        r.index === index ? { ...r, type, categoryId: defaultCategoryFor(type, categoryRules, r.note) } : r,
+      ),
+    )
+  }
+
+  // Alguns bancos exportam os gastos como valores positivos (ou invertem as
+  // colunas Débito/Crédito): aí o extrato inteiro entra ao contrário e trocar
+  // linha a linha seria impraticável.
+  function invertAllTypes() {
+    setRows((prev) =>
+      prev.map((r) => {
+        if (r.invalid) return r
+        const type = r.type === 'income' ? 'expense' : 'income'
+        return { ...r, type, categoryId: defaultCategoryFor(type, categoryRules, r.note) }
+      }),
+    )
   }
 
   function applyBulkCategory() {
@@ -239,6 +271,18 @@ export default function BankStatementImportSection({ accounts, categories }) {
                 </div>
               </div>
             </div>
+            <button
+              type="button"
+              onClick={invertAllTypes}
+              className="flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-amber-300 px-3 text-xs font-medium text-amber-800 dark:border-amber-800 dark:text-amber-300"
+            >
+              <ArrowLeftRight size={12} aria-hidden="true" />
+              Trocar Gasto ↔ Ganho em todas
+            </button>
+            <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400">
+              Usa isto se o teu banco exportar os gastos como valores positivos e o extrato tiver
+              entrado todo ao contrário.
+            </p>
           </div>
 
           <p className="text-xs text-neutral-500">
@@ -253,6 +297,7 @@ export default function BankStatementImportSection({ accounts, categories }) {
                 accounts={accounts}
                 categories={categories.filter((c) => c.type === row.type)}
                 onChange={(changes) => updateRow(row.index, changes)}
+                onTypeChange={(type) => changeRowType(row.index, type)}
               />
             ))}
           </ul>
@@ -280,7 +325,7 @@ export default function BankStatementImportSection({ accounts, categories }) {
   )
 }
 
-function RowCard({ row, accounts, categories, onChange }) {
+function RowCard({ row, accounts, categories, onChange, onTypeChange }) {
   return (
     <li
       className={`space-y-2 rounded-xl border p-3 ${
@@ -319,6 +364,24 @@ function RowCard({ row, accounts, categories, onChange }) {
 
       {!row.invalid && (
         <div className="space-y-2 pl-6">
+          <div role="group" aria-label="Gasto ou ganho" className="flex rounded-lg bg-neutral-100 p-0.5 dark:bg-neutral-800">
+            {ROW_TYPES.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                disabled={!row.included}
+                onClick={() => onTypeChange(opt.value)}
+                aria-pressed={row.type === opt.value}
+                className={`min-h-8 flex-1 rounded-md text-xs font-medium transition-colors disabled:opacity-50 ${
+                  row.type === opt.value
+                    ? 'bg-white text-neutral-900 shadow-sm dark:bg-neutral-700 dark:text-neutral-100'
+                    : 'text-neutral-500 dark:text-neutral-400'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
           <input
             type="text"
             value={row.note}

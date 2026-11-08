@@ -85,9 +85,14 @@ export async function listTransactionsPage({
     q = q.ilike('note', `%${term}%`)
   }
 
+  // O `id` é o desempate final e tem de estar aqui: um insert em bloco (o
+  // importador de CSV, via createTransactionsBulk) dá o MESMO created_at a
+  // todas as linhas, e com (occurred_on, created_at) empatados a ordem entre
+  // páginas não é determinada — uma linha podia aparecer duas vezes ou nunca.
   q = q
     .order('occurred_on', { ascending: false })
     .order('created_at', { ascending: false })
+    .order('id')
     .range(offset, offset + limit - 1)
 
   const { data, error, count } = await q
@@ -120,9 +125,14 @@ export async function listMovementsPage({ limit, offset, type, accountId, catego
     q = q.ilike('note', `%${term}%`)
   }
 
+  // O `id` é o desempate final e tem de estar aqui: um insert em bloco (o
+  // importador de CSV, via createTransactionsBulk) dá o MESMO created_at a
+  // todas as linhas, e com (occurred_on, created_at) empatados a ordem entre
+  // páginas não é determinada — uma linha podia aparecer duas vezes ou nunca.
   q = q
     .order('occurred_on', { ascending: false })
     .order('created_at', { ascending: false })
+    .order('id')
     .range(offset, offset + limit - 1)
 
   const { data, error, count } = await q
@@ -165,7 +175,14 @@ export async function listTransactionsInRange({ from, to }) {
     source: 'transfer',
   }))
 
-  return [...data, ...transfersAsExpense].sort((a, b) => (a.occurred_on < b.occurred_on ? -1 : 1))
+  // Desempate por created_at e id: com só `occurred_on` o comparador devolve 1
+  // para datas iguais (nunca 0), o que não é uma ordem estável e fazia a lista
+  // trocar de ordem entre renders em dias com vários movimentos.
+  return [...data, ...transfersAsExpense].sort((a, b) => {
+    if (a.occurred_on !== b.occurred_on) return a.occurred_on < b.occurred_on ? -1 : 1
+    if (a.created_at !== b.created_at) return a.created_at < b.created_at ? -1 : 1
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+  })
 }
 
 export async function createTransaction({ amount, type, accountId, categoryId, occurredOn, note }) {
