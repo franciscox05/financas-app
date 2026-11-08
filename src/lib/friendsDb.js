@@ -112,6 +112,18 @@ export async function listEntries(friendId) {
   return data
 }
 
+// Todos os movimentos de conta-corrente, de todos os amigos, com o mínimo para
+// `entryCounts`/`signedCents` (ledgerMath) decidirem o que conta e com que
+// sinal. Para o Património: o saldo de amigos de hoje e, no modo Global, o de
+// cada mês passado — `friend_balances` só dá o total de agora, sem datas.
+export async function listAllLedgerEntriesForBalance() {
+  const { data, error } = await supabase
+    .from('ledger_entries')
+    .select('friend_id, kind, amount, occurred_on, status, created_by, user_id, cancel_requested_by')
+  if (error) throw error
+  return data
+}
+
 // Um movimento + o amigo a que pertence, para o modal de detalhe em Registo
 // mostrar as mesmas ações (aceitar/contestar/cancelar/apagar) que já existem
 // na página do amigo, sem duplicar essa lógica.
@@ -219,8 +231,31 @@ export async function createRepayment({
 // nunca deixe o movimento desaparecido com a transação ainda na conta (o inverso do que fazia
 // antes: apagar o movimento primeiro arriscava perder a única referência à transação a apagar
 // se o segundo delete falhasse). A FK é on delete set null, não em cascata, por isso é explícito.
+//
+// O teste já não é `settlement === 'bank'`: se há `transaction_id`, houve dinheiro a mover-se numa
+// conta, qualquer que seja o settlement. O `settlement` só é preenchido por `createRepayment`/
+// `createLinkedEntry` — o "Paguei eu" do NewExpenseSheet cria a transação e chama `createExpense`,
+// que o deixa a NULL. Com o teste antigo, apagar essa dívida deixava a transação órfã na conta (FK
+// a NULL, invisível no conta-corrente) e recriá-la somava um segundo gasto igual: foi assim que um
+// empréstimo de 4.490€ passou a pesar 8.980€ no património.
+//
+// Mas não basta "tem transação, apaga": num gasto dividido por várias pessoas, TODAS as entradas
+// apontam para a MESMA transação (QuickEntryForm passa o mesmo `transactionId` a cada parte). Aí a
+// transação é do gasto todo e não pode ir embora com a parte de um amigo só — por isso só se apaga
+// quando esta entrada é a última a referenciá-la. Com mais partes, sai só a entrada.
 export async function deleteEntry(entry) {
-  if (entry.settlement === 'bank' && entry.transaction_id) {
+  let deleteTransactionToo = false
+  if (entry.transaction_id) {
+    const { count, error: countError } = await supabase
+      .from('ledger_entries')
+      .select('id', { count: 'exact', head: true })
+      .eq('transaction_id', entry.transaction_id)
+      .neq('id', entry.id)
+    if (countError) throw countError
+    deleteTransactionToo = (count ?? 0) === 0
+  }
+
+  if (deleteTransactionToo) {
     const { error: txError } = await supabase.from('transactions').delete().eq('id', entry.transaction_id)
     if (txError) throw txError
   }

@@ -86,17 +86,29 @@ export async function deleteGoal(id) {
   if (error) throw error
 }
 
+// Ordenado por `noted_on` (o dia a que a nota se refere) e, dentro do mesmo
+// dia, pela ordem em que foram escritas.
 export async function listNotes() {
-  const { data, error } = await supabase.from('notes').select('*').order('created_at', { ascending: false })
+  const { data, error } = await supabase
+    .from('notes')
+    .select('*')
+    .order('noted_on', { ascending: false })
+    .order('created_at', { ascending: false })
   if (error) throw error
   return data
 }
 
-export async function createNote(body) {
+// `notedOn` é o dia a que a nota se refere (o dia aberto no calendário). Sem
+// ele, a base usa o default `current_date` — hoje.
+export async function createNote(body, notedOn) {
   const userId = await getCurrentUserId()
   const trimmed = body.trim()
   if (!trimmed) throw new Error('Escreve algo para guardar.')
-  const { data, error } = await supabase.from('notes').insert({ user_id: userId, body: trimmed }).select().single()
+  const { data, error } = await supabase
+    .from('notes')
+    .insert({ user_id: userId, body: trimmed, ...(notedOn ? { noted_on: notedOn } : {}) })
+    .select()
+    .single()
   if (error) throw error
   return data
 }

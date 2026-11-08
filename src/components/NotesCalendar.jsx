@@ -109,10 +109,15 @@ function NoteRow({ note, onSaved, onDeleteRequest }) {
 // Notas em formato de calendário: cada dia com notas leva um ponto por baixo
 // do número (mesma lógica visual de grelha do MonthCalendar.jsx do Balanço,
 // adaptada — aqui a célula só precisa de um indicador, não de um valor em
-// euros). Clicar num dia abre as notas desse dia para ler/editar/apagar; o
-// composer de nova nota só aparece no dia de hoje, porque createNote() usa
-// sempre a data real de criação (como em todo o resto da app, created_at
-// nunca é escolhido à mão pelo utilizador).
+// euros). Clicar num dia abre as notas desse dia para ler, editar, apagar e
+// escrever uma nova.
+//
+// Antes o composer só aparecia no dia de hoje, porque a tabela não tinha data
+// de nota e o agrupamento usava `created_at` — qualquer outro dia ficava sem
+// caixa de escrita. A coluna `noted_on` (migration 20261110010000) separa "o
+// dia a que a nota se refere" de "quando foi escrita", e é por ela que se
+// agrupa: deixa de haver dia só de leitura e resolve o desvio de fuso horário
+// que punha uma nota escrita depois da meia-noite no dia anterior.
 export default function NotesCalendar() {
   const toast = useToast()
   const [selectedMonth, setSelectedMonth] = useState(() => monthStart(new Date()))
@@ -156,7 +161,7 @@ export default function NotesCalendar() {
   const byDay = useMemo(() => {
     const map = new Map()
     for (const note of notes) {
-      const iso = note.created_at.slice(0, 10)
+      const iso = note.noted_on ?? note.created_at.slice(0, 10)
       if (iso.slice(0, 7) !== monthKey(selectedMonth)) continue
       const day = Number(iso.slice(8, 10))
       if (!map.has(day)) map.set(day, [])
@@ -170,6 +175,9 @@ export default function NotesCalendar() {
   for (let d = 1; d <= daysInMonth; d++) cells.push(d)
 
   const dayNotes = selectedDay ? (byDay.get(selectedDay) ?? []) : []
+  const selectedIso = selectedDay
+    ? `${monthKey(selectedMonth)}-${String(selectedDay).padStart(2, '0')}`
+    : null
   const isSelectedToday = isCurrentMonth && selectedDay === todayDay
 
   function openDay(day) {
@@ -184,7 +192,7 @@ export default function NotesCalendar() {
     setAdding(true)
     setAddError('')
     try {
-      const created = await createNote(newBody)
+      const created = await createNote(newBody, selectedIso)
       if (!mounted.current) return
       setNotes((prev) => [created, ...prev])
       setNewBody('')
@@ -259,15 +267,12 @@ export default function NotesCalendar() {
         })}
       </div>
 
-      {notes.length === 0 && <EmptyState title="Ainda sem notas" description="Escreve a primeira no dia de hoje." />}
+      {notes.length === 0 && <EmptyState title="Ainda sem notas" description="Toca num dia para escrever a primeira." />}
 
       <Modal open={selectedDay !== null} onClose={() => setSelectedDay(null)} labelledBy="notes-day-title">
         <h2 id="notes-day-title" className="mb-3 text-base font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
-          {selectedDay &&
-            shortDate(
-              `${monthKey(selectedMonth)}-${String(selectedDay).padStart(2, '0')}`,
-              { withYear: true },
-            )}
+          {selectedIso && shortDate(selectedIso, { withYear: true })}
+          {isSelectedToday && <span className="ml-2 text-xs font-normal text-neutral-400">hoje</span>}
         </h2>
 
         {dayNotes.length === 0 ? (
@@ -280,34 +285,32 @@ export default function NotesCalendar() {
           </ul>
         )}
 
-        {isSelectedToday && (
-          <form onSubmit={handleAdd} className="mt-3 space-y-2 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
-            <label htmlFor="new-note-body" className="sr-only">
-              Nova nota
-            </label>
-            <textarea
-              id="new-note-body"
-              rows={3}
-              placeholder="Escreve uma nota..."
-              value={newBody}
-              disabled={adding}
-              onChange={(e) => setNewBody(e.target.value)}
-              className={inputClass}
-            />
-            {addError && (
-              <p role="alert" className="text-sm text-red-600 dark:text-red-400">
-                {addError}
-              </p>
-            )}
-            <button
-              type="submit"
-              disabled={adding || !newBody.trim()}
-              className={`min-h-11 w-full rounded-lg bg-neutral-900 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900 ${focusRing}`}
-            >
-              {adding ? 'A guardar...' : 'Guardar nota'}
-            </button>
-          </form>
+        <form onSubmit={handleAdd} className="mt-3 space-y-2 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
+        <label htmlFor="new-note-body" className="sr-only">
+          Nova nota
+        </label>
+        <textarea
+          id="new-note-body"
+          rows={3}
+          placeholder={isSelectedToday ? 'Escreve uma nota...' : 'Escreve uma nota para este dia...'}
+          value={newBody}
+          disabled={adding}
+          onChange={(e) => setNewBody(e.target.value)}
+          className={inputClass}
+        />
+        {addError && (
+          <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+            {addError}
+          </p>
         )}
+        <button
+          type="submit"
+          disabled={adding || !newBody.trim()}
+          className={`min-h-11 w-full rounded-lg bg-neutral-900 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900 ${focusRing}`}
+        >
+          {adding ? 'A guardar...' : 'Guardar nota'}
+        </button>
+        </form>
       </Modal>
 
       <ConfirmDialog

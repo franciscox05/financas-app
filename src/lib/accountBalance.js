@@ -21,6 +21,35 @@ export function reflectedInSnapshot(movement, snapshot) {
   return new Date(movement.created_at) <= new Date(snapshot.created_at)
 }
 
+// Há base fiável para o saldo desta conta nesta data?
+//
+// Sem nenhum snapshot até `asOfDate`, `balanceAt()` arranca do zero e soma
+// todas as transações da conta desde sempre — o que não é o saldo desse dia, é
+// o fluxo de caixa acumulado. Para o saldo de hoje a diferença passa
+// despercebida, mas num gráfico histórico é um valor inventado: uma única
+// transação com data antiga (ex.: um empréstimo de 2025 registado agora) entra
+// com o peso total em todos os pontos anteriores ao primeiro snapshot e
+// afunda-os, enquanto os meses que já têm snapshot ficam intactos.
+//
+// Uma conta que nunca teve snapshot nenhum é caso diferente: aí a soma desde
+// sempre é o único modelo que existe e é o comportamento de sempre (quem só
+// registou transações desde o início). Só quem usa snapshots é que tem um
+// "antes de haver saldo conhecido".
+export function hasReliableBaseline(accountId, snapshots, asOfDate) {
+  const own = snapshots.filter((s) => s.account_id === accountId)
+  if (own.length === 0) return true
+  return own.some((s) => s.snapshot_date <= asOfDate)
+}
+
+// Idem para um conjunto de contas (um ponto do gráfico de património): só é
+// fiável se todas as contas que já existiam nessa data tiverem base. Uma conta
+// criada depois não conta — não ter saldo antes de existir não é falta de dados.
+export function groupHasReliableBaseline(accounts, snapshots, asOfDate) {
+  return accounts
+    .filter((a) => !a.created_at || a.created_at.slice(0, 10) <= asOfDate)
+    .every((a) => hasReliableBaseline(a.id, snapshots, asOfDate))
+}
+
 export function balanceAt(accountId, transactions, snapshots, asOfDate, transfers = []) {
   const latestSnapshot = snapshots
     .filter((s) => s.account_id === accountId && s.snapshot_date <= asOfDate)

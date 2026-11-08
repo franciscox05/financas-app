@@ -1,4 +1,4 @@
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Info, Users } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
@@ -23,7 +23,9 @@ import {
 import { Trash2 } from 'lucide-react'
 import { ErrorNotice, Pager, Skeleton } from '../components/Feedback'
 import { useToast } from '../context/toastContext'
-import { balanceAt } from '../lib/accountBalance'
+import { listAllLedgerEntriesForBalance } from '../lib/friendsDb'
+import { balanceOfAt, receivablesAndPayables } from '../lib/ledgerMath'
+import { balanceAt, groupHasReliableBaseline } from '../lib/accountBalance'
 import { parseBalanceValue } from '../lib/balanceInput'
 import { addMonths, endOfMonth, monthStart, shortMonthLabel, toIsoDate, today } from '../lib/dates'
 import Money from '../components/Money'
@@ -34,6 +36,24 @@ import { eur, ptDate } from '../lib/format'
 const HISTORY_PAGE_SIZE = 10
 
 const LINE_COLOR = '#2a78d6'
+
+// "Líquido" conta só o dinheiro que é teu e está nas tuas contas; "Global"
+// junta-lhe o saldo da conta-corrente de amigos (o que te devem menos o que
+// deves). A escolha fica no dispositivo, como o modo privacidade.
+const VIEW_STORAGE_KEY = 'financasapp:networth-view'
+
+const VIEW_OPTIONS = [
+  { value: 'net', label: 'Líquido' },
+  { value: 'global', label: 'Global' },
+]
+
+function readStoredView() {
+  try {
+    return localStorage.getItem(VIEW_STORAGE_KEY) === 'global' ? 'global' : 'net'
+  } catch {
+    return 'net'
+  }
+}
 
 // Soma o saldo (snapshot mais recente + transações desde esse snapshot) de
 // cada conta do grupo, na mesma data — serve tanto para contas à ordem como
@@ -52,6 +72,8 @@ export default function NetWorth() {
   const [transactions, setTransactions] = useState([])
   const [snapshots, setSnapshots] = useState([])
   const [transfers, setTransfers] = useState([])
+  const [ledgerEntries, setLedgerEntries] = useState([])
+  const [view, setView] = useState(readStoredView)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -69,16 +91,18 @@ export default function NetWorth() {
   const loadAll = useCallback(async () => {
     setError('')
     try {
-      const [accs, txs, snaps, trs] = await Promise.all([
+      const [accs, txs, snaps, trs, entries] = await Promise.all([
         listAccounts(),
         listAllTransactionsForBalance(),
         listNetWorthSnapshots(),
         listTransfers(),
+        listAllLedgerEntriesForBalance(),
       ])
       setAccounts(accs)
       setTransactions(txs)
       setSnapshots(snaps)
       setTransfers(trs)
+      setLedgerEntries(entries)
       setSnapAccountId((prev) => prev || accs[0]?.id || '')
     } catch (err) {
       setError(err.message)
@@ -143,20 +167,80 @@ export default function NetWorth() {
     [transactions, snapshots, investmentAccountIds, transfers],
   )
 
-  const totalNetWorth = cashBalance + investmentTotal
+  const accountsTotal = cashBalance + investmentTotal
 
-  const chartData = useMemo(() => {
-    const allAccountIds = accounts.map((a) => a.id)
+  // Posições de conta-corrente agrupadas por amigo: 50€ a receber de um e 30€ a
+  // pagar a outro são duas posições, não "20€" — o cartão mostra as duas e só o
+  // líquido entra no total do modo Global.
+  const friendPositions = useMemo(() => {
+    const byFriend = new Map()
+    for (const entry of ledgerEntries) {
+      if (!byFriend.has(entry.friend_id)) byFriend.set(entry.friend_id, [])
+      byFriend.get(entry.friend_id).push(entry)
+    }
+    return receivablesAndPayables([...byFriend.values()])
+  }, [ledgerEntries])
+
+  const hasFriendPositions = friendPositions.receivable > 0 || friendPositions.payable > 0
+
+  const totalNetWorth = view === 'global' ? accountsTotal + friendPositions.net : accountsTotal
+
+  // Os 6 pontos da janela, calculados uma vez: o mês corrente vai até hoje, os
+  // anteriores até ao último dia do mês.
+  const monthPoints = useMemo(() => {
     const points = []
     for (let i = 5; i >= 0; i--) {
       const monthDate = addMonths(monthStart(new Date()), -i)
-      const isCurrentMonth = i === 0
-      const asOfDate = isCurrentMonth ? today() : toIsoDate(endOfMonth(monthDate))
-      const total = groupBalanceAt(transactions, snapshots, allAccountIds, asOfDate, transfers)
-      points.push({ month: shortMonthLabel(monthDate), Património: Number(total.toFixed(2)) })
+      points.push({
+        label: shortMonthLabel(monthDate),
+        asOfDate: i === 0 ? today() : toIsoDate(endOfMonth(monthDate)),
+      })
     }
     return points
-  }, [transactions, snapshots, accounts, transfers])
+  }, [])
+
+  // Um ponto só é desenhado se houver base fiável para todas as contas nessa
+  // data (ver `hasReliableBaseline`); sem isso o valor seria o fluxo de caixa
+  // acumulado desde zero, não o património do mês — e uma transação antiga
+  // registada hoje afundava todos os meses anteriores ao primeiro snapshot.
+  // Os meses sem base ficam a `null`: a linha corta e o aviso abaixo explica.
+  const chartData = useMemo(() => {
+    const allAccountIds = accounts.map((a) => a.id)
+    return monthPoints.map(({ label, asOfDate }) => {
+      if (!groupHasReliableBaseline(accounts, snapshots, asOfDate)) {
+        return { month: label, Património: null }
+      }
+      let total = groupBalanceAt(transactions, snapshots, allAccountIds, asOfDate, transfers)
+      if (view === 'global') total += balanceOfAt(ledgerEntries, asOfDate)
+      return { month: label, Património: Number(total.toFixed(2)) }
+    })
+  }, [monthPoints, transactions, snapshots, accounts, transfers, ledgerEntries, view])
+
+  const missingMonths = chartData.filter((p) => p.Património === null).length
+
+  // Contas que já existiam no início da janela mas ainda não tinham saldo
+  // registado — são estas que obrigam a cortar a linha, e saber o nome torna o
+  // aviso acionável ("atualiza o saldo do XTB com uma data de junho").
+  const accountsWithoutHistory = useMemo(() => {
+    if (missingMonths === 0) return []
+    const oldest = monthPoints[0].asOfDate
+    return accounts
+      .filter((a) => !a.created_at || a.created_at.slice(0, 10) <= oldest)
+      .filter((a) => {
+        const own = snapshots.filter((s) => s.account_id === a.id)
+        return own.length > 0 && !own.some((s) => s.snapshot_date <= oldest)
+      })
+      .map((a) => a.name)
+  }, [accounts, snapshots, missingMonths, monthPoints])
+
+  function changeView(next) {
+    setView(next)
+    try {
+      localStorage.setItem(VIEW_STORAGE_KEY, next)
+    } catch {
+      // Sem localStorage (modo privado): a escolha só dura enquanto a app está aberta.
+    }
+  }
 
   async function handleAddSnapshot(e) {
     e.preventDefault()
@@ -261,12 +345,69 @@ export default function NetWorth() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-neutral-200 p-4 text-center dark:border-neutral-800">
-        <p className="text-xs text-neutral-500">Património total</p>
-        <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
-          <Money value={totalNetWorth} />
-        </p>
+      <div className="space-y-3 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
+        <div
+          role="group"
+          aria-label="Como contar o património"
+          className="mx-auto flex w-full max-w-xs rounded-lg bg-neutral-100 p-0.5 dark:bg-neutral-800"
+        >
+          {VIEW_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => changeView(opt.value)}
+              aria-pressed={view === opt.value}
+              className={`min-h-9 flex-1 rounded-md px-3 text-xs font-medium transition-colors duration-150 ease-out motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100 ${
+                view === opt.value
+                  ? 'bg-white text-neutral-900 shadow-sm dark:bg-neutral-700 dark:text-neutral-100'
+                  : 'text-neutral-500 dark:text-neutral-400'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        <div className="text-center">
+          <p className="text-xs text-neutral-500">Património total</p>
+          <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
+            <Money value={totalNetWorth} />
+          </p>
+          <p className="mt-0.5 text-xs text-neutral-400">
+            {view === 'global'
+              ? hasFriendPositions
+                ? <>inclui <Money value={friendPositions.net} /> de dívidas de amigos</>
+                : 'contas + amigos (sem dívidas em aberto)'
+              : 'só o que está nas tuas contas'}
+          </p>
+        </div>
       </div>
+
+      {hasFriendPositions && view === 'net' && (
+        <div className="rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
+          <div className="mb-2 flex items-center gap-2">
+            <Users size={14} className="text-neutral-400" aria-hidden="true" />
+            <h3 className="text-sm font-semibold text-neutral-500">Dívidas de amigos</h3>
+          </div>
+          <dl className="grid grid-cols-2 gap-3">
+            <div>
+              <dt className="text-xs text-neutral-500">A receber</dt>
+              <dd className="font-semibold text-emerald-600 dark:text-emerald-400">
+                <Money value={friendPositions.receivable} />
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-neutral-500">A pagar</dt>
+              <dd className="font-semibold text-red-600 dark:text-red-400">
+                <Money value={friendPositions.payable} />
+              </dd>
+            </div>
+          </dl>
+          <p className="mt-2 text-xs leading-relaxed text-neutral-400">
+            Não entra no total acima. Muda para <strong className="font-medium">Global</strong> para
+            o somar ao património.
+          </p>
+        </div>
+      )}
 
       <section className="grid grid-cols-1 gap-2">
         {cashAccounts.map((acc) => (
@@ -345,12 +486,26 @@ export default function NetWorth() {
                   dataKey="Património"
                   stroke={LINE_COLOR}
                   strokeWidth={2}
+                  connectNulls={false}
                   dot={{ r: 4, fill: LINE_COLOR }}
                 />
               </LineChart>
             </ResponsiveContainer>
           )}
         </div>
+        {missingMonths > 0 && !hidden && (
+          <div className="mt-2 flex items-start gap-2 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
+            <Info size={14} className="mt-0.5 shrink-0 text-neutral-400" aria-hidden="true" />
+            <p className="text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">
+              {missingMonths === 1 ? 'Falta 1 mês' : `Faltam ${missingMonths} meses`} na linha: antes
+              disso ainda não havia saldo registado
+              {accountsWithoutHistory.length > 0 && ` em ${accountsWithoutHistory.join(', ')}`}, e
+              inventar um valor a partir de zero faria qualquer registo antigo afundar os meses
+              passados. Para recuperar o histórico, usa "Atualizar saldo de uma conta" abaixo com uma
+              data desses meses.
+            </p>
+          </div>
+        )}
       </section>
 
       <section>
