@@ -316,16 +316,21 @@ export default function NetWorth() {
                 key={segment.type}
                 // O divisor só aparece a partir do 2.º bloco VISÍVEL — se não
                 // houver contas de liquidez, o de investimento é o primeiro a
-                // mostrar-se e não deve ter uma linha solta por cima.
-                className={visibleIndex > 0 ? 'mt-3 border-t border-neutral-200 pt-3 dark:border-neutral-800' : ''}
+                // mostrar-se e não deve ter uma linha solta por cima. Mais
+                // respiro que no resto do cartão (mt-6/pt-5 em vez de
+                // mt-3/pt-3): é a única fronteira que precisa de se notar à
+                // primeira vista, entre duas naturezas de dinheiro diferentes.
+                className={visibleIndex > 0 ? 'mt-6 border-t border-neutral-200 pt-5 dark:border-neutral-800' : ''}
               >
-                <div className="mb-1 flex items-baseline justify-between gap-2">
-                  <h3 className="text-sm font-semibold text-neutral-500">{segment.label}</h3>
-                  <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                <div className="mb-1.5 flex items-baseline justify-between gap-2">
+                  <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+                    {segment.label}
+                  </h3>
+                  <span className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
                     <Money value={subtotal} />
                   </span>
                 </div>
-                <p className="mb-2 text-xs text-neutral-400">{segment.hint}</p>
+                <p className="mb-3 text-xs text-neutral-400">{segment.hint}</p>
                 <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
                   {segmentAccounts.map((acc) => {
                     const latest = latestByAccount.get(acc.id)
