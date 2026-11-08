@@ -2,6 +2,7 @@ import { Settings2, SlidersHorizontal, Tags, Wallet } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import BankStatementImportSection from '../components/BankStatementImportSection'
 import CategoryRulesSection from '../components/CategoryRulesSection'
+import { CARD_CLASS } from '../components/Card'
 import EntityManager from '../components/EntityManager'
 import { ErrorNotice, ListSkeleton } from '../components/Feedback'
 import ImportSection from '../components/ImportSection'
@@ -21,6 +22,7 @@ import {
   listTransfers,
   renameAccount,
   renameCategory,
+  reorderAccounts,
   updateCategorySavingsFlag,
 } from '../lib/db'
 
@@ -35,6 +37,11 @@ const CATEGORY_GROUPS = [
 ]
 
 const byName = (a, b) => a.name.localeCompare(b.name, 'pt')
+
+// As contas seguem a ordem manual (`sort_order`, definida com as setas nesta
+// página); o nome é só o desempate, como em `listAccounts`.
+const byAccountOrder = (a, b) =>
+  (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name, 'pt')
 
 export default function Manage() {
   const [accounts, setAccounts] = useState([])
@@ -88,7 +95,9 @@ export default function Manage() {
     return <ErrorNotice message={error} onRetry={load} />
   }
 
-  const cardClass = 'rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900'
+  // Mesmo raio e mesmo fundo que os cartões do resto da app (ver Card.jsx) —
+  // este usava rounded-2xl e destoava de todas as outras páginas.
+  const cardClass = CARD_CLASS
 
   return (
     <div className="space-y-6">
@@ -113,18 +122,22 @@ export default function Manage() {
           deleteWarning="Só é possível apagar se não tiver transações, transferências, atualizações de saldo ou dívidas associadas."
           onCreate={async (values) => {
             const created = await createAccount(values)
-            setAccounts((prev) => [...prev, created].sort(byName))
+            setAccounts((prev) => [...prev, created].sort(byAccountOrder))
             return created
           }}
           onRename={async (item, name) => {
             const updated = await renameAccount(item.id, name)
-            setAccounts((prev) => prev.map((a) => (a.id === item.id ? updated : a)).sort(byName))
+            setAccounts((prev) => prev.map((a) => (a.id === item.id ? updated : a)).sort(byAccountOrder))
           }}
           onDelete={async (item) => {
             await deleteAccount(item.id)
             setAccounts((prev) => prev.filter((a) => a.id !== item.id))
           }}
           balances={accountBalances}
+          onReorder={async (newGroupOrder) => {
+            await reorderAccounts(newGroupOrder)
+            setAccounts(await listAccounts())
+          }}
           onQuickSnapshot={async (item, value) => {
             const created = await createSnapshot({
               accountId: item.id,

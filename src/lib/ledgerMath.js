@@ -44,6 +44,28 @@ export function balanceOf(entries) {
   return entries.filter(entryCounts).reduce((sum, e) => sum + signedCents(e.kind, e.amount), 0) / 100
 }
 
+// Saldo de conta-corrente até uma data (inclusive), para o gráfico de
+// património no modo Global: um crédito só conta a partir do dia em que o
+// dinheiro mudou de mãos (`occurred_on`), não desde sempre. Mesmas regras de
+// `balanceOf` quanto ao que conta.
+export function balanceOfAt(entries, asOfDate) {
+  return balanceOf(entries.filter((e) => e.occurred_on <= asOfDate))
+}
+
+// Separa o saldo total em quanto há a receber e quanto há a pagar, por amigo —
+// 50€ a receber de um e 30€ a pagar a outro não são "20€", são duas posições
+// diferentes e o cartão do Património mostra as duas.
+export function receivablesAndPayables(entriesByFriend) {
+  let receivable = 0
+  let payable = 0
+  for (const entries of entriesByFriend) {
+    const balance = balanceOf(entries)
+    if (balance > 0) receivable += balance
+    else if (balance < 0) payable += -balance
+  }
+  return { receivable, payable, net: receivable - payable }
+}
+
 export function describeBalance(balance) {
   const c = cents(balance)
   if (c > 0) return { state: 'owes_me', amount: c / 100 }

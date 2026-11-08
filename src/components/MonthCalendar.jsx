@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { eurCompact, eurSigned } from '../lib/format'
 import Money from './Money'
+import Card from './Card'
 
 const WEEKDAY_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 
@@ -82,8 +83,8 @@ export default function MonthCalendar({ monthDate, transactions }) {
   const selectedEntry = selectedDay ? byDay.get(selectedDay) : null
 
   return (
-    <section className="space-y-3">
-      <h3 className="text-sm font-semibold text-neutral-500">Calendário do mês</h3>
+    <Card as="section" className="space-y-3">
+      <h3 className="text-center text-sm font-semibold text-neutral-500">Calendário do mês</h3>
 
       <div className="space-y-3">
         <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-neutral-400">
@@ -162,6 +163,6 @@ export default function MonthCalendar({ monthDate, transactions }) {
           </div>
         )}
       </div>
-    </section>
+    </Card>
   )
 }

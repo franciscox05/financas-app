@@ -19,6 +19,12 @@ import {
 // os esconderia). A foto só existe para quem está "connected" — falha
 // silenciosamente (sem foto) se o pedido da foto falhar, para não bloquear a
 // lista por causa de um extra.
+//
+// Ordem sempre alfabética pelo nome (pedido explícito do Francisco): o
+// `.order('name')` do Postgres é só um primeiro corte (colação do servidor,
+// pode não coincidir com acentos em português); o `.sort` final com
+// `localeCompare('pt')` é que garante a ordem certa e vale para todo quem
+// chama esta função, sem cada ecrã ter de repetir o sort.
 export async function listFriendsWithBalance() {
   const [friendsRes, balancesRes, avatars] = await Promise.all([
     supabase.from('friends').select('*').order('name'),
@@ -30,11 +36,13 @@ export async function listFriendsWithBalance() {
 
   // friends.* inclui status e linked_user_id.
   const balances = new Map(balancesRes.data.map((b) => [b.friend_id, Number(b.balance)]))
-  return friendsRes.data.map((f) => ({
-    ...f,
-    balance: balances.get(f.id) ?? 0,
-    avatarPath: avatars.get(f.id) ?? null,
-  }))
+  return friendsRes.data
+    .map((f) => ({
+      ...f,
+      balance: balances.get(f.id) ?? 0,
+      avatarPath: avatars.get(f.id) ?? null,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt'))
 }
 
 // Os nomes são únicos por utilizador (sem acentos nem maiúsculas); a
@@ -219,8 +227,31 @@ export async function createRepayment({
 // nunca deixe o movimento desaparecido com a transação ainda na conta (o inverso do que fazia
 // antes: apagar o movimento primeiro arriscava perder a única referência à transação a apagar
 // se o segundo delete falhasse). A FK é on delete set null, não em cascata, por isso é explícito.
+//
+// O teste já não é `settlement === 'bank'`: se há `transaction_id`, houve dinheiro a mover-se numa
+// conta, qualquer que seja o settlement. O `settlement` só é preenchido por `createRepayment`/
+// `createLinkedEntry` — o "Paguei eu" do NewExpenseSheet cria a transação e chama `createExpense`,
+// que o deixa a NULL. Com o teste antigo, apagar essa dívida deixava a transação órfã na conta (FK
+// a NULL, invisível no conta-corrente) e recriá-la somava um segundo gasto igual: foi assim que um
+// empréstimo de 4.490€ passou a pesar 8.980€ no património.
+//
+// Mas não basta "tem transação, apaga": num gasto dividido por várias pessoas, TODAS as entradas
+// apontam para a MESMA transação (QuickEntryForm passa o mesmo `transactionId` a cada parte). Aí a
+// transação é do gasto todo e não pode ir embora com a parte de um amigo só — por isso só se apaga
+// quando esta entrada é a última a referenciá-la. Com mais partes, sai só a entrada.
 export async function deleteEntry(entry) {
-  if (entry.settlement === 'bank' && entry.transaction_id) {
+  let deleteTransactionToo = false
+  if (entry.transaction_id) {
+    const { count, error: countError } = await supabase
+      .from('ledger_entries')
+      .select('id', { count: 'exact', head: true })
+      .eq('transaction_id', entry.transaction_id)
+      .neq('id', entry.id)
+    if (countError) throw countError
+    deleteTransactionToo = (count ?? 0) === 0
+  }
+
+  if (deleteTransactionToo) {
     const { error: txError } = await supabase.from('transactions').delete().eq('id', entry.transaction_id)
     if (txError) throw txError
   }

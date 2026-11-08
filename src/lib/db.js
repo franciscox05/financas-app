@@ -13,9 +13,11 @@ export async function getCurrentUserId() {
 let accountsCache = null
 let categoriesCache = null
 
+// Ordem manual primeiro (`sort_order`, definida em Gestão) e o nome só como
+// desempate — ver migration 20261110020000_accounts_sort_order.sql.
 export async function listAccounts() {
   if (accountsCache) return accountsCache
-  const { data, error } = await supabase.from('accounts').select('*').order('name')
+  const { data, error } = await supabase.from('accounts').select('*').order('sort_order').order('name')
   if (error) throw error
   accountsCache = data
   return data
@@ -85,9 +87,14 @@ export async function listTransactionsPage({
     q = q.ilike('note', `%${term}%`)
   }
 
+  // O `id` é o desempate final e tem de estar aqui: um insert em bloco (o
+  // importador de CSV, via createTransactionsBulk) dá o MESMO created_at a
+  // todas as linhas, e com (occurred_on, created_at) empatados a ordem entre
+  // páginas não é determinada — uma linha podia aparecer duas vezes ou nunca.
   q = q
     .order('occurred_on', { ascending: false })
     .order('created_at', { ascending: false })
+    .order('id')
     .range(offset, offset + limit - 1)
 
   const { data, error, count } = await q
@@ -120,9 +127,14 @@ export async function listMovementsPage({ limit, offset, type, accountId, catego
     q = q.ilike('note', `%${term}%`)
   }
 
+  // O `id` é o desempate final e tem de estar aqui: um insert em bloco (o
+  // importador de CSV, via createTransactionsBulk) dá o MESMO created_at a
+  // todas as linhas, e com (occurred_on, created_at) empatados a ordem entre
+  // páginas não é determinada — uma linha podia aparecer duas vezes ou nunca.
   q = q
     .order('occurred_on', { ascending: false })
     .order('created_at', { ascending: false })
+    .order('id')
     .range(offset, offset + limit - 1)
 
   const { data, error, count } = await q
@@ -165,7 +177,14 @@ export async function listTransactionsInRange({ from, to }) {
     source: 'transfer',
   }))
 
-  return [...data, ...transfersAsExpense].sort((a, b) => (a.occurred_on < b.occurred_on ? -1 : 1))
+  // Desempate por created_at e id: com só `occurred_on` o comparador devolve 1
+  // para datas iguais (nunca 0), o que não é uma ordem estável e fazia a lista
+  // trocar de ordem entre renders em dias com vários movimentos.
+  return [...data, ...transfersAsExpense].sort((a, b) => {
+    if (a.occurred_on !== b.occurred_on) return a.occurred_on < b.occurred_on ? -1 : 1
+    if (a.created_at !== b.created_at) return a.created_at < b.created_at ? -1 : 1
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+  })
 }
 
 export async function createTransaction({ amount, type, accountId, categoryId, occurredOn, note }) {
@@ -322,14 +341,38 @@ export async function createAccount({ name, type }) {
   const { data: userData, error: userError } = await supabase.auth.getUser()
   if (userError) throw userError
 
+  // Entra no fim da ordem manual, não no início (o default 0 da coluna punha
+  // cada conta nova à frente de todas as outras).
+  const existing = await listAccounts()
+  const nextOrder = existing.reduce((max, a) => Math.max(max, a.sort_order ?? 0), 0) + 1
+
   const { data, error } = await supabase
     .from('accounts')
-    .insert({ user_id: userData.user.id, name, type })
+    .insert({ user_id: userData.user.id, name, type, sort_order: nextOrder })
     .select()
     .single()
   if (error) throw error
   accountsCache = null
   return data
+}
+
+// Grava a nova sequência depois de um arrastar: `orderedIds` é a lista de
+// contas do MESMO grupo (cash ou investment), já na ordem final que o
+// utilizador soltou no ecrã. Atribui 1..N e só escreve as linhas cujo
+// `sort_order` realmente mudou — arrastar uma conta de um extremo ao outro
+// não implica reescrever as do meio que não se moveram.
+export async function reorderAccounts(orderedAccounts) {
+  const updates = orderedAccounts
+    .map((account, index) => ({ id: account.id, sort_order: index + 1, current: account.sort_order }))
+    .filter((row) => row.sort_order !== row.current)
+  if (updates.length === 0) return
+
+  const results = await Promise.all(
+    updates.map((row) => supabase.from('accounts').update({ sort_order: row.sort_order }).eq('id', row.id)),
+  )
+  const failed = results.find((r) => r.error)
+  if (failed) throw failed.error
+  accountsCache = null
 }
 
 export async function renameAccount(id, name) {

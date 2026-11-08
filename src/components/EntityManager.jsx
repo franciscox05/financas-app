@@ -1,10 +1,11 @@
-import { Pencil, PiggyBank, TrendingUp, Trash2 } from 'lucide-react'
+import { GripVertical, Pencil, PiggyBank, TrendingUp, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { parseBalanceValue } from '../lib/balanceInput'
 import { MAX_NAME_LENGTH, validateName } from '../lib/names'
 import { eur } from '../lib/format'
 import ConfirmDialog from './ConfirmDialog'
+import DragReorderList from './DragReorderList'
 
 const inputClass =
   'w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100'
@@ -20,6 +21,8 @@ function ManageRow({
   onDelete,
   onToggleSavings,
   onQuickSnapshot,
+  dragHandleProps, // ligado à asa de arrastar; ausente = esta lista não é reordenável
+  isDragging,
 }) {
   const [editing, setEditing] = useState(false)
   const [updatingBalance, setUpdatingBalance] = useState(false)
@@ -100,7 +103,7 @@ function ManageRow({
 
   if (editing) {
     return (
-      <li className="py-2">
+      <div className="py-2">
         <form onSubmit={handleSave} className="space-y-2">
           <input
             autoFocus
@@ -133,18 +136,30 @@ function ManageRow({
             </button>
           </div>
         </form>
-      </li>
+      </div>
     )
   }
 
   return (
-    <li className="py-2">
+    <div className={`py-2 ${isDragging ? 'bg-neutral-50 dark:bg-neutral-800' : ''}`}>
       <div className="flex items-center justify-between gap-3">
-        <span className="min-w-0 truncate text-sm text-neutral-900 dark:text-neutral-100">
-          {item.name}
-          {balance !== undefined && (
-            <span className="ml-1.5 text-xs text-neutral-400">· {eur(balance)}</span>
+        <span className="flex min-w-0 items-center gap-1.5">
+          {dragHandleProps && (
+            <button
+              type="button"
+              aria-label={`Arrastar para reordenar ${item.name}`}
+              className="-ml-1 flex shrink-0 items-center justify-center rounded p-1 text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
+              {...dragHandleProps}
+            >
+              <GripVertical size={16} />
+            </button>
           )}
+          <span className="min-w-0 truncate text-sm text-neutral-900 dark:text-neutral-100">
+            {item.name}
+            {balance !== undefined && (
+              <span className="ml-1.5 text-xs text-neutral-400">· {eur(balance)}</span>
+            )}
+          </span>
         </span>
         <div className="flex shrink-0 items-center gap-2">
           {onToggleSavings && item.type === 'expense' && (
@@ -248,7 +263,7 @@ function ManageRow({
           {error}
         </p>
       )}
-    </li>
+    </div>
   )
 }
 
@@ -270,6 +285,7 @@ export default function EntityManager({
   onDelete,
   onToggleSavings,
   onQuickSnapshot,
+  onReorder, // (groupItems, id, 'up'|'down') => Promise; só as contas usam
 }) {
   const toast = useToast()
   const [newName, setNewName] = useState('')
@@ -354,6 +370,16 @@ export default function EntityManager({
     }
   }
 
+  // Chamado pelo DragReorderList só UMA vez por gesto (ao soltar), já com a
+  // lista desse grupo na ordem final — nunca a meio do arrasto.
+  async function handleReorder(newGroupOrder) {
+    try {
+      await onReorder(newGroupOrder)
+    } catch (err) {
+      toast.error(`Não foi possível reordenar: ${err.message}`)
+    }
+  }
+
   async function handleToggleSavings(item, value) {
     try {
       await onToggleSavings(item, value)
@@ -403,12 +429,16 @@ export default function EntityManager({
             )}
             {groupItems.length === 0 ? (
               <p className="py-2 text-sm text-neutral-500">Sem {noun}s deste tipo.</p>
-            ) : (
-              <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
-                {groupItems.map((item) => (
+            ) : onReorder ? (
+              <DragReorderList
+                items={groupItems}
+                onReorder={handleReorder}
+                className="divide-y divide-neutral-200 dark:divide-neutral-800"
+                renderItem={(item, { dragHandleProps, isDragging }) => (
                   <ManageRow
-                    key={item.id}
                     item={item}
+                    dragHandleProps={dragHandleProps}
+                    isDragging={isDragging}
                     siblings={siblingsOf(group.type)}
                     canDelete={pool.length > 1}
                     deleteHint={`Tem de existir pelo menos uma ${noun}${scope === 'group' ? ' deste tipo' : ''}.`}
@@ -419,6 +449,25 @@ export default function EntityManager({
                     onToggleSavings={onToggleSavings ? handleToggleSavings : undefined}
                     onQuickSnapshot={onQuickSnapshot ? handleQuickSnapshot : undefined}
                   />
+                )}
+              />
+            ) : (
+              <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+                {groupItems.map((item) => (
+                  <li key={item.id}>
+                    <ManageRow
+                      item={item}
+                      siblings={siblingsOf(group.type)}
+                      canDelete={pool.length > 1}
+                      deleteHint={`Tem de existir pelo menos uma ${noun}${scope === 'group' ? ' deste tipo' : ''}.`}
+                      deleteWarning={deleteWarning}
+                      balance={balances?.get(item.id)}
+                      onRename={handleRename}
+                      onDelete={handleDelete}
+                      onToggleSavings={onToggleSavings ? handleToggleSavings : undefined}
+                      onQuickSnapshot={onQuickSnapshot ? handleQuickSnapshot : undefined}
+                    />
+                  </li>
                 ))}
               </ul>
             )}

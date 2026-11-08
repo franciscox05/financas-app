@@ -1,6 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  balanceOfAt,
+  receivablesAndPayables,
   signedCents,
   balanceOf,
   describeBalance,
@@ -101,4 +103,22 @@ test('signedCents tabela de sinais e kind desconhecido', () => {
   assert.equal(signedCents('repaid_to_me', 3), -300)
   assert.equal(signedCents('repaid_to_them', 4), 400)
   assert.throws(() => signedCents('xpto', 1))
+})
+
+// Saldo de amigos no tempo e por direção — para o Património (modo Global e
+// cartão "A receber / A pagar").
+const atEntry = (kind, amount, occurred_on) => ({ kind, amount, occurred_on, status: 'confirmed' })
+
+test('balanceOfAt ignora movimentos posteriores à data', () => {
+  const entries = [atEntry('paid_for_them', 4490, '2025-01-01'), atEntry('repaid_to_me', 490, '2026-11-01')]
+  assert.equal(balanceOfAt(entries, '2026-06-30'), 4490)
+  assert.equal(balanceOfAt(entries, '2026-11-30'), 4000)
+})
+
+test('receivablesAndPayables separa as duas direções em vez de as cruzar', () => {
+  const nelson = [atEntry('paid_for_them', 50, '2026-11-01')]
+  const tiago = [atEntry('paid_for_me', 30, '2026-11-01')]
+  const quites = [atEntry('paid_for_them', 10, '2026-11-01'), atEntry('repaid_to_me', 10, '2026-11-02')]
+  const r = receivablesAndPayables([nelson, tiago, quites])
+  assert.deepEqual(r, { receivable: 50, payable: 30, net: 20 })
 })

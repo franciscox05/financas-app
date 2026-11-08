@@ -61,7 +61,7 @@ export default function MonthPicker({ value, onChange, disableFuture = false }) 
       {showJump && (
         <form
           onSubmit={handleJump}
-          className="flex items-center gap-2 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800"
+          className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900"
         >
           <select
             value={jumpMonth}

@@ -4,7 +4,7 @@
 // separadas). Em vez de pedir ao utilizador para saber isto, tentamos
 // adivinhar pelo cabeçalho e só pedimos confirmação manual se a deteção falhar.
 import Papa from 'papaparse'
-import { normalize } from './categorySuggest'
+import { normalize } from './categorySuggest.js'
 
 const HEADER_HINTS = {
   date: ['data mov', 'data valor', 'data lanc', 'datamov', 'data', 'date'],
@@ -95,10 +95,17 @@ function parseDateText(text) {
       parts[key] = match[i + 1]
     })
     const year = parts.y ? Number(parts.y) : 2000 + Number(parts.y2)
-    const month = String(parts.m).padStart(2, '0')
-    const day = String(parts.d).padStart(2, '0')
-    if (Number(month) < 1 || Number(month) > 12 || Number(day) < 1 || Number(day) > 31) continue
-    return `${year}-${month}-${day}`
+    const month = Number(parts.m)
+    const day = Number(parts.d)
+    // Dia válido NESTE mês, não só 1-31: um "31/02/2026" passava o teste
+    // antigo e saía como "2026-02-31", data que não existe. A linha não ficava
+    // marcada como inválida (tinha data), entrava na gravação, e como
+    // `createTransactionsBulk` insere tudo num só INSERT, o Postgres rejeitava
+    // o lote INTEIRO por causa de uma linha — o importador falhava todo com um
+    // erro de base de dados em vez de sinalizar a linha.
+    if (month < 1 || month > 12 || day < 1) continue
+    if (day > new Date(Date.UTC(year, month, 0)).getUTCDate()) continue
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
   }
   return null
 }

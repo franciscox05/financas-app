@@ -24,7 +24,7 @@ export default function Modal({ open, onClose, labelledBy, children }) {
 
   return (
     <div
-      className="modal-overlay fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4"
+      className="modal-overlay fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center sm:p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}

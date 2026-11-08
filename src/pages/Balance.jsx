@@ -13,9 +13,11 @@ import { useNavigate } from 'react-router-dom'
 import MonthCalendar from '../components/MonthCalendar'
 import CategoryDrilldownModal from '../components/CategoryDrilldownModal'
 import MonthPicker from '../components/MonthPicker'
+import Card, { SectionCard } from '../components/Card'
+import MonthlyReportButtons from '../components/MonthlyReportButtons'
 import { EmptyState, ErrorNotice, ListSkeleton, Skeleton } from '../components/Feedback'
 import { listCategories, listTransactionsInRange } from '../lib/db'
-import { addMonths, monthKey, monthStart, shortMonthLabel, toIsoDate } from '../lib/dates'
+import { addMonths, monthKey, monthLabel, monthStart, shortMonthLabel, toIsoDate } from '../lib/dates'
 import Money from '../components/Money'
 import { usePrivacy } from '../context/privacyContext'
 import HiddenChartNotice from '../components/HiddenChartNotice'
@@ -203,6 +205,28 @@ export default function Balance() {
     Gastos: Number(b.expense.toFixed(2)),
   }))
 
+  // Tudo o que o relatório precisa já está calculado para o ecrã — exportar não
+  // faz pedidos novos nem recalcula nada por outro caminho (um relatório que
+  // discordasse do que está no ecrã seria pior do que não existir).
+  const report = useMemo(
+    () => ({
+      monthLabel: monthLabel(selectedMonth),
+      monthKey: monthKey(selectedMonth),
+      income: selectedBucket?.income ?? 0,
+      expense: selectedBucket?.expense ?? 0,
+      savingsAmount,
+      expenseByCategory: categoryBreakdown,
+      incomeByCategory: incomeBreakdown,
+      transactions: selectedBucket?.txs ?? [],
+      evolution: sixMonthData.map((b) => ({
+        label: shortMonthLabel(b.date),
+        income: b.income,
+        expense: b.expense,
+      })),
+    }),
+    [selectedMonth, selectedBucket, savingsAmount, categoryBreakdown, incomeBreakdown, sixMonthData],
+  )
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -237,32 +261,32 @@ export default function Balance() {
       )}
 
       <div className="grid grid-cols-3 gap-1.5 text-center sm:gap-2">
-        <div className="min-w-0 rounded-xl border border-neutral-200 p-2 dark:border-neutral-800 sm:p-3">
+        <Card padding="sm" className="min-w-0 sm:p-3">
           <p className="text-xs text-neutral-500">Ganhos</p>
           <p className="break-words text-sm font-semibold text-green-600 sm:text-base">
             <Money value={income} />
           </p>
-        </div>
-        <div className="min-w-0 rounded-xl border border-neutral-200 p-2 dark:border-neutral-800 sm:p-3">
+        </Card>
+        <Card padding="sm" className="min-w-0 sm:p-3">
           <p className="text-xs text-neutral-500">Gastos</p>
           <p className="break-words text-sm font-semibold text-red-600 sm:text-base">
             <Money value={expense} />
           </p>
-        </div>
-        <div className="min-w-0 rounded-xl border border-neutral-200 p-2 dark:border-neutral-800 sm:p-3">
+        </Card>
+        <Card padding="sm" className="min-w-0 sm:p-3">
           <p className="text-xs text-neutral-500">Saldo</p>
           <p
             className={`break-words text-sm font-semibold sm:text-base ${saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}
           >
             <Money value={saldo} />
           </p>
-        </div>
+        </Card>
       </div>
 
       <MonthCalendar monthDate={selectedMonth} transactions={selectedBucket?.txs ?? []} />
 
       {insights.length > 0 && (
-        <section className="space-y-1.5 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/40">
+        <section className="space-y-1.5 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/40">
           <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">
             Insights
           </h3>
@@ -277,7 +301,7 @@ export default function Balance() {
         </section>
       )}
 
-      <section className="rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
+      <Card as="section">
         <div className="mb-3 grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -319,7 +343,7 @@ export default function Balance() {
         ) : (
           <CategoryBars items={incomeBreakdown} color={INCOME_COLOR} onSelectCategory={setDrilldownCategory} />
         )}
-      </section>
+      </Card>
 
       <CategoryDrilldownModal
         category={drilldownCategory}
@@ -327,11 +351,8 @@ export default function Balance() {
         onClose={() => setDrilldownCategory(null)}
       />
 
-      <section>
-        <h3 className="mb-2 text-sm font-semibold text-neutral-500">
-          Evolução (últimos 6 meses)
-        </h3>
-        <div className="h-56 w-full rounded-xl border border-neutral-200 p-2 dark:border-neutral-800">
+      <SectionCard title="Evolução (últimos 6 meses)">
+        <div className="h-56 w-full">
           {hidden ? (
             <HiddenChartNotice />
           ) : (
@@ -361,7 +382,9 @@ export default function Balance() {
             </ResponsiveContainer>
           )}
         </div>
-      </section>
+      </SectionCard>
+
+      <MonthlyReportButtons report={report} monthKey={monthKey(selectedMonth)} />
     </div>
   )
 }

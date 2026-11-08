@@ -12,6 +12,7 @@ import { describeBalance } from '../lib/ledgerMath'
 import { listPendingForMe } from '../lib/linkedDb'
 import { friendStateLabel } from '../lib/linkedLogic'
 import { onPendingChanged } from '../lib/pendingEvents'
+import Card from '../components/Card'
 
 const inputClass =
   'min-h-11 w-full rounded-lg border border-neutral-300 px-3 py-2 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 motion-reduce:transition-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus-visible:outline-neutral-100'
@@ -81,11 +82,11 @@ export default function Friends() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Ordem alfabética estrita — pedido explícito do Francisco, em vez da
+  // ordenação anterior por saldo em dívida (que ia mudando a posição de cada
+  // amigo sempre que o saldo mudava e parecia aleatória/cronológica).
   const sorted = useMemo(
-    () =>
-      [...friends].sort(
-        (a, b) => Math.abs(b.balance) - Math.abs(a.balance) || a.name.localeCompare(b.name, 'pt'),
-      ),
+    () => [...friends].sort((a, b) => a.name.localeCompare(b.name, 'pt')),
     [friends],
   )
 
@@ -147,7 +148,7 @@ export default function Friends() {
 
       <PendingEntriesStrip entries={pendingEntries} friends={friends} />
 
-      <div className="rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
+      <Card>
         <p className="text-xs text-neutral-500">No total</p>
         <p className={`text-2xl font-semibold tracking-tight ${STATE_STYLES[total.state].text}`}>
           {total.state === 'even' ? (
@@ -158,9 +159,9 @@ export default function Friends() {
             </>
           )}
         </p>
-      </div>
+      </Card>
 
-      <section className="space-y-3">
+      <Card as="section" className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-neutral-500">Amigos</h3>
           <button
@@ -182,7 +183,7 @@ export default function Friends() {
         {showForm && (
           <form
             onSubmit={handleCreate}
-            className="space-y-3 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
+            className="space-y-3 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800"
           >
             <div>
               <label htmlFor="friend-name" className="mb-1 block text-xs font-medium text-neutral-500">
@@ -294,7 +295,7 @@ export default function Friends() {
             })}
           </ul>
         )}
-      </section>
+      </Card>
     </div>
   )
 }
