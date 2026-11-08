@@ -356,26 +356,20 @@ export async function createAccount({ name, type }) {
   return data
 }
 
-// Troca uma conta com a vizinha, para cima ou para baixo. Dois updates em vez
-// de reescrever a lista toda: é o suficiente para botões de setas e não toca em
-// nada que não mude. `accounts` é a lista já na ordem mostrada ao utilizador.
-export async function swapAccountOrder(accounts, id, direction) {
-  const index = accounts.findIndex((a) => a.id === id)
-  const target = index + (direction === 'up' ? -1 : 1)
-  if (index < 0 || target < 0 || target >= accounts.length) return
+// Grava a nova sequência depois de um arrastar: `orderedIds` é a lista de
+// contas do MESMO grupo (cash ou investment), já na ordem final que o
+// utilizador soltou no ecrã. Atribui 1..N e só escreve as linhas cujo
+// `sort_order` realmente mudou — arrastar uma conta de um extremo ao outro
+// não implica reescrever as do meio que não se moveram.
+export async function reorderAccounts(orderedAccounts) {
+  const updates = orderedAccounts
+    .map((account, index) => ({ id: account.id, sort_order: index + 1, current: account.sort_order }))
+    .filter((row) => row.sort_order !== row.current)
+  if (updates.length === 0) return
 
-  const a = accounts[index]
-  const b = accounts[target]
-  // Se as posições estiverem empatadas (dados antigos), usa o índice da lista
-  // para garantir que a troca produz valores diferentes.
-  const aOrder = a.sort_order ?? index + 1
-  const bOrder = b.sort_order ?? target + 1
-  const [newA, newB] = aOrder === bOrder ? [target + 1, index + 1] : [bOrder, aOrder]
-
-  const results = await Promise.all([
-    supabase.from('accounts').update({ sort_order: newA }).eq('id', a.id),
-    supabase.from('accounts').update({ sort_order: newB }).eq('id', b.id),
-  ])
+  const results = await Promise.all(
+    updates.map((row) => supabase.from('accounts').update({ sort_order: row.sort_order }).eq('id', row.id)),
+  )
   const failed = results.find((r) => r.error)
   if (failed) throw failed.error
   accountsCache = null

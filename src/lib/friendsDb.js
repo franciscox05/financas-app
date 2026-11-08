@@ -19,6 +19,12 @@ import {
 // os esconderia). A foto só existe para quem está "connected" — falha
 // silenciosamente (sem foto) se o pedido da foto falhar, para não bloquear a
 // lista por causa de um extra.
+//
+// Ordem sempre alfabética pelo nome (pedido explícito do Francisco): o
+// `.order('name')` do Postgres é só um primeiro corte (colação do servidor,
+// pode não coincidir com acentos em português); o `.sort` final com
+// `localeCompare('pt')` é que garante a ordem certa e vale para todo quem
+// chama esta função, sem cada ecrã ter de repetir o sort.
 export async function listFriendsWithBalance() {
   const [friendsRes, balancesRes, avatars] = await Promise.all([
     supabase.from('friends').select('*').order('name'),
@@ -30,11 +36,13 @@ export async function listFriendsWithBalance() {
 
   // friends.* inclui status e linked_user_id.
   const balances = new Map(balancesRes.data.map((b) => [b.friend_id, Number(b.balance)]))
-  return friendsRes.data.map((f) => ({
-    ...f,
-    balance: balances.get(f.id) ?? 0,
-    avatarPath: avatars.get(f.id) ?? null,
-  }))
+  return friendsRes.data
+    .map((f) => ({
+      ...f,
+      balance: balances.get(f.id) ?? 0,
+      avatarPath: avatars.get(f.id) ?? null,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt'))
 }
 
 // Os nomes são únicos por utilizador (sem acentos nem maiúsculas); a
@@ -108,18 +116,6 @@ export async function listEntries(friendId) {
     .eq('friend_id', friendId)
     .order('occurred_on', { ascending: false })
     .order('created_at', { ascending: false })
-  if (error) throw error
-  return data
-}
-
-// Todos os movimentos de conta-corrente, de todos os amigos, com o mínimo para
-// `entryCounts`/`signedCents` (ledgerMath) decidirem o que conta e com que
-// sinal. Para o Património: o saldo de amigos de hoje e, no modo Global, o de
-// cada mês passado — `friend_balances` só dá o total de agora, sem datas.
-export async function listAllLedgerEntriesForBalance() {
-  const { data, error } = await supabase
-    .from('ledger_entries')
-    .select('friend_id, kind, amount, occurred_on, status, created_by, user_id, cancel_requested_by')
   if (error) throw error
   return data
 }

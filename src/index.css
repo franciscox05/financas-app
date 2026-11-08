@@ -7,10 +7,14 @@
   --tooltip-text: #171717;
 }
 
+/* Tooltip como um cartão elevado sobre o gráfico, na mesma hierarquia do
+   resto da app no tema escuro: página #0a0a0a < cartão #171717 < campo de
+   escrita #262626 (ver Card.jsx). O tooltip usa a cor de cartão com uma
+   borda no tom de campo, para ficar nítido sem destoar da restante UI. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --tooltip-bg: #262626;
-    --tooltip-border: #404040;
+    --tooltip-bg: #171717;
+    --tooltip-border: #262626;
     --tooltip-text: #f5f5f5;
   }
 }

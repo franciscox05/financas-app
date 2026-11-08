@@ -248,41 +248,39 @@ export default function Balance() {
     <div className="space-y-6">
       <MonthPicker value={selectedMonth} onChange={setSelectedMonth} disableFuture />
 
-      <Card className="space-y-3">
-        <div className="grid grid-cols-3 gap-1.5 text-center sm:gap-2">
-          <div className="min-w-0">
-            <p className="text-xs text-neutral-500">Ganhos</p>
-            <p className="break-words text-sm font-semibold text-green-600 sm:text-base">
-              <Money value={income} />
-            </p>
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs text-neutral-500">Gastos</p>
-            <p className="break-words text-sm font-semibold text-red-600 sm:text-base">
-              <Money value={expense} />
-            </p>
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs text-neutral-500">Saldo</p>
-            <p
-              className={`break-words text-sm font-semibold sm:text-base ${saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}
-            >
-              <Money value={saldo} />
-            </p>
-          </div>
-        </div>
-        {(monthSummary || savingsAmount > 0) && (
-          <div className="space-y-1 border-t border-neutral-200 pt-3 text-center dark:border-neutral-800">
-            {monthSummary && <p className="text-sm text-neutral-500">{monthSummary}</p>}
-            {savingsAmount > 0 && (
-              <p className="text-xs text-neutral-400">
-                Dessas, <Money value={savingsAmount} /> foram para poupança/investimento — não contam
-                como gasto do dia a dia.
-              </p>
-            )}
-          </div>
-        )}
-      </Card>
+      {monthSummary && (
+        <p className="text-center text-sm text-neutral-500">{monthSummary}</p>
+      )}
+
+      {savingsAmount > 0 && (
+        <p className="text-center text-xs text-neutral-400">
+          Dessas, <Money value={savingsAmount} /> foram para poupança/investimento — não contam como gasto do
+          dia a dia.
+        </p>
+      )}
+
+      <div className="grid grid-cols-3 gap-1.5 text-center sm:gap-2">
+        <Card padding="sm" className="min-w-0 sm:p-3">
+          <p className="text-xs text-neutral-500">Ganhos</p>
+          <p className="break-words text-sm font-semibold text-green-600 sm:text-base">
+            <Money value={income} />
+          </p>
+        </Card>
+        <Card padding="sm" className="min-w-0 sm:p-3">
+          <p className="text-xs text-neutral-500">Gastos</p>
+          <p className="break-words text-sm font-semibold text-red-600 sm:text-base">
+            <Money value={expense} />
+          </p>
+        </Card>
+        <Card padding="sm" className="min-w-0 sm:p-3">
+          <p className="text-xs text-neutral-500">Saldo</p>
+          <p
+            className={`break-words text-sm font-semibold sm:text-base ${saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}
+          >
+            <Money value={saldo} />
+          </p>
+        </Card>
+      </div>
 
       <MonthCalendar monthDate={selectedMonth} transactions={selectedBucket?.txs ?? []} />
 

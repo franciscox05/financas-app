@@ -22,7 +22,7 @@ import {
   listTransfers,
   renameAccount,
   renameCategory,
-  swapAccountOrder,
+  reorderAccounts,
   updateCategorySavingsFlag,
 } from '../lib/db'
 
@@ -134,8 +134,8 @@ export default function Manage() {
             setAccounts((prev) => prev.filter((a) => a.id !== item.id))
           }}
           balances={accountBalances}
-          onReorder={async (groupItems, id, direction) => {
-            await swapAccountOrder(groupItems, id, direction)
+          onReorder={async (newGroupOrder) => {
+            await reorderAccounts(newGroupOrder)
             setAccounts(await listAccounts())
           }}
           onQuickSnapshot={async (item, value) => {

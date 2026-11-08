@@ -82,11 +82,11 @@ export default function Friends() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Ordem alfabética estrita — pedido explícito do Francisco, em vez da
+  // ordenação anterior por saldo em dívida (que ia mudando a posição de cada
+  // amigo sempre que o saldo mudava e parecia aleatória/cronológica).
   const sorted = useMemo(
-    () =>
-      [...friends].sort(
-        (a, b) => Math.abs(b.balance) - Math.abs(a.balance) || a.name.localeCompare(b.name, 'pt'),
-      ),
+    () => [...friends].sort((a, b) => a.name.localeCompare(b.name, 'pt')),
     [friends],
   )
 
