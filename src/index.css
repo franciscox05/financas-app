@@ -18,8 +18,12 @@
   --label-2: rgb(60 60 67 / 0.62); /* texto secundário */
   --label-3: rgb(60 60 67 / 0.34); /* texto terciário, setas, ícones inativos */
   --separator: rgb(60 60 67 / 0.2);
-  --accent: #007aff; /* ação e seleção */
-  --positive: #1f8a3b; /* ganho / devem-te */
+  /* Azul-cobalto em vez do azul de sistema do iOS (#007aff): esse só tem
+     4,0:1 de contraste sobre branco, abaixo do mínimo de 4,5:1 para texto
+     pequeno (ligações, "Exportar CSV", separador ativo). Este tem 6,1:1. */
+  --accent: #1f55e0; /* ação e seleção: texto, ícones, anéis de foco */
+  --accent-fill: #1f55e0; /* fundo de botões principais (texto branco por cima) */
+  --positive: #1a7f37; /* ganho / devem-te */
   --negative: #d1242f; /* gasto / deves */
   --warning: #b25e00;
   --bar: #f9f9fb; /* cabeçalho e barra de separadores, opacos */
@@ -38,7 +42,11 @@
     --label-2: rgb(235 235 245 / 0.62);
     --label-3: rgb(235 235 245 / 0.32);
     --separator: rgb(84 84 88 / 0.65);
-    --accent: #0a84ff;
+    /* No escuro o texto de ação tem de ser claro (6,6:1 sobre o cartão) e o
+       fundo dos botões escuro o bastante para texto branco (5,5:1): por isso
+       são dois valores. */
+    --accent: #6ea0ff;
+    --accent-fill: #2f5bea;
     --positive: #30d158;
     --negative: #ff453a;
     --warning: #ff9f0a;
@@ -59,6 +67,7 @@
   --color-label-3: var(--label-3);
   --color-separator: var(--separator);
   --color-accent: var(--accent);
+  --color-accent-fill: var(--accent-fill);
   --color-positive: var(--positive);
   --color-negative: var(--negative);
   --color-warning: var(--warning);
@@ -80,6 +89,15 @@
   .rounded-control {
     border-radius: 1rem;
   }
+}
+
+/* Números em destaque (o valor principal de cada ecrã) e a marca: variante
+   arredondada do tipo de letra do sistema. No iPhone/Mac é a SF Pro Rounded,
+   já instalada (nada para descarregar, funciona offline); nos outros sistemas
+   cai para o tipo de letra normal. Dá aos números grandes um ar próprio sem
+   mexer no texto corrido. */
+.display {
+  font-family: ui-rounded, 'SF Pro Rounded', ui-sans-serif, system-ui, sans-serif;
 }
 
 /* Montantes: algarismos todos com a mesma largura, para alinharem em coluna e

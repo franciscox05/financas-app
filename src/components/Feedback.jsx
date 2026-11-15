@@ -66,7 +66,7 @@ export function EmptyState({ title, description, actionLabel, onAction }) {
         <button
           type="button"
           onClick={onAction}
-          className="mt-5 min-h-11 rounded-control bg-accent px-5 text-[0.9375rem] font-semibold text-white transition-opacity duration-150 active:opacity-70"
+          className="mt-5 min-h-11 rounded-control bg-accent-fill px-5 text-[0.9375rem] font-semibold text-white transition-opacity duration-150 active:opacity-70"
         >
           {actionLabel}
         </button>

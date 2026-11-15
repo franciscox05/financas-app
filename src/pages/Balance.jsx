@@ -278,7 +278,7 @@ export default function Balance() {
           frases soltas por cima, sem ligação visível aos números. */}
       <section aria-label="Resumo do mês" className="rounded-group bg-surface p-5">
         <p className="text-[0.8125rem] font-medium text-label-2">Saldo do mês</p>
-        <p className={`amount mt-1 truncate text-[2.5rem] leading-none font-bold tracking-tight ${saldoTone}`}>
+        <p className={`amount display mt-1 truncate text-[2.5rem] leading-none font-bold tracking-tight ${saldoTone}`}>
           <Money>{eurSigned(saldo)}</Money>
         </p>
 

@@ -149,7 +149,7 @@ export default function Dashboard() {
         >
           <div className="min-w-0">
             <p className="text-[0.8125rem] text-label-2">Saldo este mês</p>
-            <p className={`amount truncate text-[1.625rem] leading-tight font-bold tracking-tight ${saldoTone}`}>
+            <p className={`amount display truncate text-[1.625rem] leading-tight font-bold tracking-tight ${saldoTone}`}>
               <Money>{eurSigned(saldo)}</Money>
             </p>
           </div>

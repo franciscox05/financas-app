@@ -178,7 +178,7 @@ export default function Friends() {
           <div className="min-w-0 rounded-group bg-surface p-4">
             <p className="text-[0.8125rem] text-label-2">A receber</p>
             <p
-              className={`amount mt-1 truncate text-[1.625rem] leading-tight font-bold tracking-tight ${
+              className={`amount display mt-1 truncate text-[1.625rem] leading-tight font-bold tracking-tight ${
                 positions.receivable > 0 ? 'text-positive' : 'text-label-3'
               }`}
             >
@@ -188,7 +188,7 @@ export default function Friends() {
           <div className="min-w-0 rounded-group bg-surface p-4">
             <p className="text-[0.8125rem] text-label-2">A pagar</p>
             <p
-              className={`amount mt-1 truncate text-[1.625rem] leading-tight font-bold tracking-tight ${
+              className={`amount display mt-1 truncate text-[1.625rem] leading-tight font-bold tracking-tight ${
                 positions.payable > 0 ? 'text-negative' : 'text-label-3'
               }`}
             >
@@ -300,7 +300,7 @@ export default function Friends() {
           <button
             type="submit"
             disabled={submitting}
-            className="min-h-12 w-full rounded-control bg-accent text-[1.0625rem] font-semibold text-white transition-opacity duration-150 active:opacity-70 disabled:opacity-50"
+            className="min-h-12 w-full rounded-control bg-accent-fill text-[1.0625rem] font-semibold text-white transition-opacity duration-150 active:opacity-70 disabled:opacity-50"
           >
             {submitting ? 'A guardar...' : 'Guardar amigo'}
           </button>

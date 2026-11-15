@@ -193,7 +193,7 @@ export default function NetWorth() {
           volta, para ser a primeira coisa que se lê. */}
       <section aria-label="Património total" className="px-1">
         <p className="text-[0.9375rem] text-label-2">Património total</p>
-        <p className="amount mt-1 text-[2.75rem] leading-none font-bold tracking-tight text-label">
+        <p className="amount display mt-1 text-[2.75rem] leading-none font-bold tracking-tight text-label">
           <Money value={totalNetWorth} />
         </p>
       </section>

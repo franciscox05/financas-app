@@ -98,7 +98,7 @@ export default function MonthPicker({ value, onChange, disableFuture = false }) 
           </select>
           <button
             type="submit"
-            className="min-h-11 rounded-[0.5625rem] bg-accent px-4 text-[0.9375rem] font-semibold text-white"
+            className="min-h-11 rounded-[0.5625rem] bg-accent-fill px-4 text-[0.9375rem] font-semibold text-white"
           >
             Ir
           </button>

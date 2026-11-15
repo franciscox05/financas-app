@@ -759,7 +759,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       <button
         type="submit"
         disabled={submitting}
-        className="min-h-12 w-full rounded-control bg-accent py-3 text-[1.0625rem] font-semibold text-white transition-opacity duration-150 active:opacity-70 disabled:opacity-50"
+        className="min-h-12 w-full rounded-control bg-accent-fill py-3 text-[1.0625rem] font-semibold text-white transition-opacity duration-150 active:opacity-70 disabled:opacity-50"
       >
         {submitting ? 'A guardar...' : type === 'transfer' && !transferCountsAsExpense ? 'Transferir' : 'Registar'}
       </button>
