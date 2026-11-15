@@ -24,7 +24,7 @@ export default function Modal({ open, onClose, labelledBy, children }) {
 
   return (
     <div
-      className="modal-overlay fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center sm:p-4"
+      className="modal-overlay fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center sm:p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
@@ -33,11 +33,11 @@ export default function Modal({ open, onClose, labelledBy, children }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
-        className="modal-sheet max-h-[88vh] w-full overflow-y-auto rounded-t-2xl bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-xl dark:bg-neutral-900 sm:max-w-sm sm:rounded-2xl sm:pb-5"
+        className="modal-sheet max-h-[88vh] w-full overflow-y-auto rounded-t-[1.75rem] bg-surface p-5 text-label pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-xl sm:max-w-sm sm:rounded-[1.75rem] sm:pb-5"
       >
         <div
           aria-hidden="true"
-          className="mx-auto -mt-1 mb-3 h-1 w-10 shrink-0 rounded-full bg-neutral-300 dark:bg-neutral-700 sm:hidden"
+          className="mx-auto -mt-2 mb-3 h-[5px] w-9 shrink-0 rounded-full bg-fill-strong sm:hidden"
         />
         {children}
       </div>

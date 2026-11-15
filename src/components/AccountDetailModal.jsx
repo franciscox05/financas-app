@@ -5,9 +5,7 @@ import Modal from './Modal'
 import Money from './Money'
 import { listNetWorthSnapshots, listTransactionsPage, listTransfers } from '../lib/db'
 import { eur, ptDate } from '../lib/format'
-
-const focusRing =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
+import { focusRing } from './ui/styles'
 
 // Menor que a página cheia (20, em AccountHistory.jsx): isto é um modal
 // compacto sobreposto ao Património, não uma página dedicada só à conta.
@@ -81,22 +79,22 @@ function AccountDetailBody({ account, balance, titleId, onClose }) {
         <div className="min-w-0">
           <h2
             id={titleId}
-            className="truncate text-sm font-semibold text-neutral-500"
+            className="truncate pt-1 text-[0.9375rem] font-semibold text-label-2"
           >
             {account.name}
           </h2>
-          <p className="mt-0.5 text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
+          <p className="amount display mt-0.5 text-[2.125rem] leading-tight font-bold tracking-tight text-label">
             <Money value={balance} />
           </p>
-          <p className="text-xs text-neutral-400">saldo atual</p>
+          <p className="text-xs text-label-3">saldo atual</p>
         </div>
         <button
           type="button"
           onClick={onClose}
           aria-label="Fechar"
-          className={`flex size-8 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100 ${focusRing}`}
+          className={`pressable -mt-1.5 -mr-2 flex size-11 shrink-0 items-center justify-center rounded-full bg-fill text-label-2 ${focusRing}`}
         >
-          <X size={18} aria-hidden="true" />
+          <X size={20} strokeWidth={2.4} aria-hidden="true" />
         </button>
       </div>
 
@@ -104,12 +102,12 @@ function AccountDetailBody({ account, balance, titleId, onClose }) {
 
       {snapshots.length > 0 && (
         <div className="space-y-1">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Atualizações de saldo</h3>
-          <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-label-3">Atualizações de saldo</h3>
+          <ul className="divide-y divide-separator">
             {snapshots.slice((snapPage - 1) * PAGE_SIZE, snapPage * PAGE_SIZE).map((s) => (
               <li key={s.id} className="flex items-center justify-between py-2 text-sm">
-                <span className="text-neutral-500">{ptDate(s.snapshot_date)}</span>
-                <span className="font-semibold text-neutral-900 dark:text-neutral-100">
+                <span className="text-label-2">{ptDate(s.snapshot_date)}</span>
+                <span className="font-semibold text-label">
                   <Money value={Number(s.value)} />
                 </span>
               </li>
@@ -121,17 +119,17 @@ function AccountDetailBody({ account, balance, titleId, onClose }) {
 
       {transfers.length > 0 && (
         <div className="space-y-1">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Transferências</h3>
-          <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-label-3">Transferências</h3>
+          <ul className="divide-y divide-separator">
             {transfers.slice((transferPage - 1) * PAGE_SIZE, transferPage * PAGE_SIZE).map((t) => {
               const isOutgoing = t.from_account_id === account.id
               return (
                 <li key={t.id} className="flex items-center justify-between py-2 text-sm">
-                  <span className="min-w-0 truncate text-neutral-500">
+                  <span className="min-w-0 truncate text-label-2">
                     {ptDate(t.occurred_on)} ·{' '}
                     {isOutgoing ? `para ${t.to_account?.name ?? 'conta'}` : `de ${t.from_account?.name ?? 'conta'}`}
                   </span>
-                  <span className={`shrink-0 font-semibold ${isOutgoing ? 'text-red-600' : 'text-green-600'}`}>
+                  <span className={`shrink-0 font-semibold ${isOutgoing ? 'text-negative' : 'text-positive'}`}>
                     <Money>{`${isOutgoing ? '-' : '+'}${eur(t.amount)}`}</Money>
                   </span>
                 </li>
@@ -143,7 +141,7 @@ function AccountDetailBody({ account, balance, titleId, onClose }) {
       )}
 
       <div className="space-y-1">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-label-3">
           Transações{totalCount ? ` (${totalCount})` : ''}
         </h3>
         {loading ? (
@@ -152,21 +150,21 @@ function AccountDetailBody({ account, balance, titleId, onClose }) {
           <EmptyState title="Sem transações" description="Ainda não há registos nesta conta." />
         ) : (
           <>
-            <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+            <ul className="divide-y divide-separator">
               {rows.map((tx) => (
                 <li key={tx.id} className="flex items-center justify-between gap-3 py-2">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                    <p className="truncate text-sm font-medium text-label">
                       {tx.note || tx.categories?.name || 'Sem nota'}
                     </p>
-                    <p className="truncate text-xs text-neutral-500">
+                    <p className="truncate text-xs text-label-2">
                       {ptDate(tx.occurred_on)}
                       {tx.note && ` · ${tx.categories?.name ?? 'Sem categoria'}`}
                     </p>
                   </div>
                   <span
                     className={`shrink-0 text-sm font-semibold ${
-                      tx.type === 'income' ? 'text-green-600' : 'text-red-600'
+                      tx.type === 'income' ? 'text-positive' : 'text-negative'
                     }`}
                   >
                     <Money>{`${tx.type === 'income' ? '+' : '-'}${eur(tx.amount)}`}</Money>

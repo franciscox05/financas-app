@@ -9,14 +9,12 @@ import { eur } from '../lib/format'
 import ConfirmDialog from './ConfirmDialog'
 import LedgerEntryRow from './LedgerEntryRow'
 import Modal from './Modal'
+import { buttonBase, focusRing, inputClass } from './ui/styles'
 
-const focusRing =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
-const inputClass =
-  'min-h-11 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm transition-colors duration-150 ease-out dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100'
-const primaryButton = `min-h-11 flex-1 rounded-lg bg-neutral-900 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900 ${focusRing}`
-const secondaryButton = `min-h-11 flex-1 rounded-lg border border-neutral-300 text-sm font-medium text-neutral-900 dark:border-neutral-700 dark:text-neutral-100 ${focusRing}`
-const dangerButton = `min-h-11 flex-1 rounded-lg bg-red-600 text-sm font-medium text-white disabled:opacity-50 ${focusRing}`
+// Os botões deste modal dividem a linha a meio (flex-1) por cima do estilo comum.
+const primaryButton = `${buttonBase} flex-1 bg-accent-fill text-white`
+const secondaryButton = `${buttonBase} flex-1 bg-fill text-label`
+const dangerButton = `${buttonBase} flex-1 bg-negative/12 text-negative`
 
 const TYPE_ICON = { transaction: Receipt, transfer: ArrowRightLeft, ledger: Link2 }
 
@@ -24,17 +22,17 @@ const TYPE_ICON = { transaction: Receipt, transfer: ArrowRightLeft, ledger: Link
 function ModalHeader({ titleId, icon: Icon, children, onClose }) {
   return (
     <div className="mb-4 flex items-start justify-between gap-3">
-      <h2 id={titleId} className="flex items-center gap-2 text-base font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
-        <Icon size={17} className="shrink-0 text-neutral-400" aria-hidden="true" />
+      <h2 id={titleId} className="flex min-w-0 items-center gap-2 pt-1.5 text-[1.25rem] leading-tight font-bold tracking-tight text-label">
+        <Icon size={20} className="shrink-0 text-label-2" aria-hidden="true" />
         {children}
       </h2>
       <button
         type="button"
         onClick={onClose}
         aria-label="Fechar"
-        className={`flex size-8 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100 ${focusRing}`}
+        className={`pressable -mt-1.5 -mr-2 flex size-11 shrink-0 items-center justify-center rounded-full bg-fill text-label-2 ${focusRing}`}
       >
-        <X size={18} aria-hidden="true" />
+        <X size={20} strokeWidth={2.4} aria-hidden="true" />
       </button>
     </div>
   )
@@ -172,7 +170,7 @@ function TransactionBody({ tx, categories, accounts, linkedEntry, titleId, onClo
       </ModalHeader>
 
       {linkedEntry && (
-        <p className="rounded-lg bg-amber-50 p-2 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+        <p className="rounded-control bg-warning/10 p-2 text-xs text-warning">
           Ligado a um movimento com{' '}
           <Link to={`/dividas/${linkedEntry.friend_id}`} className="underline underline-offset-2" onClick={onClose}>
             {linkedEntry.friendName}
@@ -182,7 +180,7 @@ function TransactionBody({ tx, categories, accounts, linkedEntry, titleId, onClo
       )}
 
       <div>
-        <label htmlFor="modal-amount" className="mb-1 block text-xs font-medium text-neutral-500">
+        <label htmlFor="modal-amount" className="mb-1 block text-xs font-medium text-label-2">
           Valor (€)
         </label>
         <input
@@ -198,7 +196,7 @@ function TransactionBody({ tx, categories, accounts, linkedEntry, titleId, onClo
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label htmlFor="modal-category" className="mb-1 block text-xs font-medium text-neutral-500">
+          <label htmlFor="modal-category" className="mb-1 block text-xs font-medium text-label-2">
             Categoria
           </label>
           <select id="modal-category" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={inputClass}>
@@ -210,7 +208,7 @@ function TransactionBody({ tx, categories, accounts, linkedEntry, titleId, onClo
           </select>
         </div>
         <div>
-          <label htmlFor="modal-account" className="mb-1 block text-xs font-medium text-neutral-500">
+          <label htmlFor="modal-account" className="mb-1 block text-xs font-medium text-label-2">
             Conta
           </label>
           <select id="modal-account" value={accountId} onChange={(e) => setAccountId(e.target.value)} className={inputClass}>
@@ -224,14 +222,14 @@ function TransactionBody({ tx, categories, accounts, linkedEntry, titleId, onClo
       </div>
 
       <div>
-        <label htmlFor="modal-note" className="mb-1 block text-xs font-medium text-neutral-500">
+        <label htmlFor="modal-note" className="mb-1 block text-xs font-medium text-label-2">
           Nota
         </label>
         <input id="modal-note" type="text" value={note} onChange={(e) => setNote(e.target.value)} className={inputClass} />
       </div>
 
       {error && (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+        <p role="alert" className="text-sm text-negative">
           {error}
         </p>
       )}
@@ -317,15 +315,15 @@ function TransferBody({ tx, titleId, onClose, onDeleted, onRestored }) {
       <ModalHeader titleId={titleId} icon={TYPE_ICON.transfer} onClose={onClose}>
         {tx.note || tx.category_name || 'Transferência'}
       </ModalHeader>
-      <div className="rounded-lg bg-neutral-50 p-3 dark:bg-neutral-800/60">
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+      <div className="rounded-control bg-fill p-3">
+        <p className="text-sm text-label-2">
           {tx.account_name ?? 'Conta'} → {tx.counter_account_name ?? 'Conta'}
         </p>
-        <p className={`mt-1 text-xl font-semibold ${tx.counts_as_expense ? 'text-red-600' : 'text-blue-500'}`}>
+        <p className={`mt-1 text-xl font-semibold ${tx.counts_as_expense ? 'text-negative' : 'text-accent'}`}>
           {eur(tx.amount)}
         </p>
         {tx.counts_as_expense && (
-          <p className="mt-1 text-xs text-neutral-500">
+          <p className="mt-1 text-xs text-label-2">
             {tx.category_name ?? 'Sem categoria'} · conta como gasto do mês
           </p>
         )}
@@ -399,9 +397,9 @@ function LedgerBody({ tx, titleId, onClose, onRowChanged }) {
         Movimento com {tx.friend_name}
       </ModalHeader>
 
-      {loading && <p className="text-sm text-neutral-500">A carregar...</p>}
+      {loading && <p className="text-sm text-label-2">A carregar...</p>}
       {error && (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+        <p role="alert" className="text-sm text-negative">
           {error}
         </p>
       )}

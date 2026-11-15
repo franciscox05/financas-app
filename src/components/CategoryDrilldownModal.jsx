@@ -3,9 +3,7 @@ import { useId } from 'react'
 import Modal from './Modal'
 import Money from './Money'
 import { ptDate } from '../lib/format'
-
-const focusRing =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
+import { focusRing } from './ui/styles'
 
 // Lista as transações de uma categoria num mês (drill-down das barras do
 // Balanço) — só leitura, para editar/apagar usa-se o modal de detalhe já
@@ -25,7 +23,7 @@ export default function CategoryDrilldownModal({ category, color, onClose }) {
           <div className="mb-4 flex items-start justify-between gap-3">
             <h2
               id={titleId}
-              className="flex items-center gap-2 text-base font-semibold tracking-tight text-neutral-900 dark:text-neutral-100"
+              className="flex min-w-0 items-center gap-2 pt-1.5 text-[1.25rem] leading-tight font-bold tracking-tight text-label"
             >
               <Tag size={17} className="shrink-0" style={{ color }} aria-hidden="true" />
               {category.name}
@@ -34,31 +32,31 @@ export default function CategoryDrilldownModal({ category, color, onClose }) {
               type="button"
               onClick={onClose}
               aria-label="Fechar"
-              className={`flex size-8 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100 ${focusRing}`}
+              className={`pressable -mt-1.5 -mr-2 flex size-11 shrink-0 items-center justify-center rounded-full bg-fill text-label-2 ${focusRing}`}
             >
-              <X size={18} aria-hidden="true" />
+              <X size={20} strokeWidth={2.4} aria-hidden="true" />
             </button>
           </div>
 
-          <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+          <ul className="divide-y divide-separator">
             {txs.map((tx) => (
               <li key={tx.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
                 <div className="min-w-0">
-                  <p className="truncate text-neutral-800 dark:text-neutral-200">{tx.note || 'Sem nota'}</p>
-                  <p className="text-xs text-neutral-500">
+                  <p className="truncate text-label">{tx.note || 'Sem nota'}</p>
+                  <p className="text-xs text-label-2">
                     {ptDate(tx.occurred_on)} · {tx.account_name ?? tx.accounts?.name ?? 'Conta'}
                   </p>
                 </div>
-                <span className="shrink-0 font-medium text-neutral-900 dark:text-neutral-100">
+                <span className="shrink-0 font-medium text-label">
                   <Money value={Number(tx.amount)} />
                 </span>
               </li>
             ))}
           </ul>
 
-          <div className="mt-2 flex items-center justify-between border-t border-neutral-200 pt-3 text-sm font-semibold dark:border-neutral-800">
-            <span className="text-neutral-700 dark:text-neutral-300">Total</span>
-            <span className="text-neutral-900 dark:text-neutral-100">
+          <div className="mt-2 flex items-center justify-between border-t border-separator pt-3 text-sm font-semibold">
+            <span className="text-label">Total</span>
+            <span className="text-label">
               <Money value={total} />
             </span>
           </div>
