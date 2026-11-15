@@ -1,4 +1,3 @@
-import { ChevronRight } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Area,
@@ -14,13 +13,17 @@ import { ErrorNotice, Skeleton } from '../components/Feedback'
 import { balanceAt, groupHasReliableBaseline } from '../lib/accountBalance'
 import { addMonths, endOfMonth, monthStart, shortMonthLabel, toIsoDate, today } from '../lib/dates'
 import AccountDetailModal from '../components/AccountDetailModal'
-import Card, { SectionCard } from '../components/Card'
 import Money from '../components/Money'
+import Group, { Row } from '../components/ui/Group'
+import PageHeader from '../components/ui/PageHeader'
 import { usePrivacy } from '../context/privacyContext'
 import HiddenChartNotice from '../components/HiddenChartNotice'
 import { eur, ptDate } from '../lib/format'
 
-const LINE_COLOR = '#2a78d6'
+// Cores do gráfico pelos tokens de index.css (já com par claro/escuro).
+const LINE_COLOR = 'var(--accent)'
+const AXIS_COLOR = 'var(--label-2)'
+const GRID_COLOR = 'var(--separator)'
 
 // Divisão visual pedida pelo Francisco: liquidez e investimento são dinheiros
 // com naturezas diferentes e deixam de aparecer numa lista corrida só.
@@ -156,96 +159,74 @@ export default function NetWorth() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-8">
+        <PageHeader title="Património" />
         <Skeleton className="h-20" />
-        <Skeleton className="h-12" />
-        <Skeleton className="h-12" />
+        <Skeleton className="h-40" />
         <Skeleton className="h-56" />
       </div>
     )
   }
 
   if (error) {
-    return <ErrorNotice message={error} />
+    return (
+      <div className="space-y-8">
+        <PageHeader title="Património" />
+        <ErrorNotice message={error} onRetry={loadAll} />
+      </div>
+    )
   }
 
+  // Só os blocos com contas: sem contas de liquidez, o de investimento é o
+  // único grupo a aparecer (e vice-versa).
+  const visibleSegments = ACCOUNT_SEGMENTS.map((segment) => ({
+    ...segment,
+    accounts: segment.type === 'cash' ? cashAccounts : investmentAccounts,
+    subtotal: segment.type === 'cash' ? cashBalance : investmentTotal,
+  })).filter((segment) => segment.accounts.length > 0)
+
   return (
-    <div className="space-y-6">
-      <Card className="text-center">
-        <p className="text-xs text-neutral-500">Património total</p>
-        <p className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
+    <div className="space-y-8">
+      <PageHeader title="Património" />
+
+      {/* O número que interessa neste ecrã, sozinho e grande — sem caixa à
+          volta, para ser a primeira coisa que se lê. */}
+      <section aria-label="Património total" className="px-1">
+        <p className="text-[0.9375rem] text-label-2">Património total</p>
+        <p className="amount mt-1 text-[2.75rem] leading-none font-bold tracking-tight text-label">
           <Money value={totalNetWorth} />
         </p>
-      </Card>
+      </section>
 
-      {/* Um só cartão para as duas naturezas de dinheiro (Liquidez/Investimento),
-          separadas por uma divisória interna em vez de dois cartões — pedido
-          do Francisco depois de testar no telemóvel. A ordem das contas dentro
-          de cada bloco já vem de `accounts` (listAccounts ordena por
-          `sort_order`), por isso o arrastar definido em Gestão continua a
-          valer aqui sem nada extra. */}
-      {accounts.length > 0 && (
-        <Card>
-          {ACCOUNT_SEGMENTS.filter(
-            (segment) => (segment.type === 'cash' ? cashAccounts : investmentAccounts).length > 0,
-          ).map((segment, visibleIndex) => {
-            const segmentAccounts = segment.type === 'cash' ? cashAccounts : investmentAccounts
-            const subtotal = segment.type === 'cash' ? cashBalance : investmentTotal
+      {/* Liquidez e Investimento são dinheiros de naturezas diferentes (pedido
+          do Francisco): cada um é um grupo de lista com o subtotal no título.
+          A ordem das contas dentro de cada grupo já vem de `accounts`
+          (listAccounts ordena por `sort_order`), por isso o arrastar definido
+          em Gestão continua a valer aqui sem nada extra. */}
+      {visibleSegments.map((segment) => (
+        <Group
+          key={segment.type}
+          list
+          header={segment.label}
+          aside={<Money value={segment.subtotal} />}
+          footer={segment.hint}
+        >
+          {segment.accounts.map((acc) => {
+            const latest = latestByAccount.get(acc.id)
             return (
-              <div
-                key={segment.type}
-                // O divisor só aparece a partir do 2.º bloco VISÍVEL — se não
-                // houver contas de liquidez, o de investimento é o primeiro a
-                // mostrar-se e não deve ter uma linha solta por cima. Mais
-                // respiro que no resto do cartão (mt-6/pt-5 em vez de
-                // mt-3/pt-3): é a única fronteira que precisa de se notar à
-                // primeira vista, entre duas naturezas de dinheiro diferentes.
-                className={visibleIndex > 0 ? 'mt-6 border-t border-neutral-200 pt-5 dark:border-neutral-800' : ''}
-              >
-                <div className="mb-1.5 flex items-baseline justify-between gap-2">
-                  <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
-                    {segment.label}
-                  </h3>
-                  <span className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
-                    <Money value={subtotal} />
-                  </span>
-                </div>
-                <p className="mb-3 text-xs text-neutral-400">{segment.hint}</p>
-                <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
-                  {segmentAccounts.map((acc) => {
-                    const latest = latestByAccount.get(acc.id)
-                    return (
-                      <li key={acc.id}>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedAccount(acc)}
-                          // Compacto e claramente "filho" do cabeçalho do bloco
-                          // acima (text-base font-semibold): aqui é text-sm e
-                          // peso normal/médio, nunca a competir em destaque.
-                          className="flex w-full items-center justify-between gap-3 py-2 text-left transition-transform active:scale-[0.99]"
-                        >
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-normal text-neutral-700 dark:text-neutral-300">
-                              {acc.name}
-                            </p>
-                            {latest && (
-                              <p className="text-xs text-neutral-400">atualizado {ptDate(latest.snapshot_date)}</p>
-                            )}
-                          </div>
-                          <span className="flex shrink-0 items-center gap-1.5 text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                            <Money value={balanceByAccountId.get(acc.id) ?? 0} />
-                            <ChevronRight size={14} className="text-neutral-400" aria-hidden="true" />
-                          </span>
-                        </button>
-                      </li>
-                    )
-                  })}
-                </ul>
-              </div>
+              <Row
+                key={acc.id}
+                as="button"
+                onClick={() => setSelectedAccount(acc)}
+                title={acc.name}
+                subtitle={latest ? `atualizado ${ptDate(latest.snapshot_date)}` : undefined}
+                value={<Money value={balanceByAccountId.get(acc.id) ?? 0} />}
+                chevron
+              />
             )
           })}
-        </Card>
-      )}
+        </Group>
+      ))}
 
       <AccountDetailModal
         account={selectedAccount}
@@ -253,7 +234,7 @@ export default function NetWorth() {
         onClose={() => setSelectedAccount(null)}
       />
 
-      <SectionCard title="Evolução (últimos 6 meses)">
+      <Group header="Evolução" footer="Últimos 6 meses. Os meses sem saldo registado não aparecem.">
         <div className="h-56 w-full">
           {hidden ? (
             <HiddenChartNotice />
@@ -266,15 +247,15 @@ export default function NetWorth() {
                     <stop offset="100%" stopColor={LINE_COLOR} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid vertical={false} stroke="#898781" strokeOpacity={0.2} strokeDasharray="3 3" />
+                <CartesianGrid vertical={false} stroke={GRID_COLOR} strokeDasharray="3 3" />
                 <XAxis
                   dataKey="month"
-                  tick={{ fontSize: 12, fill: '#898781' }}
-                  axisLine={{ stroke: '#c3c2b7' }}
+                  tick={{ fontSize: 12, fill: AXIS_COLOR }}
+                  axisLine={{ stroke: GRID_COLOR }}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 12, fill: '#898781' }}
+                  tick={{ fontSize: 12, fill: AXIS_COLOR }}
                   axisLine={false}
                   tickLine={false}
                   width={40}
@@ -282,14 +263,14 @@ export default function NetWorth() {
                 <Tooltip
                   formatter={(value) => eur(Number(value))}
                   contentStyle={{
-                    fontSize: 12,
-                    borderRadius: 10,
-                    border: '1px solid var(--tooltip-border)',
-                    backgroundColor: 'var(--tooltip-bg)',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12)',
+                    fontSize: 13,
+                    borderRadius: 12,
+                    border: '0.5px solid var(--separator)',
+                    backgroundColor: 'var(--surface-raised)',
+                    boxShadow: 'var(--shadow-raised)',
                   }}
-                  itemStyle={{ color: 'var(--tooltip-text)' }}
-                  labelStyle={{ color: 'var(--tooltip-text)', fontWeight: 600, marginBottom: 2 }}
+                  itemStyle={{ color: 'var(--label)' }}
+                  labelStyle={{ color: 'var(--label-2)', fontWeight: 600, marginBottom: 2 }}
                 />
                 <Area
                   type="monotone"
@@ -305,7 +286,7 @@ export default function NetWorth() {
             </ResponsiveContainer>
           )}
         </div>
-      </SectionCard>
+      </Group>
     </div>
   )
 }
