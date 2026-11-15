@@ -308,7 +308,7 @@ export default function Balance() {
             {monthSummary && <p>{monthSummary}</p>}
             {savingsAmount > 0 && (
               <p>
-                Dos gastos, <Money value={savingsAmount} /> foram para poupança/investimento — não contam como
+                Dessas, <Money value={savingsAmount} /> foram para poupança/investimento — não contam como
                 gasto do dia a dia.
               </p>
             )}
