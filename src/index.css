@@ -1,5 +1,151 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   Sistema visual (redesenho 2026-11): cores semânticas com par claro/escuro,
+   inspiradas nas cores de sistema do iOS. Os componentes novos (components/ui)
+   usam só estes nomes (bg-canvas, bg-surface, text-label, text-positive, ...),
+   nunca cores soltas do Tailwind — assim o tema escuro vem de graça e mudar a
+   paleta é mexer aqui. Documentado em Cerebro/Projetos/FinancasApp/material/
+   sistema_visual.md.
+   --------------------------------------------------------------------------- */
+:root {
+  --canvas: #f2f2f7; /* fundo da página (agrupado) */
+  --surface: #ffffff; /* cartões e grupos de lista */
+  --surface-raised: #ffffff; /* folhas e elementos flutuantes */
+  --fill: rgb(118 118 128 / 0.12); /* fundo de segmentos, barras, campos */
+  --fill-strong: rgb(118 118 128 / 0.2);
+  --label: #1c1c1e; /* texto principal */
+  --label-2: rgb(60 60 67 / 0.62); /* texto secundário */
+  --label-3: rgb(60 60 67 / 0.34); /* texto terciário, setas, ícones inativos */
+  --separator: rgb(60 60 67 / 0.2);
+  --accent: #007aff; /* ação e seleção */
+  --positive: #1f8a3b; /* ganho / devem-te */
+  --negative: #d1242f; /* gasto / deves */
+  --warning: #b25e00;
+  --bar: #f9f9fb; /* cabeçalho e barra de separadores, opacos */
+  --bar-translucent: rgb(249 249 251 / 0.78);
+  --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 16px rgb(0 0 0 / 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #000000;
+    --surface: #1c1c1e;
+    --surface-raised: #2c2c2e;
+    --fill: rgb(118 118 128 / 0.24);
+    --fill-strong: rgb(118 118 128 / 0.36);
+    --label: #ffffff;
+    --label-2: rgb(235 235 245 / 0.62);
+    --label-3: rgb(235 235 245 / 0.32);
+    --separator: rgb(84 84 88 / 0.65);
+    --accent: #0a84ff;
+    --positive: #30d158;
+    --negative: #ff453a;
+    --warning: #ff9f0a;
+    --bar: #121214;
+    --bar-translucent: rgb(22 22 24 / 0.72);
+    --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 20px rgb(0 0 0 / 0.5);
+  }
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-fill: var(--fill);
+  --color-fill-strong: var(--fill-strong);
+  --color-label: var(--label);
+  --color-label-2: var(--label-2);
+  --color-label-3: var(--label-3);
+  --color-separator: var(--separator);
+  --color-accent: var(--accent);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-warning: var(--warning);
+  --radius-group: 1.25rem; /* 20px: cartões e grupos */
+  --radius-control: 0.75rem; /* 12px: botões, campos, segmentos */
+  --ease-apple: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Cantos contínuos (superelipse) onde o browser já os suporta; nos outros fica
+   o raio normal, que já é generoso. */
+@supports (corner-shape: squircle) {
+  .rounded-group,
+  .rounded-control {
+    corner-shape: squircle;
+  }
+  .rounded-group {
+    border-radius: 1.75rem;
+  }
+  .rounded-control {
+    border-radius: 1rem;
+  }
+}
+
+/* Montantes: algarismos todos com a mesma largura, para alinharem em coluna e
+   não "dançarem" quando o valor muda. */
+.amount {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* Material das barras (cabeçalho e separadores). Por omissão é OPACO: o
+   desfoque num elemento fixo deu um "fantasma" durante o scroll elástico no
+   Safari de um iPhone 17 Pro (ver comentários em AppLayout/BottomNav). Para
+   ligar o desfoque, pôr data-bar-material="blur" no <html> (index.html) — e
+   testar primeiro nesse aparelho. */
+.material-bar {
+  background-color: var(--bar);
+}
+
+html[data-bar-material='blur'] .material-bar {
+  background-color: var(--bar-translucent);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+}
+
+/* Material dos elementos que flutuam por cima do conteúdo e não são fixos ao
+   scroll da página (indicador de atualizar, etiquetas sobre gráficos). */
+.material-float {
+  background-color: color-mix(in srgb, var(--surface-raised) 82%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  backdrop-filter: saturate(180%) blur(16px);
+}
+
+/* Lista agrupada: separadores finos entre linhas, recuados até ao início do
+   texto (--row-inset), como nas Definições do iOS. */
+.grouped > li {
+  position: relative;
+}
+
+.grouped > li + li::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: var(--row-inset, 1rem);
+  border-top: 0.5px solid var(--separator);
+  pointer-events: none;
+}
+
+/* Feedback de pressão comum a linhas e botões novos. */
+.pressable {
+  transition:
+    background-color 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pressable:active {
+  background-color: var(--fill);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pressable {
+    transition: none;
+  }
+}
+
 :root {
   color-scheme: light dark;
   --tooltip-bg: #ffffff;
