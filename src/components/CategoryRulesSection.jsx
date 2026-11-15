@@ -94,7 +94,7 @@ export default function CategoryRulesSection({ categories }) {
       onToggle={() => setShowSection((v) => !v)}
     >
           {loading ? (
-            <p className="text-sm text-neutral-500">A carregar...</p>
+            <p className="text-sm text-label-2">A carregar...</p>
           ) : rules.length === 0 && !showForm ? (
             <EmptyState
               title="Ainda sem regras"
@@ -103,23 +103,23 @@ export default function CategoryRulesSection({ categories }) {
               onAction={() => setShowForm(true)}
             />
           ) : (
-            <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+            <ul className="divide-y divide-separator">
               {rules.map((r) => (
                 <li key={r.id} className="flex items-center justify-between py-2 text-sm">
-                  <span className="text-neutral-700 dark:text-neutral-300">
+                  <span className="text-label">
                     "{r.keyword}" → {r.categories?.name}
                   </span>
                   {confirmingDeleteId === r.id ? (
                     <span className="flex items-center gap-1">
                       <button
                         onClick={() => handleDelete(r)}
-                        className="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white"
+                        className="rounded bg-negative px-2 py-1 text-xs font-medium text-white"
                       >
                         Confirmar
                       </button>
                       <button
                         onClick={() => setConfirmingDeleteId(null)}
-                        className="rounded border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700"
+                        className="rounded border border-separator px-2 py-1 text-xs"
                       >
                         Cancelar
                       </button>
@@ -128,7 +128,7 @@ export default function CategoryRulesSection({ categories }) {
                     <button
                       onClick={() => setConfirmingDeleteId(r.id)}
                       aria-label={`Apagar regra ${r.keyword}`}
-                      className="rounded p-1 text-neutral-400 hover:text-red-600"
+                      className="rounded p-1 text-label-3 hover:text-negative"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -141,31 +141,31 @@ export default function CategoryRulesSection({ categories }) {
           {rules.length > 0 && !showForm && (
             <button
               onClick={() => setShowForm(true)}
-              className="flex items-center gap-0.5 text-xs text-neutral-500 underline-offset-2 hover:underline"
+              className="flex items-center gap-0.5 text-xs text-label-2 underline-offset-2 hover:underline"
             >
               <Plus size={13} /> Nova regra
             </button>
           )}
 
           {showForm && (
-            <form onSubmit={handleCreate} className="space-y-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
+            <form onSubmit={handleCreate} className="space-y-2 rounded-control border border-separator p-3">
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-neutral-500">Palavra-chave</label>
+                  <label className="mb-1 block text-xs font-medium text-label-2">Palavra-chave</label>
                   <input
                     type="text"
                     placeholder='Ex: "gas"'
                     value={keyword}
                     onChange={(e) => setKeyword(e.target.value)}
-                    className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                    className="w-full rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-neutral-500">Categoria</label>
+                  <label className="mb-1 block text-xs font-medium text-label-2">Categoria</label>
                   <select
                     value={categoryId}
                     onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                    className="w-full rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
                   >
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -175,19 +175,19 @@ export default function CategoryRulesSection({ categories }) {
                   </select>
                 </div>
               </div>
-              {error && <p className="text-xs text-red-600">{error}</p>}
+              {error && <p className="text-xs text-negative">{error}</p>}
               <div className="flex gap-2">
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 rounded-lg bg-neutral-900 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+                  className="flex-1 min-h-11 rounded-control bg-accent-fill px-4 text-[0.9375rem] font-semibold text-white disabled:opacity-50"
                 >
                   {submitting ? 'A guardar...' : 'Guardar regra'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="rounded-lg border border-neutral-300 px-4 py-2 text-sm dark:border-neutral-700"
+                  className="min-h-11 rounded-control bg-fill px-4 text-[0.9375rem] font-semibold text-label"
                 >
                   Cancelar
                 </button>

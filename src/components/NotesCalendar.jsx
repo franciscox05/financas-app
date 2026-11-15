@@ -8,12 +8,9 @@ import ConfirmDialog from './ConfirmDialog'
 import { EmptyState } from './Feedback'
 import Modal from './Modal'
 import MonthPicker from './MonthPicker'
+import { focusRing, inputClass } from './ui/styles'
 
 const WEEKDAY_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
-
-const focusRing =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
-const inputClass = `w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm transition-colors duration-150 ease-out dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 ${focusRing}`
 
 // Uma nota existente, com edição em linha (mesmo padrão já usado no nome de
 // um amigo/perfil) e apagar.
@@ -43,7 +40,7 @@ function NoteRow({ note, onSaved, onDeleteRequest }) {
 
   if (editing) {
     return (
-      <form onSubmit={handleSave} className="space-y-2 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
+      <form onSubmit={handleSave} className="space-y-2 rounded-control border border-separator p-3">
         <textarea
           autoFocus
           rows={3}
@@ -53,7 +50,7 @@ function NoteRow({ note, onSaved, onDeleteRequest }) {
           className={inputClass}
         />
         {error && (
-          <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+          <p role="alert" className="text-sm text-negative">
             {error}
           </p>
         )}
@@ -61,7 +58,7 @@ function NoteRow({ note, onSaved, onDeleteRequest }) {
           <button
             type="submit"
             disabled={busy || !draft.trim()}
-            className={`min-h-9 rounded-lg bg-neutral-900 px-3 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900 ${focusRing}`}
+            className={`min-h-9 rounded-control bg-accent-fill px-3 text-sm font-medium text-white disabled:opacity-50 ${focusRing}`}
           >
             {busy ? 'A guardar...' : 'Guardar'}
           </button>
@@ -72,7 +69,7 @@ function NoteRow({ note, onSaved, onDeleteRequest }) {
               setDraft(note.body)
               setEditing(false)
             }}
-            className={`min-h-9 rounded-lg border border-neutral-300 px-3 text-sm dark:border-neutral-700 ${focusRing}`}
+            className={`min-h-9 rounded-control border border-separator px-3 text-sm ${focusRing}`}
           >
             Cancelar
           </button>
@@ -82,14 +79,14 @@ function NoteRow({ note, onSaved, onDeleteRequest }) {
   }
 
   return (
-    <li className="flex items-start gap-2 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
-      <p className="min-w-0 flex-1 whitespace-pre-wrap text-sm text-neutral-800 dark:text-neutral-200">{note.body}</p>
+    <li className="flex items-start gap-2 rounded-control border border-separator p-3">
+      <p className="min-w-0 flex-1 whitespace-pre-wrap text-sm text-label">{note.body}</p>
       <div className="flex shrink-0 gap-1">
         <button
           type="button"
           onClick={() => setEditing(true)}
           aria-label="Editar nota"
-          className={`flex size-9 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100 ${focusRing}`}
+          className={`flex size-9 items-center justify-center rounded-control text-label-3 transition-colors hover:text-label ${focusRing}`}
         >
           <Pencil size={14} aria-hidden="true" />
         </button>
@@ -97,7 +94,7 @@ function NoteRow({ note, onSaved, onDeleteRequest }) {
           type="button"
           onClick={() => onDeleteRequest(note)}
           aria-label="Apagar nota"
-          className={`flex size-9 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:text-red-600 ${focusRing}`}
+          className={`flex size-9 items-center justify-center rounded-control text-label-3 transition-colors hover:text-negative ${focusRing}`}
         >
           <Trash2 size={14} aria-hidden="true" />
         </button>
@@ -221,18 +218,18 @@ export default function NotesCalendar() {
   }
 
   if (loading) {
-    return <div className="h-64 animate-pulse rounded-xl bg-neutral-100 dark:bg-neutral-800" />
+    return <div className="h-64 animate-pulse rounded-control bg-fill" />
   }
 
   if (error) {
-    return <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+    return <p className="text-sm text-negative">{error}</p>
   }
 
   return (
     <div className="space-y-3">
       <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
 
-      <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-neutral-400">
+      <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-label-3">
         {WEEKDAY_LABELS.map((label) => (
           <div key={label}>{label}</div>
         ))}
@@ -249,18 +246,18 @@ export default function NotesCalendar() {
               onClick={() => openDay(day)}
               aria-current={isToday ? 'date' : undefined}
               aria-label={hasNotes ? `Dia ${day}, com notas` : `Dia ${day}`}
-              className={`relative flex flex-col items-center justify-center gap-1 rounded-lg py-2 text-xs transition-colors ${
-                isToday ? 'ring-2 ring-blue-500 ring-inset' : ''
+              className={`relative flex flex-col items-center justify-center gap-1 rounded-control py-2 text-xs transition-colors ${
+                isToday ? 'ring-2 ring-accent ring-inset' : ''
               } ${
                 hasNotes
-                  ? 'bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700'
-                  : 'text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900'
+                  ? 'bg-fill hover:bg-fill-strong'
+                  : 'text-label-3 hover:bg-fill'
               }`}
             >
-              <span className={isToday ? 'font-bold text-neutral-900 dark:text-white' : undefined}>{day}</span>
+              <span className={isToday ? 'font-bold text-label dark:text-white' : undefined}>{day}</span>
               <span
                 aria-hidden="true"
-                className={`size-1.5 rounded-full ${hasNotes ? 'bg-blue-500' : 'bg-transparent'}`}
+                className={`size-1.5 rounded-full ${hasNotes ? 'bg-accent-fill' : 'bg-transparent'}`}
               />
             </button>
           )
@@ -270,13 +267,13 @@ export default function NotesCalendar() {
       {notes.length === 0 && <EmptyState title="Ainda sem notas" description="Toca num dia para escrever a primeira." />}
 
       <Modal open={selectedDay !== null} onClose={() => setSelectedDay(null)} labelledBy="notes-day-title">
-        <h2 id="notes-day-title" className="mb-3 text-base font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+        <h2 id="notes-day-title" className="mb-3 text-base font-semibold tracking-tight text-label">
           {selectedIso && shortDate(selectedIso, { withYear: true })}
-          {isSelectedToday && <span className="ml-2 text-xs font-normal text-neutral-400">hoje</span>}
+          {isSelectedToday && <span className="ml-2 text-xs font-normal text-label-3">hoje</span>}
         </h2>
 
         {dayNotes.length === 0 ? (
-          <p className="py-1 text-sm text-neutral-400">Sem notas neste dia.</p>
+          <p className="py-1 text-sm text-label-3">Sem notas neste dia.</p>
         ) : (
           <ul className="space-y-2">
             {dayNotes.map((note) => (
@@ -285,7 +282,7 @@ export default function NotesCalendar() {
           </ul>
         )}
 
-        <form onSubmit={handleAdd} className="mt-3 space-y-2 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
+        <form onSubmit={handleAdd} className="mt-3 space-y-2 rounded-control border border-separator p-3">
         <label htmlFor="new-note-body" className="sr-only">
           Nova nota
         </label>
@@ -299,14 +296,14 @@ export default function NotesCalendar() {
           className={inputClass}
         />
         {addError && (
-          <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+          <p role="alert" className="text-sm text-negative">
             {addError}
           </p>
         )}
         <button
           type="submit"
           disabled={adding || !newBody.trim()}
-          className={`min-h-11 w-full rounded-lg bg-neutral-900 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900 ${focusRing}`}
+          className={`min-h-11 w-full rounded-control bg-accent-fill text-sm font-medium text-white disabled:opacity-50 ${focusRing}`}
         >
           {adding ? 'A guardar...' : 'Guardar nota'}
         </button>

@@ -10,14 +10,7 @@ import { notifyPendingChanged } from '../lib/pendingEvents'
 import { forgivenessEntry, suggestedRepayment } from '../lib/ledgerMath'
 import { defaultCategoryId, overshootNote } from '../lib/repaymentInput'
 import { eur } from '../lib/format'
-
-const inputClass =
-  'min-h-11 w-full rounded-lg border border-neutral-300 px-3 py-2 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 motion-reduce:transition-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus-visible:outline-neutral-100'
-
-const focusRing =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
-
-const labelClass = 'mb-1 block text-xs font-medium text-neutral-500'
+import { focusRing, inputClass, labelClass } from './ui/styles'
 
 const OPTIONS = [
   {
@@ -182,9 +175,10 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
     <form
       onSubmit={handleSubmit}
       aria-label={title}
-      className="space-y-4 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
+      // Sem caixa própria: abre dentro de uma folha (Modal) na página do amigo.
+      className="space-y-4"
     >
-      <h3 className="text-base font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">{title}</h3>
+      <h3 className="pr-10 text-[1.375rem] leading-tight font-bold tracking-tight text-label">{title}</h3>
 
       <div>
         <label htmlFor="repayment-amount" className={labelClass}>
@@ -203,13 +197,13 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
         />
         {overshoot && (
           <div id="repayment-overshoot" className="mt-1.5 space-y-1.5">
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">{overshoot}</p>
-            <label className="flex min-h-9 items-center gap-2 text-sm text-neutral-800 dark:text-neutral-200">
+            <p className="text-sm text-label-2">{overshoot}</p>
+            <label className="flex min-h-9 items-center gap-2 text-sm text-label">
               <input
                 type="checkbox"
                 checked={forgiveDifference}
                 onChange={(e) => setForgiveDifference(e.target.checked)}
-                className="size-4 accent-neutral-900 dark:accent-neutral-100"
+                className="size-4 accent-accent"
               />
               Ficamos quites — perdoa esta diferença
             </label>
@@ -222,7 +216,7 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
         {OPTIONS.map((opt) => (
           <label
             key={opt.value}
-            className="flex min-h-14 cursor-pointer items-start gap-3 rounded-lg border border-neutral-300 px-3 py-2.5 transition-colors duration-150 ease-out has-[:checked]:border-neutral-900 has-[:checked]:bg-neutral-100 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-1 has-[:focus-visible]:outline-neutral-900 motion-reduce:transition-none dark:border-neutral-700 dark:has-[:checked]:border-neutral-100 dark:has-[:checked]:bg-neutral-800 dark:has-[:focus-visible]:outline-neutral-100"
+            className="flex min-h-14 cursor-pointer items-start gap-3 rounded-control border border-separator px-3 py-2.5 transition-colors duration-150 ease-out has-[:checked]:border-accent has-[:checked]:bg-accent/10 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-1 has-[:focus-visible]:outline-accent motion-reduce:transition-none"
           >
             <input
               type="radio"
@@ -230,18 +224,18 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
               value={opt.value}
               checked={settlement === opt.value}
               onChange={() => setSettlement(opt.value)}
-              className="mt-1 size-4 accent-neutral-900 dark:accent-neutral-100"
+              className="mt-1 size-4 accent-accent"
             />
             <span>
-              <span className="block font-medium text-neutral-900 dark:text-neutral-100">{opt.title}</span>
-              <span className="block text-sm text-neutral-500 dark:text-neutral-400">{opt.hint}</span>
+              <span className="block font-medium text-label">{opt.title}</span>
+              <span className="block text-sm text-label-2">{opt.hint}</span>
             </span>
           </label>
         ))}
       </fieldset>
 
       {settlement === 'bank' && bankProblem && (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+        <p role="alert" className="text-sm text-negative">
           {bankProblem}
         </p>
       )}
@@ -315,7 +309,7 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
       </div>
 
       {error && (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+        <p role="alert" className="text-sm text-negative">
           {error}
         </p>
       )}
@@ -325,14 +319,14 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className={`min-h-11 flex-1 rounded-lg border border-neutral-300 font-medium text-neutral-700 transition duration-150 ease-out hover:bg-neutral-100 active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800 ${focusRing}`}
+          className={`min-h-11 flex-1 rounded-control border border-separator font-medium text-label transition duration-150 ease-out hover:bg-fill active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 ${focusRing}`}
         >
           Cancelar
         </button>
         <button
           type="submit"
           disabled={saving || bankBlocked || !note.trim()}
-          className={`min-h-11 flex-1 rounded-lg bg-neutral-900 font-medium text-white transition duration-150 ease-out hover:bg-neutral-700 active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300 ${focusRing}`}
+          className={`min-h-11 flex-1 rounded-control bg-accent-fill font-medium text-white transition duration-150 ease-out active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 ${focusRing}`}
         >
           {saving ? 'A guardar...' : shared ? 'Enviar para confirmar' : 'Guardar'}
         </button>

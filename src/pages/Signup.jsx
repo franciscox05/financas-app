@@ -80,9 +80,9 @@ export default function Signup() {
         Criar conta
       </PrimaryButton>
 
-      <p className="text-center text-sm text-neutral-500">
+      <p className="text-center text-sm text-label-2">
         Já tens conta?{' '}
-        <Link to="/login" className="font-medium text-green-600 hover:text-green-700">
+        <Link to="/login" className="font-medium text-accent">
           Entrar
         </Link>
       </p>

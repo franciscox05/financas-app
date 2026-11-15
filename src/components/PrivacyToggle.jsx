@@ -9,12 +9,12 @@ export default function PrivacyToggle() {
       onClick={toggle}
       aria-pressed={hidden}
       aria-label={hidden ? 'Mostrar valores' : 'Esconder valores'}
-      className="rounded-lg border border-neutral-300 p-1.5 dark:border-neutral-700"
+      className="pressable flex size-11 shrink-0 items-center justify-center rounded-full text-label-2"
     >
       {hidden ? (
-        <EyeOff size={16} className="text-neutral-400" />
+        <EyeOff size={21} strokeWidth={1.9} aria-hidden="true" className="text-accent" />
       ) : (
-        <Eye size={16} className="text-neutral-400" />
+        <Eye size={21} strokeWidth={1.9} aria-hidden="true" />
       )}
     </button>
   )

@@ -1,4 +1,4 @@
-import { ArrowLeft, Phone, Target, StickyNote } from 'lucide-react'
+import { ChevronLeft, Phone, Target, StickyNote } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import Card from '../components/Card'
 import GoalsSection from '../components/GoalsSection'
@@ -7,27 +7,25 @@ import MyPhoneSection from '../components/MyPhoneSection'
 import NotesCalendar from '../components/NotesCalendar'
 import PersonalInfoSection from '../components/PersonalInfoSection'
 import SignOutButton from '../components/SignOutButton'
-
-const focusRing =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
+import { focusRing } from '../components/ui/styles'
 
 // Mesmo contentor e mesma hierarquia de título em todos os blocos da página —
 // antes o Perfil usava cartões sem fundo e a Gestão usava rounded-2xl com
 // fundo, duas caixas diferentes para o mesmo papel.
 const cardTitleClass =
-  'flex items-center gap-1.5 text-sm font-semibold text-neutral-500'
+  'flex items-center gap-2 text-[1.25rem] font-bold tracking-tight text-label [&>svg]:size-5 [&>svg]:text-accent'
 
 // Módulo pessoal: dados do perfil, telefone/MB Way (usados pelos Amigos) e um
 // espaço livre para objetivos e notas, sem ligação a dinheiro.
 export default function Profile() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <header>
         <Link
           to="/"
-          className={`-ml-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm text-neutral-600 transition-colors duration-150 ease-out hover:text-neutral-900 motion-reduce:transition-none dark:text-neutral-300 dark:hover:text-neutral-100 ${focusRing}`}
+          className={`pressable -ml-2 inline-flex min-h-11 items-center gap-0.5 rounded-control pr-3 pl-1 text-[1.0625rem] text-accent ${focusRing}`}
         >
-          <ArrowLeft size={16} aria-hidden="true" /> Início
+          <ChevronLeft size={24} strokeWidth={2.1} aria-hidden="true" /> Início
         </Link>
       </header>
 

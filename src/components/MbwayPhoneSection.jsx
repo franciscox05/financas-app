@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { getMyMbwayPhone, saveMbwayPhone } from '../lib/friendsDb'
-
-const focusRing =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
+import { focusRing } from './ui/styles'
 
 // O número que aparece nos lembretes de WhatsApp/SMS para os amigos pagarem por MB Way.
 export default function MbwayPhoneSection() {
@@ -49,12 +47,12 @@ export default function MbwayPhoneSection() {
   }
 
   return (
-    <div className="border-t border-neutral-200 pt-4 dark:border-neutral-800">
+    <div className="border-t border-separator pt-4">
       <form onSubmit={handleSubmit} className="space-y-2">
-        <label htmlFor="my-mbway" className="block text-xs font-medium text-neutral-500">
+        <label htmlFor="my-mbway" className="block text-xs font-medium text-label-2">
           O meu número MB Way (opcional)
         </label>
-        <p className="text-xs text-neutral-500">Aparece nos lembretes que envias aos amigos.</p>
+        <p className="text-xs text-label-2">Aparece nos lembretes que envias aos amigos.</p>
         <div className="flex gap-2">
           <input
             id="my-mbway"
@@ -65,18 +63,18 @@ export default function MbwayPhoneSection() {
             value={value}
             disabled={!loaded || busy}
             onChange={(e) => setValue(e.target.value)}
-            className={`min-h-11 min-w-0 flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm transition-colors duration-150 ease-out disabled:opacity-50 motion-reduce:transition-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 ${focusRing}`}
+            className={`min-h-11 min-w-0 flex-1 rounded-control border-0 bg-fill px-3.5 text-label focus:ring-2 focus:ring-accent transition-colors duration-150 ease-out disabled:opacity-50 motion-reduce:transition-none ${focusRing}`}
           />
           <button
             type="submit"
             disabled={busy || !loaded}
-            className={`min-h-11 rounded-lg bg-neutral-900 px-4 text-sm font-medium text-white transition duration-150 ease-out hover:bg-neutral-700 active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300 ${focusRing}`}
+            className={`min-h-11 rounded-control bg-accent-fill px-4 text-sm font-medium text-white transition duration-150 ease-out active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 ${focusRing}`}
           >
             {busy ? 'A guardar...' : 'Guardar'}
           </button>
         </div>
         {error && (
-          <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+          <p role="alert" className="text-sm text-negative">
             {error}
           </p>
         )}

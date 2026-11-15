@@ -16,6 +16,8 @@ import {
 } from '../lib/db'
 import Money from '../components/Money'
 import Card from '../components/Card'
+import PageHeader from '../components/ui/PageHeader'
+import { eurSigned } from '../lib/format'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -97,45 +99,61 @@ export default function Dashboard() {
   }
 
   if (loading) {
-    return <PageSkeleton />
+    return (
+      <>
+        <PageHeader title="Registo" />
+        <PageSkeleton />
+      </>
+    )
   }
 
   // Só ocupa a página toda se nunca houve dados; num refresh falhado mantém-se o
   // conteúdo já carregado e mostra-se um aviso por cima.
   if (loadError && accounts.length === 0) {
-    return <ErrorNotice message={loadError} onRetry={loadAll} />
+    return (
+      <>
+        <PageHeader title="Registo" />
+        <ErrorNotice message={loadError} onRetry={loadAll} />
+      </>
+    )
   }
 
   if (accounts.length === 0 || categories.length === 0) {
     return (
-      <EmptyState
-        title="A tua conta ainda não tem contas ou categorias por defeito."
-        description="Sai e volta a entrar para as criarmos. Se continuar, contacta o suporte."
-      />
+      <>
+        <PageHeader title="Registo" />
+        <EmptyState
+          title="A tua conta ainda não tem contas ou categorias por defeito."
+          description="Sai e volta a entrar para as criarmos. Se continuar, contacta o suporte."
+        />
+      </>
     )
   }
 
   const saldo = monthSummary ? monthSummary.income - monthSummary.expense : 0
+  // Abaixo de meio cêntimo é zero (ver a mesma nota em Balance.jsx): evita o
+  // "-0,00 €" a vermelho que a soma em vírgula flutuante podia dar.
+  const saldoTone = Math.abs(saldo) < 0.005 ? 'text-label' : saldo > 0 ? 'text-positive' : 'text-negative'
 
   return (
     <>
+      <PageHeader title="Registo" />
+
       {loadError && <ErrorNotice message={loadError} onRetry={loadAll} />}
 
       {monthSummary && (monthSummary.income > 0 || monthSummary.expense > 0) && (
         <button
+          type="button"
           onClick={() => navigate('/balanco')}
-          className="flex w-full items-center justify-between rounded-xl border border-neutral-200 bg-white p-4 text-left dark:border-neutral-800 dark:bg-neutral-900"
+          className="pressable flex min-h-16 w-full items-center justify-between gap-3 rounded-group bg-surface px-4 py-3 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
         >
-          <div>
-            <p className="text-xs text-neutral-500">Saldo este mês</p>
-            <p
-              className={`text-xl font-semibold ${saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}
-            >
-              {saldo >= 0 ? '+' : '-'}
-              <Money value={Math.abs(saldo)} />
+          <div className="min-w-0">
+            <p className="text-[0.8125rem] text-label-2">Saldo este mês</p>
+            <p className={`amount display truncate text-[1.625rem] leading-tight font-bold tracking-tight ${saldoTone}`}>
+              <Money>{eurSigned(saldo)}</Money>
             </p>
           </div>
-          <ChevronRight className="text-neutral-400" size={20} />
+          <ChevronRight size={20} strokeWidth={2.25} aria-hidden="true" className="shrink-0 text-label-3" />
         </button>
       )}
 
@@ -155,14 +173,15 @@ export default function Dashboard() {
       />
 
       <Card as="section" className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-neutral-500">Transações recentes</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-[1.25rem] font-bold tracking-tight text-label">Transações recentes</h2>
           <button
+            type="button"
             onClick={handleExport}
             disabled={exporting}
-            className="flex items-center gap-1 text-xs text-neutral-500 underline-offset-2 hover:underline disabled:opacity-50"
+            className="pressable -mr-2 flex min-h-11 items-center gap-1.5 rounded-control px-2 text-[0.9375rem] font-medium text-accent disabled:opacity-50"
           >
-            <Download size={13} />
+            <Download size={17} aria-hidden="true" />
             {exporting ? 'A exportar...' : 'Exportar CSV'}
           </button>
         </div>

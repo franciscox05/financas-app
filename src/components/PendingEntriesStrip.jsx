@@ -1,10 +1,8 @@
 import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { eur } from '../lib/format'
+import Money from './Money'
 import { signedCents } from '../lib/ledgerMath'
-
-const focusRing =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
+import { focusRing } from './ui/styles'
 
 const KIND_TITLES = {
   repaid_to_me: 'Devolução recebida',
@@ -19,10 +17,10 @@ export default function PendingEntriesStrip({ entries, friends }) {
 
   return (
     <section aria-labelledby="pending-entries-title" className="space-y-2">
-      <h3 id="pending-entries-title" className="text-sm font-semibold text-neutral-500">
+      <h3 id="pending-entries-title" className="text-sm font-semibold text-label-2">
         A confirmar ({entries.length})
       </h3>
-      <ul className="divide-y divide-neutral-200 rounded-xl border border-neutral-200 px-4 dark:divide-neutral-800 dark:border-neutral-800">
+      <ul className="divide-y divide-separator rounded-control border border-separator px-4">
         {entries.map((entry) => {
           const name = names.get(entry.friend_id) ?? 'Um amigo'
           const title = entry.note || KIND_TITLES[entry.kind] || 'Gasto'
@@ -32,17 +30,19 @@ export default function PendingEntriesStrip({ entries, friends }) {
             <li key={entry.id}>
               <Link
                 to={`/dividas/${entry.friend_id}`}
-                className={`-mx-2 flex min-h-14 items-center justify-between gap-3 rounded-lg px-2 py-2 transition-colors duration-150 ease-out hover:bg-neutral-100 active:bg-neutral-200 motion-reduce:transition-none dark:hover:bg-neutral-800 dark:active:bg-neutral-700 ${focusRing}`}
+                className={`-mx-2 flex min-h-14 items-center justify-between gap-3 rounded-control px-2 py-2 transition-colors duration-150 ease-out hover:bg-fill active:bg-fill-strong motion-reduce:transition-none ${focusRing}`}
               >
                 <span className="min-w-0">
-                  <span className="block truncate font-medium text-neutral-800 dark:text-neutral-200">
+                  <span className="block truncate font-medium text-label">
                     {name} · {title}
                   </span>
-                  <span className="block truncate text-xs text-amber-700 dark:text-amber-400">{action}</span>
+                  <span className="block truncate text-xs text-warning">{action}</span>
                 </span>
                 <span className="flex shrink-0 items-center gap-1.5 text-sm">
-                  <span className="font-semibold text-neutral-800 dark:text-neutral-200">{eur(cents / 100)}</span>
-                  <ChevronRight size={16} aria-hidden="true" className="text-neutral-400" />
+                  <span className="amount font-semibold text-label">
+                    <Money value={cents / 100} />
+                  </span>
+                  <ChevronRight size={16} aria-hidden="true" className="text-label-3" />
                 </span>
               </Link>
             </li>

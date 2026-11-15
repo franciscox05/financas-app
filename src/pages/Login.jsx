@@ -66,9 +66,9 @@ export default function Login() {
         </SecondaryButton>
       </div>
 
-      <p className="text-center text-sm text-neutral-500">
+      <p className="text-center text-sm text-label-2">
         Ainda não tens conta?{' '}
-        <Link to="/signup" className="font-medium text-green-600 hover:text-green-700">
+        <Link to="/signup" className="font-medium text-accent">
           Criar conta
         </Link>
       </p>

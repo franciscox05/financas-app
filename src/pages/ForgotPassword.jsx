@@ -103,7 +103,7 @@ export default function ForgotPassword() {
         title="Vê o teu email"
         subtitle={
           <>
-            Enviámos um código de {OTP_LENGTH} dígitos para <strong className="font-medium text-neutral-800 dark:text-neutral-200">{email.trim()}</strong>. Pode demorar um minuto; vê também o spam.
+            Enviámos um código de {OTP_LENGTH} dígitos para <strong className="font-medium text-label">{email.trim()}</strong>. Pode demorar um minuto; vê também o spam.
           </>
         }
         onSubmit={(e) => {
@@ -126,7 +126,7 @@ export default function ForgotPassword() {
               setError('')
               setStep('email')
             }}
-            className="rounded-md px-1 py-1 font-medium text-neutral-500 transition-colors hover:text-neutral-800 focus-visible:outline-2 focus-visible:outline-green-600 dark:hover:text-neutral-200"
+            className="rounded-md px-1 py-1 font-medium text-label-2 transition-colors hover:text-label focus-visible:outline-2 focus-visible:outline-accent"
           >
             Usar outro email
           </button>
@@ -134,7 +134,7 @@ export default function ForgotPassword() {
             type="button"
             disabled={cooldown > 0 || loading}
             onClick={sendCode}
-            className="rounded-md px-1 py-1 font-medium text-green-600 transition-colors hover:text-green-700 focus-visible:outline-2 focus-visible:outline-green-600 disabled:text-neutral-400"
+            className="rounded-md px-1 py-1 font-medium text-accent transition-colors focus-visible:outline-2 focus-visible:outline-accent disabled:text-label-3"
           >
             {cooldown > 0 ? `Reenviar código (${cooldown}s)` : 'Reenviar código'}
           </button>

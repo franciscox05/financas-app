@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   balanceOfAt,
+  positionsFromBalances,
   receivablesAndPayables,
   signedCents,
   balanceOf,
@@ -121,4 +122,13 @@ test('receivablesAndPayables separa as duas direções em vez de as cruzar', () 
   const quites = [atEntry('paid_for_them', 10, '2026-11-01'), atEntry('repaid_to_me', 10, '2026-11-02')]
   const r = receivablesAndPayables([nelson, tiago, quites])
   assert.deepEqual(r, { receivable: 50, payable: 30, net: 20 })
+})
+
+test('positionsFromBalances separa a receber e a pagar a partir dos saldos por amigo', () => {
+  assert.deepEqual(positionsFromBalances([50, -30, 0]), { receivable: 50, payable: 30, net: 20 })
+})
+
+test('positionsFromBalances soma em cêntimos e aceita saldos em falta', () => {
+  assert.deepEqual(positionsFromBalances([0.1, 0.2, null, undefined]), { receivable: 0.3, payable: 0, net: 0.3 })
+  assert.deepEqual(positionsFromBalances([]), { receivable: 0, payable: 0, net: 0 })
 })

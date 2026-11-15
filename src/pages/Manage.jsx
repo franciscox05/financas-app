@@ -1,4 +1,4 @@
-import { Settings2, SlidersHorizontal, Tags, Wallet } from 'lucide-react'
+import { SlidersHorizontal, Tags, Wallet } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import BankStatementImportSection from '../components/BankStatementImportSection'
 import CategoryRulesSection from '../components/CategoryRulesSection'
@@ -6,6 +6,7 @@ import { CARD_CLASS } from '../components/Card'
 import EntityManager from '../components/EntityManager'
 import { ErrorNotice, ListSkeleton } from '../components/Feedback'
 import ImportSection from '../components/ImportSection'
+import PageHeader from '../components/ui/PageHeader'
 import ReclassifySection from '../components/ReclassifySection'
 import { balanceAt } from '../lib/accountBalance'
 import { today } from '../lib/dates'
@@ -32,8 +33,8 @@ const ACCOUNT_GROUPS = [
 ]
 
 const CATEGORY_GROUPS = [
-  { type: 'expense', label: 'Gastos', activeClass: 'bg-red-600 text-white' },
-  { type: 'income', label: 'Ganhos', activeClass: 'bg-green-600 text-white' },
+  { type: 'expense', label: 'Gastos', tone: 'negative' },
+  { type: 'income', label: 'Ganhos', tone: 'positive' },
 ]
 
 const byName = (a, b) => a.name.localeCompare(b.name, 'pt')
@@ -101,15 +102,7 @@ export default function Manage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center gap-2">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-neutral-500 dark:bg-neutral-800">
-          <Settings2 size={18} aria-hidden="true" />
-        </span>
-        <div>
-          <h1 className="text-base font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">Gestão</h1>
-          <p className="text-xs text-neutral-500">Contas, categorias e ferramentas avançadas</p>
-        </div>
-      </header>
+      <PageHeader title="Gestão" subtitle="Contas, categorias e ferramentas avançadas" />
 
       <div className={cardClass}>
         <EntityManager
@@ -179,9 +172,11 @@ export default function Manage() {
         />
       </div>
 
-      <div className={`${cardClass} space-y-3`}>
-        <h2 className="flex items-center gap-1.5 text-sm font-semibold text-neutral-500">
-          <SlidersHorizontal size={14} aria-hidden="true" /> Ferramentas avançadas
+      {/* As ferramentas deixam de estar dentro de um cartão: cada uma é uma
+          linha própria sobre o fundo da página, que abre no sítio. */}
+      <div className="space-y-2">
+        <h2 className="flex items-center gap-2 px-1 pb-1 text-[1.25rem] font-bold tracking-tight text-label">
+          <SlidersHorizontal size={20} strokeWidth={2.1} aria-hidden="true" className="text-accent" /> Ferramentas avançadas
         </h2>
         <CategoryRulesSection categories={categories} />
         <BankStatementImportSection accounts={accounts} categories={categories} />

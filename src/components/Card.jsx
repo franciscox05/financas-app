@@ -1,6 +1,6 @@
 // Contentor padrão de toda a app. Antes havia dois estilos a competir — uns
-// blocos só com borda (`rounded-xl border`) e outros com borda e fundo
-// (`bg-white dark:bg-neutral-900`) — e várias secções sem contentor nenhum,
+// blocos só com borda (`rounded-control border`) e outros com borda e fundo
+// (`bg-surface`) — e várias secções sem contentor nenhum,
 // com o título e a lista soltos sobre o fundo da página. Daí vinha a sensação
 // de margens e paddings desencontrados: não eram as margens, era a falta de um
 // único conceito de "caixa".
@@ -10,10 +10,13 @@
 // depender só de uma borda de 1px. Os campos de escrita dentro do cartão são
 // neutral-800, mais claros que ele, mantendo a hierarquia página < cartão <
 // campo.
-export const CARD_CLASS =
-  'rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900'
+//
+// Redesenho 2026-11: a caixa passa a ser uma superfície agrupada ao estilo iOS
+// — sem borda, raio maior, e as cores vêm dos tokens de index.css (página
+// --canvas < cartão --surface), que já trazem o par claro/escuro.
+export const CARD_CLASS = 'rounded-group bg-surface p-4'
 
-const CARD = 'rounded-xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900'
+const CARD = 'rounded-group bg-surface'
 
 const PADDING = { none: '', sm: 'p-3', md: 'p-4' }
 
@@ -34,11 +37,11 @@ export function SectionCard({ title, hint, aside, padding = 'md', className = ''
     <Card padding={padding} className={className} as="section" {...rest}>
       {(title || aside) && (
         <div className="flex items-baseline justify-between gap-2">
-          {title && <h3 className="text-sm font-semibold text-neutral-500">{title}</h3>}
+          {title && <h3 className="text-sm font-semibold text-label-2">{title}</h3>}
           {aside}
         </div>
       )}
-      {hint && <p className="mt-1 text-xs leading-relaxed text-neutral-400">{hint}</p>}
+      {hint && <p className="mt-1 text-xs leading-relaxed text-label-3">{hint}</p>}
       {children && <div className={title || hint ? 'mt-3' : ''}>{children}</div>}
     </Card>
   )

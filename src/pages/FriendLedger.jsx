@@ -1,4 +1,4 @@
-import { ArrowLeft, Pencil, Plus } from 'lucide-react'
+import { ChevronLeft, Pencil, Plus } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import CollapsibleSection from '../components/CollapsibleSection'
@@ -21,22 +21,22 @@ import { hasOpenBalance } from '../lib/friendsLogic'
 import { balanceOf, describeBalance, lifetimeTotals, suggestedRepayment } from '../lib/ledgerMath'
 import { hasPendingOpening, privateConfirmedEntries } from '../lib/linkedLogic'
 import { onPendingChanged } from '../lib/pendingEvents'
-import Card from '../components/Card'
-
-const inputClass =
-  'min-h-11 w-full rounded-lg border border-neutral-300 px-3 py-2 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 motion-reduce:transition-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus-visible:outline-neutral-100'
-
-const focusRing =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
-
-const buttonBase = `min-h-11 rounded-lg px-3 text-sm font-medium transition duration-150 ease-out active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 ${focusRing}`
-const primaryButton = `${buttonBase} bg-neutral-900 text-white hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300`
-const secondaryButton = `${buttonBase} border border-neutral-300 text-neutral-800 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800`
+import Modal from '../components/Modal'
+import IconButton from '../components/ui/IconButton'
+import {
+  dangerButton,
+  focusRing,
+  inputClass,
+  labelClass,
+  primaryButton,
+  secondaryButton,
+  textButton,
+} from '../components/ui/styles'
 
 const STATE_TEXT = {
-  owes_me: 'text-green-700 dark:text-green-500',
-  i_owe: 'text-red-700 dark:text-red-500',
-  even: 'text-neutral-500 dark:text-neutral-400',
+  owes_me: 'text-positive',
+  i_owe: 'text-negative',
+  even: 'text-label-2',
 }
 
 export default function FriendLedger() {
@@ -177,7 +177,7 @@ export default function FriendLedger() {
   if (!friend) {
     return (
       <div className="space-y-3">
-        <p className="text-neutral-700 dark:text-neutral-300">Amigo não encontrado.</p>
+        <p className="text-label">Amigo não encontrado.</p>
         <Link to="/dividas" className={`inline-flex min-h-11 items-center text-sm underline ${focusRing}`}>
           Voltar aos amigos
         </Link>
@@ -196,11 +196,23 @@ export default function FriendLedger() {
   const showOpeningOffer = connected && privateBalance !== 0 && !hasPendingOpening(entries)
   const deleteHasBank = deleteTarget?.settlement === 'bank' && Boolean(deleteTarget?.transaction_id)
 
+  function startEditing(phone) {
+    setNameDraft(friend.name)
+    setPhoneDraft(phone)
+    setNameError('')
+    setEditing(true)
+  }
+
+  function closePanel() {
+    setPanel(null)
+    setPrefill(null)
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {error && <ErrorNotice message={error} onRetry={load} />}
 
-      <header className="space-y-1">
+      <div className="-mb-4 flex items-center justify-between">
         <button
           type="button"
           // Volta exatamente para onde estavas (ex. a linha em Registo) quando vieste de
@@ -210,14 +222,26 @@ export default function FriendLedger() {
             if (location.key !== 'default') navigate(-1)
             else navigate('/dividas')
           }}
-          className={`-ml-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm text-neutral-600 transition-colors duration-150 ease-out hover:text-neutral-900 motion-reduce:transition-none dark:text-neutral-300 dark:hover:text-neutral-100 ${focusRing}`}
+          className="pressable -ml-2 inline-flex min-h-11 items-center gap-0.5 rounded-control pr-3 pl-1 text-[1.0625rem] text-accent"
         >
-          <ArrowLeft size={16} aria-hidden="true" /> Voltar
+          <ChevronLeft size={24} strokeWidth={2.1} aria-hidden="true" /> Voltar
         </button>
+        {!editing && (
+          <IconButton
+            label="Editar nome e telemóvel"
+            tone="accent"
+            className="-mr-2"
+            onClick={() => startEditing(friend.phone ?? '')}
+          >
+            <Pencil size={20} aria-hidden="true" />
+          </IconButton>
+        )}
+      </div>
 
-        {editing ? (
-          <form onSubmit={handleSaveName} className="space-y-2">
-            <label htmlFor="friend-edit-name" className="block text-xs font-medium text-neutral-500">
+      {editing ? (
+        <form onSubmit={handleSaveName} className="space-y-3 rounded-group bg-surface p-4">
+          <div>
+            <label htmlFor="friend-edit-name" className={labelClass}>
               Nome
             </label>
             <input
@@ -229,7 +253,9 @@ export default function FriendLedger() {
               onChange={(e) => setNameDraft(e.target.value)}
               className={inputClass}
             />
-            <label htmlFor="friend-edit-phone" className="block text-xs font-medium text-neutral-500">
+          </div>
+          <div>
+            <label htmlFor="friend-edit-phone" className={labelClass}>
               Telemóvel (opcional)
             </label>
             <input
@@ -242,57 +268,38 @@ export default function FriendLedger() {
               onChange={(e) => setPhoneDraft(e.target.value)}
               className={inputClass}
             />
-            {nameError && (
-              <p role="alert" className="text-sm text-red-600 dark:text-red-400">
-                {nameError}
-              </p>
-            )}
-            <div className="flex gap-2">
-              <button type="submit" disabled={savingName} className={primaryButton}>
-                {savingName ? 'A guardar...' : 'Guardar'}
-              </button>
-              <button type="button" onClick={() => setEditing(false)} className={secondaryButton}>
-                Cancelar
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="flex items-center gap-1">
-            <FriendAvatar name={friend.name} avatarPath={friend.avatarPath} size="md" />
-            <h2 className="min-w-0 truncate text-xl font-semibold tracking-tight">{friend.name}</h2>
-            <button
-              type="button"
-              onClick={() => {
-                setNameDraft(friend.name)
-                setPhoneDraft(friend.phone ?? '')
-                setNameError('')
-                setEditing(true)
-              }}
-              aria-label="Editar nome e telemóvel"
-              className={`flex size-11 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors duration-150 ease-out hover:text-neutral-900 motion-reduce:transition-none dark:hover:text-neutral-100 ${focusRing}`}
-            >
-              <Pencil size={16} aria-hidden="true" />
+          </div>
+          {nameError && (
+            <p role="alert" className="text-[0.9375rem] text-negative">
+              {nameError}
+            </p>
+          )}
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setEditing(false)} className={`${secondaryButton} flex-1`}>
+              Cancelar
+            </button>
+            <button type="submit" disabled={savingName} className={`${primaryButton} flex-[2]`}>
+              {savingName ? 'A guardar...' : 'Guardar'}
             </button>
           </div>
-        )}
-        {!editing &&
-          (friend.phone ? (
-            <p className="text-sm text-neutral-500">{formatPhoneDisplay(friend.phone)}</p>
+        </form>
+      ) : (
+        // Identidade ao centro, como um cartão de contacto: fotografia grande,
+        // nome e telefone. O lápis de editar subiu para o canto de cima.
+        <header className="flex flex-col items-center text-center">
+          <FriendAvatar name={friend.name} avatarPath={friend.avatarPath} size="lg" />
+          <h1 className="mt-3 max-w-full truncate text-[1.75rem] leading-tight font-bold tracking-tight text-label">
+            {friend.name}
+          </h1>
+          {friend.phone ? (
+            <p className="mt-0.5 text-[0.9375rem] text-label-2">{formatPhoneDisplay(friend.phone)}</p>
           ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setNameDraft(friend.name)
-                setPhoneDraft('')
-                setNameError('')
-                setEditing(true)
-              }}
-              className={`-ml-2 min-h-11 rounded-lg px-2 text-sm text-neutral-500 underline transition-colors duration-150 ease-out hover:text-neutral-900 motion-reduce:transition-none dark:hover:text-neutral-100 ${focusRing}`}
-            >
+            <button type="button" onClick={() => startEditing('')} className={textButton}>
               Adicionar telefone
             </button>
-          ))}
-      </header>
+          )}
+        </header>
+      )}
 
       <FriendRequestPanel friend={friend} onChanged={() => load({ silent: true })} />
 
@@ -300,18 +307,40 @@ export default function FriendLedger() {
         <OpeningBalanceOffer friend={friend} balance={privateBalance} onShared={() => load({ silent: true })} />
       )}
 
-      <Card>
-        <p className="text-xs text-neutral-500">Neste momento</p>
-        <p className={`text-2xl font-semibold tracking-tight ${STATE_TEXT[state]}`}>
-          {state === 'even' ? (
-            'Estão quites'
-          ) : (
-            <>
-              {state === 'owes_me' ? 'Deve-te' : 'Deves-lhe'} <Money value={amount} />
-            </>
+      {/* O número principal do ecrã. O sentido ("Deve-te" / "Deves-lhe") fica
+          numa linha própria por cima do valor, para valores grandes não
+          partirem a linha. */}
+      <section aria-label="Saldo" className="rounded-group bg-surface p-5 text-center">
+        <p className="text-[0.8125rem] font-medium text-label-2">Neste momento</p>
+        {state === 'even' ? (
+          <p className="mt-1 text-[1.75rem] leading-tight font-bold tracking-tight text-label-2">Estão quites</p>
+        ) : (
+          <>
+            <p className={`mt-1 text-[1.0625rem] font-semibold ${STATE_TEXT[state]}`}>
+              {state === 'owes_me' ? 'Deve-te' : 'Deves-lhe'}
+            </p>
+            <p className={`amount display truncate text-[2.5rem] leading-tight font-bold tracking-tight ${STATE_TEXT[state]}`}>
+              <Money value={amount} />
+            </p>
+          </>
+        )}
+
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={() => togglePanel('expense')}
+            className={`${primaryButton} flex flex-1 items-center justify-center gap-1`}
+          >
+            <Plus size={17} strokeWidth={2.4} aria-hidden="true" /> Novo gasto
+          </button>
+          {repayment && (
+            <button type="button" onClick={() => togglePanel('repayment')} className={`${secondaryButton} min-w-0 flex-1`}>
+              {repayment.kind === 'repaid_to_me' ? 'Devolveu-me ' : 'Devolvi-lhe '}
+              <Money value={repayment.amount} />
+            </button>
           )}
-        </p>
-      </Card>
+        </div>
+      </section>
 
       {balance > 0 && <ReminderButtons friend={friend} balance={balance} entries={entries} />}
 
@@ -321,35 +350,35 @@ export default function FriendLedger() {
           open={showLifetime}
           onToggle={() => setShowLifetime((v) => !v)}
         >
-          <dl className="space-y-1.5 text-sm">
+          <dl className="space-y-2 text-[0.9375rem]">
             {lifetime.lent > 0 && (
               <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-neutral-500">Já lhe emprestaste no total</dt>
-                <dd className="font-medium text-neutral-800 dark:text-neutral-200">
+                <dt className="text-label-2">Já lhe emprestaste no total</dt>
+                <dd className="amount font-medium text-label">
                   <Money value={lifetime.lent} />
                 </dd>
               </div>
             )}
             {lifetime.repaidToMe > 0 && (
               <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-neutral-500">Já te devolveu</dt>
-                <dd className="font-medium text-neutral-800 dark:text-neutral-200">
+                <dt className="text-label-2">Já te devolveu</dt>
+                <dd className="amount font-medium text-label">
                   <Money value={lifetime.repaidToMe} />
                 </dd>
               </div>
             )}
             {lifetime.borrowed > 0 && (
               <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-neutral-500">Já te emprestou no total</dt>
-                <dd className="font-medium text-neutral-800 dark:text-neutral-200">
+                <dt className="text-label-2">Já te emprestou no total</dt>
+                <dd className="amount font-medium text-label">
                   <Money value={lifetime.borrowed} />
                 </dd>
               </div>
             )}
             {lifetime.repaidToThem > 0 && (
               <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-neutral-500">Já lhe devolveste</dt>
-                <dd className="font-medium text-neutral-800 dark:text-neutral-200">
+                <dt className="text-label-2">Já lhe devolveste</dt>
+                <dd className="amount font-medium text-label">
                   <Money value={lifetime.repaidToThem} />
                 </dd>
               </div>
@@ -358,42 +387,21 @@ export default function FriendLedger() {
         </CollapsibleSection>
       )}
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <button
-          type="button"
-          onClick={() => togglePanel('expense')}
-          aria-expanded={panel === 'expense'}
-          className={`${primaryButton} flex items-center justify-center gap-1`}
-        >
-          <Plus size={14} aria-hidden="true" /> Novo gasto
-        </button>
-        {repayment && (
-          <button
-            type="button"
-            onClick={() => togglePanel('repayment')}
-            aria-expanded={panel === 'repayment'}
-            className={secondaryButton}
-          >
-            {repayment.kind === 'repaid_to_me' ? 'Devolveu-me ' : 'Devolvi-lhe '}
-            <Money value={repayment.amount} />
-          </button>
-        )}
-      </div>
-
-      {panel === 'expense' && (
+      {/* Gasto e devolução abrem numa folha por cima da página, em vez de um
+          formulário a meio do ecrã que empurrava a lista de movimentos. As
+          folhas só existem enquanto estão abertas (o Modal não as monta
+          fechado), por isso começam sempre limpas, como antes. */}
+      <Modal open={panel === 'expense'} onClose={closePanel}>
         <NewExpenseSheet
           key={prefill?.id ?? 'new'}
           friend={friend}
           prefill={prefill}
           onStale={() => load({ silent: true })}
           onDone={() => afterChange()}
-          onCancel={() => {
-            setPanel(null)
-            setPrefill(null)
-          }}
+          onCancel={closePanel}
         />
-      )}
-      {panel === 'repayment' && (repayment || prefill) && (
+      </Modal>
+      <Modal open={panel === 'repayment' && Boolean(repayment || prefill)} onClose={closePanel}>
         <RepaymentSheet
           key={prefill?.id ?? 'new'}
           friend={friend}
@@ -401,15 +409,12 @@ export default function FriendLedger() {
           prefill={prefill}
           onStale={() => load({ silent: true })}
           onDone={() => afterChange()}
-          onCancel={() => {
-            setPanel(null)
-            setPrefill(null)
-          }}
+          onCancel={closePanel}
         />
-      )}
+      </Modal>
 
-      <Card as="section" className="space-y-2">
-        <h3 className="text-sm font-semibold text-neutral-500">Movimentos</h3>
+      <section className="space-y-3">
+        <h2 className="px-4 text-[0.8125rem] font-semibold tracking-wide text-label-2 uppercase">Movimentos</h2>
         {entries.length > 0 && <ShareSummaryButtons friend={friend} balance={balance} entries={entries} />}
         {entries.length === 0 ? (
           <EmptyState
@@ -417,7 +422,7 @@ export default function FriendLedger() {
             description="Regista o primeiro gasto para começares o conta-corrente."
           />
         ) : (
-          <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+          <ul className="grouped overflow-hidden rounded-group bg-surface">
             {entries.map((entry) => (
               <LedgerEntryRow
                 key={entry.id}
@@ -431,19 +436,15 @@ export default function FriendLedger() {
             ))}
           </ul>
         )}
-      </Card>
+      </section>
 
-      <section className="pt-2">
+      <section>
         {canDeleteFriend ? (
-          <button
-            type="button"
-            onClick={() => setConfirmFriendDelete(true)}
-            className={`${secondaryButton} text-red-700 dark:text-red-400`}
-          >
+          <button type="button" onClick={() => setConfirmFriendDelete(true)} className={`${dangerButton} w-full`}>
             Apagar amigo
           </button>
         ) : (
-          <p className="text-sm text-neutral-500">
+          <p className="px-4 text-center text-[0.8125rem] leading-snug text-label-2">
             {friend.status === 'invited'
               ? 'Cancela o pedido de amizade antes de apagar este amigo.'
               : friend.status === 'connected'

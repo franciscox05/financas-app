@@ -12,21 +12,21 @@ function DaySummary({ entry }) {
   const net = entry.income - entry.expense
   const mixed = entry.income > 0 && entry.expense > 0
   return (
-    <dl className="space-y-0.5 border-t border-neutral-200 pt-1.5 text-sm dark:border-neutral-800">
+    <dl className="space-y-0.5 border-t border-separator pt-1.5 text-sm">
       {mixed ? (
         <>
-          <SummaryRow label="Ganhos" tone="text-green-600">
+          <SummaryRow label="Ganhos" tone="text-positive">
             {eurSigned(entry.income)}
           </SummaryRow>
-          <SummaryRow label="Gastos" tone="text-red-600">
+          <SummaryRow label="Gastos" tone="text-negative">
             {eurSigned(-entry.expense)}
           </SummaryRow>
-          <SummaryRow label="Saldo do dia" tone={net >= 0 ? 'text-green-600' : 'text-red-600'} bold>
+          <SummaryRow label="Saldo do dia" tone={net >= 0 ? 'text-positive' : 'text-negative'} bold>
             {eurSigned(net)}
           </SummaryRow>
         </>
       ) : (
-        <SummaryRow label="Total do dia" tone={net >= 0 ? 'text-green-600' : 'text-red-600'} bold>
+        <SummaryRow label="Total do dia" tone={net >= 0 ? 'text-positive' : 'text-negative'} bold>
           {eurSigned(net)}
         </SummaryRow>
       )}
@@ -37,7 +37,7 @@ function DaySummary({ entry }) {
 function SummaryRow({ label, tone, bold = false, children }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <dt className={`text-neutral-500 ${bold ? 'font-semibold' : ''}`}>{label}</dt>
+      <dt className={`text-label-2 ${bold ? 'font-semibold' : ''}`}>{label}</dt>
       <dd className={`${tone} ${bold ? 'font-semibold' : 'font-medium'}`}>
         <Money>{children}</Money>
       </dd>
@@ -84,10 +84,10 @@ export default function MonthCalendar({ monthDate, transactions }) {
 
   return (
     <Card as="section" className="space-y-3">
-      <h3 className="text-center text-sm font-semibold text-neutral-500">Calendário do mês</h3>
+      <h3 className="text-center text-sm font-semibold text-label-2">Calendário do mês</h3>
 
       <div className="space-y-3">
-        <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-neutral-400">
+        <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-label-3">
           {WEEKDAY_LABELS.map((label) => (
             <div key={label}>{label}</div>
           ))}
@@ -103,19 +103,19 @@ export default function MonthCalendar({ monthDate, transactions }) {
                 key={day}
                 onClick={() => setSelectedDay(isSelected ? null : day)}
                 aria-current={isToday ? 'date' : undefined}
-                className={`relative flex flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 text-xs transition-colors ${
-                  isToday ? 'ring-2 ring-blue-500 ring-inset' : ''
+                className={`relative flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-control py-1 text-[0.8125rem] transition-colors ${
+                  isToday ? 'ring-2 ring-accent ring-inset' : ''
                 } ${
                   isSelected
-                    ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
+                    ? 'bg-accent-fill text-white'
                     : entry
-                      ? 'bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700'
-                      : 'text-neutral-400'
+                      ? 'bg-fill hover:bg-fill-strong'
+                      : 'text-label-3'
                 }`}
               >
                 <span
                   className={
-                    isToday ? (isSelected ? 'font-bold' : 'font-bold text-neutral-900 dark:text-white') : undefined
+                    isToday ? (isSelected ? 'font-bold' : 'font-bold text-label dark:text-white') : undefined
                   }
                 >
                   {day}
@@ -123,7 +123,7 @@ export default function MonthCalendar({ monthDate, transactions }) {
                 {entry && (
                   <span
                     className={`text-[9px] ${
-                      isSelected ? '' : entry.income - entry.expense >= 0 ? 'text-green-600' : 'text-red-600'
+                      isSelected ? '' : entry.income - entry.expense >= 0 ? 'text-positive' : 'text-negative'
                     }`}
                   >
                     <Money mask="••">{eurCompact(entry.income - entry.expense, { signed: true })}</Money>
@@ -135,21 +135,21 @@ export default function MonthCalendar({ monthDate, transactions }) {
         </div>
 
         {selectedDay && (
-          <div className="space-y-1.5 rounded-lg border border-neutral-200 p-2 dark:border-neutral-800">
-            <h4 className="text-xs font-semibold text-neutral-500">Dia {selectedDay}</h4>
+          <div className="space-y-1.5 rounded-control border border-separator p-2">
+            <h4 className="text-xs font-semibold text-label-2">Dia {selectedDay}</h4>
             {!selectedEntry || selectedEntry.txs.length === 0 ? (
-              <p className="py-1 text-center text-xs text-neutral-400">Sem transações.</p>
+              <p className="py-1 text-center text-xs text-label-3">Sem transações.</p>
             ) : (
-              <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+              <ul className="divide-y divide-separator">
                 {selectedEntry.txs.map((tx) => (
                   <li key={tx.id} className="flex items-center justify-between gap-2 py-1.5 text-sm">
-                    <span className="min-w-0 truncate text-neutral-700 dark:text-neutral-300">
+                    <span className="min-w-0 truncate text-label">
                       {tx.note || tx.categories?.name || 'Sem nota'}
                       {tx.note && ` · ${tx.categories?.name ?? 'Sem categoria'}`}
                     </span>
                     <span
                       className={`shrink-0 font-medium ${
-                        tx.type === 'income' ? 'text-green-600' : 'text-red-600'
+                        tx.type === 'income' ? 'text-positive' : 'text-negative'
                       }`}
                     >
                       {tx.type === 'income' ? '+' : '-'}

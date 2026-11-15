@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import Modal from './Modal'
-
-const focusRing =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
+import { focusRing } from './ui/styles'
 
 const FRAME = 280 // tamanho do visor quadrado, em px CSS
 const OUTPUT = 480 // lado do quadrado final gravado
@@ -113,7 +111,7 @@ export default function AvatarCropModal({ file, onCropped, onCancel }) {
     <Modal open={open} onClose={onCancel} labelledBy="avatar-crop-title">
       {open && (
         <div className="space-y-4">
-          <h2 id="avatar-crop-title" className="text-base font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+          <h2 id="avatar-crop-title" className="text-[1.25rem] leading-tight font-bold tracking-tight text-label">
             Ajustar foto
           </h2>
 
@@ -124,7 +122,7 @@ export default function AvatarCropModal({ file, onCropped, onCancel }) {
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerUp}
             style={{ width: FRAME, height: FRAME, touchAction: 'none' }}
-            className="relative mx-auto overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800"
+            className="relative mx-auto overflow-hidden rounded-full bg-fill"
           >
             {imgEl && (
               <img
@@ -142,7 +140,7 @@ export default function AvatarCropModal({ file, onCropped, onCancel }) {
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="text-xs text-neutral-500">Zoom</span>
+            <span className="text-xs text-label-2">Zoom</span>
             <input
               type="range"
               min="1"
@@ -150,7 +148,7 @@ export default function AvatarCropModal({ file, onCropped, onCancel }) {
               step="0.01"
               value={zoom}
               onChange={(e) => handleZoomChange(Number(e.target.value))}
-              className="flex-1 accent-neutral-900 dark:accent-neutral-100"
+              className="flex-1 accent-accent"
             />
           </div>
 
@@ -159,7 +157,7 @@ export default function AvatarCropModal({ file, onCropped, onCancel }) {
               type="button"
               onClick={onCancel}
               disabled={saving}
-              className={`min-h-11 flex-1 rounded-lg border border-neutral-300 text-sm font-medium text-neutral-700 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-200 ${focusRing}`}
+              className={`min-h-11 flex-1 rounded-control border border-separator text-sm font-medium text-label disabled:opacity-50 ${focusRing}`}
             >
               Cancelar
             </button>
@@ -167,7 +165,7 @@ export default function AvatarCropModal({ file, onCropped, onCancel }) {
               type="button"
               onClick={handleConfirm}
               disabled={!imgEl || saving}
-              className={`min-h-11 flex-1 rounded-lg bg-neutral-900 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900 ${focusRing}`}
+              className={`min-h-11 flex-1 rounded-control bg-accent-fill text-sm font-medium text-white disabled:opacity-50 ${focusRing}`}
             >
               {saving ? 'A preparar...' : 'Usar esta foto'}
             </button>

@@ -1,3 +1,4 @@
+import { ArrowDownLeft, ArrowUpRight, TrendingUp } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
   Bar,
@@ -13,19 +14,29 @@ import { useNavigate } from 'react-router-dom'
 import MonthCalendar from '../components/MonthCalendar'
 import CategoryDrilldownModal from '../components/CategoryDrilldownModal'
 import MonthPicker from '../components/MonthPicker'
-import Card, { SectionCard } from '../components/Card'
 import MonthlyReportButtons from '../components/MonthlyReportButtons'
+import Group from '../components/ui/Group'
+import PageHeader from '../components/ui/PageHeader'
+import Segmented from '../components/ui/Segmented'
 import { EmptyState, ErrorNotice, ListSkeleton, Skeleton } from '../components/Feedback'
 import { listCategories, listTransactionsInRange } from '../lib/db'
 import { addMonths, monthKey, monthLabel, monthStart, shortMonthLabel, toIsoDate } from '../lib/dates'
 import Money from '../components/Money'
 import { usePrivacy } from '../context/privacyContext'
 import HiddenChartNotice from '../components/HiddenChartNotice'
-import { eur } from '../lib/format'
+import { eur, eurSigned } from '../lib/format'
 
-const INCOME_COLOR = '#16a34a' // tailwind green-600 — consistente com o resto da UI
-const EXPENSE_COLOR = '#dc2626' // tailwind red-600
-const BAR_COLOR = '#2a78d6' // categorical slot 1 (azul) — magnitude das barras de gasto, não identidade
+// Cores pelos tokens de index.css (com par claro/escuro).
+const INCOME_COLOR = 'var(--positive)'
+const EXPENSE_COLOR = 'var(--negative)'
+const BAR_COLOR = 'var(--accent)' // magnitude das barras de gasto, não identidade
+const AXIS_COLOR = 'var(--label-2)'
+const GRID_COLOR = 'var(--separator)'
+
+const BREAKDOWN_TABS = [
+  { value: 'expense', label: 'Gastos' },
+  { value: 'income', label: 'Ganhos' },
+]
 
 // Total por categoria dos movimentos de um tipo, do maior para o menor — cada
 // categoria guarda também as suas transações, para o drill-down ao clicar.
@@ -48,32 +59,32 @@ function breakdownByCategory(bucket, type) {
 function CategoryBars({ items, color, onSelectCategory }) {
   const max = items[0]?.amount ?? 0
   return (
-    <ul className="space-y-2">
+    <ul className="grouped overflow-hidden rounded-group bg-surface">
       {items.map((c) => (
         <li key={c.name}>
           <button
             type="button"
             onClick={() => onSelectCategory(c)}
-            className="w-full rounded-lg text-left transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100"
+            className="pressable block min-h-11 w-full px-4 py-3 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
           >
-            <div className="mb-1 flex justify-between text-sm">
-              <span className="text-neutral-700 dark:text-neutral-300">{c.name}</span>
-              <span className="font-medium text-neutral-900 dark:text-neutral-100">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="min-w-0 truncate text-[1.0625rem] text-label">{c.name}</span>
+              <span className="amount shrink-0 text-[1.0625rem] font-medium text-label">
                 <Money value={c.amount} />
               </span>
             </div>
-            <div className="h-2 w-full rounded-full bg-neutral-100 dark:bg-neutral-800">
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-fill">
               <div
-                className="h-2 rounded-full"
+                className="h-full rounded-full"
                 style={{ width: `${(c.amount / max) * 100}%`, backgroundColor: color }}
               />
             </div>
           </button>
         </li>
       ))}
-      <li className="flex justify-between border-t border-neutral-200 pt-2 text-sm font-semibold dark:border-neutral-800">
-        <span className="text-neutral-700 dark:text-neutral-300">Total</span>
-        <span className="text-neutral-900 dark:text-neutral-100">
+      <li className="flex min-h-11 items-center justify-between gap-3 px-4 py-2.5 text-[1.0625rem] font-semibold text-label">
+        <span>Total</span>
+        <span className="amount">
           <Money value={items.reduce((sum, c) => sum + c.amount, 0)} />
         </span>
       </li>
@@ -229,8 +240,10 @@ export default function Balance() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-24" />
+      <div className="space-y-8">
+        <PageHeader title="Balanço" />
+        <Skeleton className="h-11" />
+        <Skeleton className="h-44" />
         <Skeleton className="h-56" />
         <ListSkeleton rows={4} />
       </div>
@@ -238,94 +251,92 @@ export default function Balance() {
   }
 
   if (error) {
-    return <ErrorNotice message={error} />
+    return (
+      <div className="space-y-8">
+        <PageHeader title="Balanço" />
+        <ErrorNotice message={error} />
+      </div>
+    )
   }
 
   const income = selectedBucket?.income ?? 0
   const expense = selectedBucket?.expense ?? 0
   const saldo = income - expense
+  // Abaixo de meio cêntimo é zero: a soma em vírgula flutuante pode dar
+  // -0,0000…1 e pintar de vermelho um mês que ficou exatamente a zeros.
+  const saldoTone = Math.abs(saldo) < 0.005 ? 'text-label' : saldo > 0 ? 'text-positive' : 'text-negative'
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      <PageHeader title="Balanço" />
+
       <MonthPicker value={selectedMonth} onChange={setSelectedMonth} disableFuture />
 
-      {monthSummary && (
-        <p className="text-center text-sm text-neutral-500">{monthSummary}</p>
-      )}
-
-      {savingsAmount > 0 && (
-        <p className="text-center text-xs text-neutral-400">
-          Dessas, <Money value={savingsAmount} /> foram para poupança/investimento — não contam como gasto do
-          dia a dia.
+      {/* Um só bloco para o mês: o saldo é o número principal, ganhos e gastos
+          vêm por baixo como apoio, e as duas frases de contexto ficam dentro do
+          mesmo bloco — antes eram três mini-cartões com valores a 14 px e
+          frases soltas por cima, sem ligação visível aos números. */}
+      <section aria-label="Resumo do mês" className="rounded-group bg-surface p-5">
+        <p className="text-[0.8125rem] font-medium text-label-2">Saldo do mês</p>
+        <p className={`amount display mt-1 truncate text-[2.5rem] leading-none font-bold tracking-tight ${saldoTone}`}>
+          <Money>{eurSigned(saldo)}</Money>
         </p>
-      )}
 
-      <div className="grid grid-cols-3 gap-1.5 text-center sm:gap-2">
-        <Card padding="sm" className="min-w-0 sm:p-3">
-          <p className="text-xs text-neutral-500">Ganhos</p>
-          <p className="break-words text-sm font-semibold text-green-600 sm:text-base">
-            <Money value={income} />
-          </p>
-        </Card>
-        <Card padding="sm" className="min-w-0 sm:p-3">
-          <p className="text-xs text-neutral-500">Gastos</p>
-          <p className="break-words text-sm font-semibold text-red-600 sm:text-base">
-            <Money value={expense} />
-          </p>
-        </Card>
-        <Card padding="sm" className="min-w-0 sm:p-3">
-          <p className="text-xs text-neutral-500">Saldo</p>
-          <p
-            className={`break-words text-sm font-semibold sm:text-base ${saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}
-          >
-            <Money value={saldo} />
-          </p>
-        </Card>
-      </div>
+        <div className="mt-5 grid grid-cols-2 gap-4 border-t-[0.5px] border-separator pt-4">
+          <div className="min-w-0">
+            <p className="flex items-center gap-1 text-[0.8125rem] text-label-2">
+              <ArrowDownLeft size={15} strokeWidth={2.4} aria-hidden="true" className="text-positive" />
+              Ganhos
+            </p>
+            <p className="amount mt-0.5 truncate text-[1.25rem] font-semibold tracking-tight text-label">
+              <Money value={income} />
+            </p>
+          </div>
+          <div className="min-w-0">
+            <p className="flex items-center gap-1 text-[0.8125rem] text-label-2">
+              <ArrowUpRight size={15} strokeWidth={2.4} aria-hidden="true" className="text-negative" />
+              Gastos
+            </p>
+            <p className="amount mt-0.5 truncate text-[1.25rem] font-semibold tracking-tight text-label">
+              <Money value={expense} />
+            </p>
+          </div>
+        </div>
+
+        {(monthSummary || savingsAmount > 0) && (
+          <div className="mt-4 space-y-1 text-[0.8125rem] leading-snug text-label-2">
+            {monthSummary && <p>{monthSummary}</p>}
+            {savingsAmount > 0 && (
+              <p>
+                Dessas, <Money value={savingsAmount} /> foram para poupança/investimento — não contam como
+                gasto do dia a dia.
+              </p>
+            )}
+          </div>
+        )}
+      </section>
 
       <MonthCalendar monthDate={selectedMonth} transactions={selectedBucket?.txs ?? []} />
 
       {insights.length > 0 && (
-        <section className="space-y-1.5 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/40">
-          <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-            Insights
-          </h3>
-          <ul className="space-y-1 text-sm text-amber-900 dark:text-amber-200">
-            {insights.map((i) => (
-              <li key={i.name}>
-                Gastaste {i.diffPct}% mais em <strong>{i.name}</strong> este mês do que a média
-                dos 3 meses anteriores.
-              </li>
-            ))}
-          </ul>
-        </section>
+        <Group header="Insights" list inset="3rem">
+          {insights.map((i) => (
+            <li key={i.name} className="flex items-start gap-3 px-4 py-3">
+              <TrendingUp size={20} strokeWidth={2.1} aria-hidden="true" className="mt-0.5 shrink-0 text-warning" />
+              <p className="text-[0.9375rem] leading-snug text-label">
+                Gastaste {i.diffPct}% mais em <strong className="font-semibold">{i.name}</strong> este mês do que a
+                média dos 3 meses anteriores.
+              </p>
+            </li>
+          ))}
+        </Group>
       )}
 
-      <Card as="section">
-        <div className="mb-3 grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setBreakdownTab('expense')}
-            className={`rounded-lg py-2 text-sm font-medium transition-colors ${
-              breakdownTab === 'expense'
-                ? 'bg-red-600 text-white'
-                : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'
-            }`}
-          >
-            Gastos por categoria
-          </button>
-          <button
-            type="button"
-            onClick={() => setBreakdownTab('income')}
-            className={`rounded-lg py-2 text-sm font-medium transition-colors ${
-              breakdownTab === 'income'
-                ? 'bg-green-600 text-white'
-                : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'
-            }`}
-          >
-            Ganhos por categoria
-          </button>
+      <section aria-label="Por categoria" className="space-y-3">
+        <div className="px-4">
+          <h2 className="text-[0.8125rem] font-semibold tracking-wide text-label-2 uppercase">Por categoria</h2>
         </div>
+        <Segmented label="Tipo de movimento" options={BREAKDOWN_TABS} value={breakdownTab} onChange={setBreakdownTab} />
 
         {breakdownTab === 'expense' ? (
           categoryBreakdown.length === 0 ? (
@@ -339,11 +350,11 @@ export default function Balance() {
             <CategoryBars items={categoryBreakdown} color={BAR_COLOR} onSelectCategory={setDrilldownCategory} />
           )
         ) : incomeBreakdown.length === 0 ? (
-          <p className="py-1 text-center text-sm text-neutral-400">Sem ganhos neste mês.</p>
+          <EmptyState title="Sem ganhos neste mês" />
         ) : (
           <CategoryBars items={incomeBreakdown} color={INCOME_COLOR} onSelectCategory={setDrilldownCategory} />
         )}
-      </Card>
+      </section>
 
       <CategoryDrilldownModal
         category={drilldownCategory}
@@ -351,38 +362,46 @@ export default function Balance() {
         onClose={() => setDrilldownCategory(null)}
       />
 
-      <SectionCard title="Evolução (últimos 6 meses)">
+      <Group header="Evolução" footer="Seis meses, a terminar no mês selecionado.">
         <div className="h-56 w-full">
           {hidden ? (
             <HiddenChartNotice />
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} barGap={2}>
-                <CartesianGrid vertical={false} stroke="#e1e0d9" strokeDasharray="3 3" />
+                <CartesianGrid vertical={false} stroke={GRID_COLOR} strokeDasharray="3 3" />
                 <XAxis
                   dataKey="month"
-                  tick={{ fontSize: 12, fill: '#898781' }}
-                  axisLine={{ stroke: '#c3c2b7' }}
+                  tick={{ fontSize: 12, fill: AXIS_COLOR }}
+                  axisLine={{ stroke: GRID_COLOR }}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 12, fill: '#898781' }}
+                  tick={{ fontSize: 12, fill: AXIS_COLOR }}
                   axisLine={false}
                   tickLine={false}
                   width={40}
                 />
                 <Tooltip
                   formatter={(value) => eur(Number(value))}
-                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                  cursor={{ fill: 'var(--fill)' }}
+                  contentStyle={{
+                    fontSize: 13,
+                    borderRadius: 12,
+                    border: '0.5px solid var(--separator)',
+                    backgroundColor: 'var(--surface-raised)',
+                    boxShadow: 'var(--shadow-raised)',
+                  }}
+                  labelStyle={{ color: 'var(--label-2)', fontWeight: 600, marginBottom: 2 }}
                 />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Legend wrapperStyle={{ fontSize: 12, color: 'var(--label-2)' }} />
                 <Bar dataKey="Ganhos" fill={INCOME_COLOR} radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Gastos" fill={EXPENSE_COLOR} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
         </div>
-      </SectionCard>
+      </Group>
 
       <MonthlyReportButtons report={report} monthKey={monthKey(selectedMonth)} />
     </div>

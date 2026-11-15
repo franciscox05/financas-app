@@ -1,11 +1,12 @@
 // Blocos de feedback partilhados: skeletons de carregamento, estados vazios com
 // call-to-action e aviso de erro. A animação respeita prefers-reduced-motion.
+import { X } from 'lucide-react'
 
 export function Skeleton({ className = '' }) {
   return (
     <div
       aria-hidden="true"
-      className={`animate-pulse rounded-lg bg-neutral-200 motion-reduce:animate-none dark:bg-neutral-800 ${className}`}
+      className={`animate-pulse rounded-control bg-fill motion-reduce:animate-none ${className}`}
     />
   )
 }
@@ -15,7 +16,7 @@ export function FormSkeleton() {
     <div
       role="status"
       aria-label="A carregar"
-      className="space-y-3 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800"
+      className="space-y-3 rounded-group bg-surface p-4"
     >
       <div className="grid grid-cols-2 gap-2">
         <Skeleton className="h-9" />
@@ -33,7 +34,7 @@ export function FormSkeleton() {
 
 export function ListSkeleton({ rows = 5 }) {
   return (
-    <ul role="status" aria-label="A carregar" className="divide-y divide-neutral-200 dark:divide-neutral-800">
+    <ul role="status" aria-label="A carregar" className="divide-y divide-separator">
       {Array.from({ length: rows }, (_, i) => (
         <li key={i} className="flex items-center justify-between gap-3 py-3">
           <div className="min-w-0 flex-1 space-y-1.5">
@@ -58,14 +59,14 @@ export function PageSkeleton() {
 
 export function EmptyState({ title, description, actionLabel, onAction }) {
   return (
-    <div className="rounded-xl border border-dashed border-neutral-300 px-4 py-8 text-center dark:border-neutral-700">
-      <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{title}</p>
-      {description && <p className="mt-1 text-xs text-neutral-500">{description}</p>}
+    <div className="rounded-group bg-fill px-5 py-9 text-center">
+      <p className="text-[1.0625rem] font-semibold tracking-tight text-label">{title}</p>
+      {description && <p className="mx-auto mt-1 max-w-xs text-[0.8125rem] leading-snug text-label-2">{description}</p>}
       {actionLabel && onAction && (
         <button
           type="button"
           onClick={onAction}
-          className="mt-4 rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300"
+          className="mt-5 min-h-11 rounded-control bg-accent-fill px-5 text-[0.9375rem] font-semibold text-white transition-opacity duration-150 active:opacity-70"
         >
           {actionLabel}
         </button>
@@ -79,23 +80,23 @@ export function EmptyState({ title, description, actionLabel, onAction }) {
 export function Pager({ page, totalPages, onChange }) {
   if (totalPages <= 1) return null
   return (
-    <div className="flex items-center justify-between pt-1 text-sm">
+    <div className="flex items-center justify-between pt-2">
       <button
         type="button"
         onClick={() => onChange(page - 1)}
         disabled={page <= 1}
-        className="rounded-lg border border-neutral-300 px-3 py-1.5 disabled:opacity-40 dark:border-neutral-700"
+        className="pressable min-h-11 rounded-control px-3 text-[0.9375rem] font-medium text-accent disabled:text-label-3"
       >
         Anterior
       </button>
-      <span className="text-xs text-neutral-500">
+      <span className="amount text-[0.8125rem] text-label-2">
         Página {page} de {totalPages}
       </span>
       <button
         type="button"
         onClick={() => onChange(page + 1)}
         disabled={page >= totalPages}
-        className="rounded-lg border border-neutral-300 px-3 py-1.5 disabled:opacity-40 dark:border-neutral-700"
+        className="pressable min-h-11 rounded-control px-3 text-[0.9375rem] font-medium text-accent disabled:text-label-3"
       >
         Seguinte
       </button>
@@ -108,18 +109,23 @@ export function ErrorNotice({ message, onRetry, onDismiss }) {
   return (
     <div
       role="alert"
-      className="flex items-start justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+      className="flex items-center justify-between gap-3 rounded-control bg-negative/10 px-4 py-2 text-[0.9375rem] leading-snug text-negative"
     >
       <span>{message}</span>
       <span className="flex shrink-0 gap-2">
         {onRetry && (
-          <button type="button" onClick={onRetry} className="font-medium underline-offset-2 hover:underline">
+          <button type="button" onClick={onRetry} className="min-h-11 px-1 font-semibold">
             Tentar de novo
           </button>
         )}
         {onDismiss && (
-          <button type="button" onClick={onDismiss} aria-label="Fechar" className="opacity-70 hover:opacity-100">
-            ✕
+          <button
+            type="button"
+            onClick={onDismiss}
+            aria-label="Fechar"
+            className="-mr-2 flex size-11 items-center justify-center opacity-70 hover:opacity-100"
+          >
+            <X size={18} aria-hidden="true" />
           </button>
         )}
       </span>

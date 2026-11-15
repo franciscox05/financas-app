@@ -64,11 +64,11 @@ export default function AccountHistory() {
         <Link
           to="/patrimonio"
           aria-label="Voltar ao património"
-          className="-ml-2 flex size-10 items-center justify-center rounded-lg text-neutral-500 active:scale-95"
+          className="-ml-2 flex size-10 items-center justify-center rounded-control text-label-2 active:scale-95"
         >
           <ChevronLeft size={22} />
         </Link>
-        <h2 className="min-w-0 truncate text-lg font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+        <h2 className="min-w-0 truncate text-lg font-semibold tracking-tight text-label">
           {account?.name ?? 'Conta'}
         </h2>
       </div>
@@ -77,12 +77,12 @@ export default function AccountHistory() {
 
       {snapshots.length > 0 && (
         <Card as="section" className="space-y-1">
-          <h3 className="text-sm font-semibold text-neutral-500">Atualizações de saldo</h3>
-          <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+          <h3 className="text-sm font-semibold text-label-2">Atualizações de saldo</h3>
+          <ul className="divide-y divide-separator">
             {snapshots.slice((snapPage - 1) * PAGE_SIZE, snapPage * PAGE_SIZE).map((s) => (
               <li key={s.id} className="flex items-center justify-between py-2 text-sm">
-                <span className="text-neutral-500">{ptDate(s.snapshot_date)}</span>
-                <span className="font-semibold text-neutral-900 dark:text-neutral-100">
+                <span className="text-label-2">{ptDate(s.snapshot_date)}</span>
+                <span className="font-semibold text-label">
                   <Money value={Number(s.value)} />
                 </span>
               </li>
@@ -94,17 +94,17 @@ export default function AccountHistory() {
 
       {transfers.length > 0 && (
         <Card as="section" className="space-y-1">
-          <h3 className="text-sm font-semibold text-neutral-500">Transferências</h3>
-          <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+          <h3 className="text-sm font-semibold text-label-2">Transferências</h3>
+          <ul className="divide-y divide-separator">
             {transfers.slice((transferPage - 1) * PAGE_SIZE, transferPage * PAGE_SIZE).map((t) => {
               const isOutgoing = t.from_account_id === accountId
               return (
                 <li key={t.id} className="flex items-center justify-between py-2 text-sm">
-                  <span className="min-w-0 truncate text-neutral-500">
+                  <span className="min-w-0 truncate text-label-2">
                     {ptDate(t.occurred_on)} ·{' '}
                     {isOutgoing ? `para ${t.to_account?.name ?? 'conta'}` : `de ${t.from_account?.name ?? 'conta'}`}
                   </span>
-                  <span className={`shrink-0 font-semibold ${isOutgoing ? 'text-red-600' : 'text-green-600'}`}>
+                  <span className={`shrink-0 font-semibold ${isOutgoing ? 'text-negative' : 'text-positive'}`}>
                     <Money>{`${isOutgoing ? '-' : '+'}${eur(t.amount)}`}</Money>
                   </span>
                 </li>
@@ -116,7 +116,7 @@ export default function AccountHistory() {
       )}
 
       <Card as="section" className="space-y-1">
-        <h3 className="text-sm font-semibold text-neutral-500">
+        <h3 className="text-sm font-semibold text-label-2">
           Transações{totalCount ? ` (${totalCount})` : ''}
         </h3>
         {loading ? (
@@ -125,21 +125,21 @@ export default function AccountHistory() {
           <EmptyState title="Sem transações" description="Ainda não há registos nesta conta." />
         ) : (
           <>
-            <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+            <ul className="divide-y divide-separator">
               {rows.map((tx) => (
                 <li key={tx.id} className="flex items-center justify-between gap-3 py-2">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                    <p className="truncate text-sm font-medium text-label">
                       {tx.note || tx.categories?.name || 'Sem nota'}
                     </p>
-                    <p className="truncate text-xs text-neutral-500">
+                    <p className="truncate text-xs text-label-2">
                       {ptDate(tx.occurred_on)}
                       {tx.note && ` · ${tx.categories?.name ?? 'Sem categoria'}`}
                     </p>
                   </div>
                   <span
                     className={`shrink-0 text-sm font-semibold ${
-                      tx.type === 'income' ? 'text-green-600' : 'text-red-600'
+                      tx.type === 'income' ? 'text-positive' : 'text-negative'
                     }`}
                   >
                     <Money>{`${tx.type === 'income' ? '+' : '-'}${eur(tx.amount)}`}</Money>

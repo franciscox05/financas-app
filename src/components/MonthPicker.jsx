@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { addMonths, monthKey, monthLabel, monthStart } from '../lib/dates'
 
@@ -37,36 +37,46 @@ export default function MonthPicker({ value, onChange, disableFuture = false }) 
         <button
           type="button"
           onClick={() => onChange(addMonths(value, -1))}
-          className="rounded-lg border border-neutral-300 px-3 py-1 text-sm dark:border-neutral-700"
+          aria-label="Mês anterior"
+          className="pressable flex size-11 items-center justify-center rounded-full text-accent"
         >
-          <ChevronLeft size={16} />
+          <ChevronLeft size={24} strokeWidth={2.1} aria-hidden="true" />
         </button>
         <button
           type="button"
           onClick={openJump}
-          className="rounded-lg px-2 py-1 text-sm font-semibold text-neutral-700 underline-offset-2 hover:underline dark:text-neutral-300"
+          aria-expanded={showJump}
+          className="pressable flex min-h-11 items-center gap-1 rounded-control px-3 text-[1.0625rem] font-semibold tracking-tight text-label"
         >
           {monthLabel(value)}
+          <ChevronDown
+            size={16}
+            strokeWidth={2.4}
+            aria-hidden="true"
+            className={`text-label-3 transition-transform duration-200 ease-apple motion-reduce:transition-none ${showJump ? 'rotate-180' : ''}`}
+          />
         </button>
         <button
           type="button"
           onClick={() => onChange(addMonths(value, 1))}
           disabled={disableFuture && monthKey(value) === monthKey(monthStart(new Date()))}
-          className="rounded-lg border border-neutral-300 px-3 py-1 text-sm disabled:opacity-30 dark:border-neutral-700"
+          aria-label="Mês seguinte"
+          className="pressable flex size-11 items-center justify-center rounded-full text-accent disabled:text-label-3 disabled:opacity-50"
         >
-          <ChevronRight size={16} />
+          <ChevronRight size={24} strokeWidth={2.1} aria-hidden="true" />
         </button>
       </div>
 
       {showJump && (
         <form
           onSubmit={handleJump}
-          className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900"
+          className="flex items-center gap-2 rounded-control bg-fill p-2"
         >
           <select
             value={jumpMonth}
             onChange={(e) => setJumpMonth(Number(e.target.value))}
-            className="flex-1 rounded-lg border border-neutral-300 px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            aria-label="Mês"
+            className="min-w-0 flex-1 rounded-[0.5625rem] border-0 bg-surface-raised px-3 text-label"
           >
             {MONTH_NAMES.map((name, idx) => (
               <option key={name} value={idx + 1}>
@@ -77,7 +87,8 @@ export default function MonthPicker({ value, onChange, disableFuture = false }) 
           <select
             value={jumpYear}
             onChange={(e) => setJumpYear(Number(e.target.value))}
-            className="rounded-lg border border-neutral-300 px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            aria-label="Ano"
+            className="rounded-[0.5625rem] border-0 bg-surface-raised px-3 text-label"
           >
             {yearOptions.map((y) => (
               <option key={y} value={y}>
@@ -87,7 +98,7 @@ export default function MonthPicker({ value, onChange, disableFuture = false }) 
           </select>
           <button
             type="submit"
-            className="rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
+            className="min-h-11 rounded-[0.5625rem] bg-accent-fill px-4 text-[0.9375rem] font-semibold text-white"
           >
             Ir
           </button>

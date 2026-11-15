@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { listAccounts, listCategories } from '../lib/db'
 import { defaultCategoryId } from '../lib/repaymentInput'
-
-const inputClass =
-  'min-h-11 w-full rounded-lg border border-neutral-300 px-3 py-2 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 motion-reduce:transition-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus-visible:outline-neutral-100'
-const labelClass = 'mb-1 block text-xs font-medium text-neutral-500'
+import { inputClass, labelClass } from './ui/styles'
 
 const OPTIONS = [
   {
@@ -86,7 +83,7 @@ export default function SettlementFields({ kind, idPrefix, disabled, onChange, i
         {OPTIONS.map((opt) => (
           <label
             key={opt.value}
-            className="flex min-h-14 cursor-pointer items-start gap-3 rounded-lg border border-neutral-300 px-3 py-2.5 transition-colors duration-150 ease-out has-[:checked]:border-neutral-900 has-[:checked]:bg-neutral-100 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-1 has-[:focus-visible]:outline-neutral-900 motion-reduce:transition-none dark:border-neutral-700 dark:has-[:checked]:border-neutral-100 dark:has-[:checked]:bg-neutral-800 dark:has-[:focus-visible]:outline-neutral-100"
+            className="flex min-h-14 cursor-pointer items-start gap-3 rounded-control border border-separator px-3 py-2.5 transition-colors duration-150 ease-out has-[:checked]:border-accent has-[:checked]:bg-accent/10 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-1 has-[:focus-visible]:outline-accent motion-reduce:transition-none"
           >
             <input
               type="radio"
@@ -94,18 +91,18 @@ export default function SettlementFields({ kind, idPrefix, disabled, onChange, i
               value={opt.value}
               checked={settlement === opt.value}
               onChange={() => setSettlement(opt.value)}
-              className="mt-1 size-4 accent-neutral-900 dark:accent-neutral-100"
+              className="mt-1 size-4 accent-accent"
             />
             <span>
-              <span className="block font-medium text-neutral-900 dark:text-neutral-100">{opt.title}</span>
-              <span className="block text-sm text-neutral-500 dark:text-neutral-400">{opt.hint}</span>
+              <span className="block font-medium text-label">{opt.title}</span>
+              <span className="block text-sm text-label-2">{opt.hint}</span>
             </span>
           </label>
         ))}
       </fieldset>
 
       {problem && (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+        <p role="alert" className="text-sm text-negative">
           {problem}
         </p>
       )}

@@ -8,14 +8,7 @@ import { createSharedEntry, retireDeclinedEntry } from '../lib/linkedDb'
 import { isSharedGuardError } from '../lib/linkedLogic'
 import { notifyPendingChanged } from '../lib/pendingEvents'
 import OptionalDateField from './OptionalDateField'
-
-const inputClass =
-  'min-h-11 w-full rounded-lg border border-neutral-300 px-3 py-2 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 motion-reduce:transition-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus-visible:outline-neutral-100'
-
-const focusRing =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
-
-const labelClass = 'mb-1 block text-xs font-medium text-neutral-500'
+import { focusRing, inputClass, labelClass } from './ui/styles'
 
 const OPTIONS = [
   { kind: 'paid_for_them', title: 'Paguei eu', hint: 'Fica a dever-me (ex.: bilhete, almoço)' },
@@ -134,9 +127,11 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
     <form
       onSubmit={handleSubmit}
       aria-label={`Novo gasto com ${friend.name}`}
-      className="space-y-4 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
+      // Sem caixa própria: passa a abrir dentro de uma folha (Modal) na página
+      // do amigo, que já dá o fundo e o padding.
+      className="space-y-4"
     >
-      <h3 className="text-base font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+      <h3 className="pr-10 text-[1.375rem] leading-tight font-bold tracking-tight text-label">
         Novo gasto com {friend.name}
       </h3>
 
@@ -145,7 +140,7 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
         {OPTIONS.map((opt) => (
           <label
             key={opt.kind}
-            className="flex min-h-14 cursor-pointer items-start gap-3 rounded-lg border border-neutral-300 px-3 py-2.5 transition-colors duration-150 ease-out has-[:checked]:border-neutral-900 has-[:checked]:bg-neutral-100 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-1 has-[:focus-visible]:outline-neutral-900 motion-reduce:transition-none dark:border-neutral-700 dark:has-[:checked]:border-neutral-100 dark:has-[:checked]:bg-neutral-800 dark:has-[:focus-visible]:outline-neutral-100"
+            className="flex min-h-14 cursor-pointer items-start gap-3 rounded-control border border-separator px-3 py-2.5 transition-colors duration-150 ease-out has-[:checked]:border-accent has-[:checked]:bg-accent/10 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-1 has-[:focus-visible]:outline-accent motion-reduce:transition-none"
           >
             <input
               type="radio"
@@ -153,11 +148,11 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
               value={opt.kind}
               checked={kind === opt.kind}
               onChange={() => setKind(opt.kind)}
-              className="mt-1 size-4 accent-neutral-900 dark:accent-neutral-100"
+              className="mt-1 size-4 accent-accent"
             />
             <span>
-              <span className="block font-medium text-neutral-900 dark:text-neutral-100">{opt.title}</span>
-              <span className="block text-sm text-neutral-500 dark:text-neutral-400">{opt.hint}</span>
+              <span className="block font-medium text-label">{opt.title}</span>
+              <span className="block text-sm text-label-2">{opt.hint}</span>
             </span>
           </label>
         ))}
@@ -198,9 +193,9 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
         <div>
           <p className={labelClass}>Saiu de que conta?</p>
           {listsFailed ? (
-            <p className="text-sm text-red-600 dark:text-red-400">Não foi possível carregar as contas. Tenta outra vez.</p>
+            <p className="text-sm text-negative">Não foi possível carregar as contas. Tenta outra vez.</p>
           ) : !loadingLists && (accounts.length === 0 || categories.length === 0) ? (
-            <p className="text-sm text-red-600 dark:text-red-400">
+            <p className="text-sm text-negative">
               Precisas de ter pelo menos uma conta e uma categoria de gastos. Cria-as em Gestão primeiro.
             </p>
           ) : (
@@ -210,7 +205,7 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
                 disabled={loadingLists}
                 onChange={(e) => setAccountId(e.target.value)}
                 aria-label="Conta"
-                className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                className="w-full min-w-0 rounded-control border border-separator px-3 py-2 text-sm"
               >
                 {accounts.map((a) => (
                   <option key={a.id} value={a.id}>
@@ -223,7 +218,7 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
                 disabled={loadingLists}
                 onChange={(e) => setCategoryId(e.target.value)}
                 aria-label="Categoria"
-                className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                className="w-full min-w-0 rounded-control border border-separator px-3 py-2 text-sm"
               >
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -260,7 +255,7 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
       </div>
 
       {error && (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+        <p role="alert" className="text-sm text-negative">
           {error}
         </p>
       )}
@@ -270,14 +265,14 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className={`min-h-11 flex-1 rounded-lg border border-neutral-300 px-3 font-medium text-neutral-700 transition duration-150 ease-out hover:bg-neutral-100 active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800 ${focusRing}`}
+          className={`min-h-11 flex-1 rounded-control border border-separator px-3 font-medium text-label transition duration-150 ease-out hover:bg-fill active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 ${focusRing}`}
         >
           Cancelar
         </button>
         <button
           type="submit"
           disabled={saving}
-          className={`min-h-11 flex-[2] rounded-lg bg-neutral-900 px-3 font-medium text-white transition duration-150 ease-out hover:bg-neutral-700 active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300 ${focusRing}`}
+          className={`min-h-11 flex-[2] rounded-control bg-accent-fill px-3 font-medium text-white transition duration-150 ease-out active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 ${focusRing}`}
         >
           {saving ? 'A guardar...' : friend.status === 'connected' ? 'Enviar para confirmar' : 'Guardar'}
         </button>

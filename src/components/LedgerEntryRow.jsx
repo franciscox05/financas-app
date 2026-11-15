@@ -4,9 +4,7 @@ import PendingEntryActions from './PendingEntryActions'
 import { entryCounts, entryLabel, signedCents } from '../lib/ledgerMath'
 import { entryStatusText } from '../lib/linkedLogic'
 import { eur, shortDate } from '../lib/format'
-
-const focusRing =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
+import { focusRing } from './ui/styles'
 
 const KIND_TITLES = {
   repaid_to_me: 'Devolução recebida',
@@ -14,10 +12,10 @@ const KIND_TITLES = {
 }
 
 const TONE_CLASS = {
-  waiting: 'text-neutral-500 dark:text-neutral-400',
-  action: 'font-medium text-amber-700 dark:text-amber-400',
-  danger: 'text-red-700 dark:text-red-400',
-  muted: 'text-neutral-400 dark:text-neutral-500',
+  waiting: 'text-label-2',
+  action: 'font-medium text-warning',
+  danger: 'text-negative',
+  muted: 'text-label-3',
 }
 
 // Uma linha do conta-corrente: título (nota ou tipo), data + tipo, valor com
@@ -33,30 +31,30 @@ export default function LedgerEntryRow({ entry, friend, viewerId, onDelete, onCh
   const dimmed = !entryCounts(entry)
   const canDelete = !entry.mirror_id && entry.status !== 'archived'
   const amountColor = dimmed
-    ? 'text-neutral-400 dark:text-neutral-500'
+    ? 'text-label-3'
     : positive
-      ? 'text-green-700 dark:text-green-500'
-      : 'text-red-700 dark:text-red-500'
+      ? 'text-positive'
+      : 'text-negative'
   const muted = dimmed
 
   return (
-    <li className="space-y-2 py-2">
+    <li className="space-y-2 py-2 pr-2 pl-4">
       <div className="flex min-h-14 items-center justify-between gap-3">
         <div className="min-w-0">
           <p
             className={`truncate font-medium ${
-              muted ? 'text-neutral-500' : 'text-neutral-800 dark:text-neutral-200'
+              muted ? 'text-label-2' : 'text-label'
             }`}
           >
             {title}
           </p>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-label-2">
             {shortDate(entry.occurred_on)} · {entryLabel(entry.kind)}
           </p>
           {status.text && <p className={`text-xs ${TONE_CLASS[status.tone] ?? ''}`}>{status.text}</p>}
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <span className={`text-sm font-semibold ${amountColor}`}>
+          <span className={`amount text-[1.0625rem] font-semibold ${amountColor} ${canDelete && onDelete ? '' : 'pr-2'}`}>
             <Money>{formatted}</Money>
           </span>
           {canDelete && onDelete && (
@@ -64,7 +62,7 @@ export default function LedgerEntryRow({ entry, friend, viewerId, onDelete, onCh
               type="button"
               onClick={() => onDelete(entry)}
               aria-label={`Apagar movimento: ${title}`}
-              className={`flex size-11 items-center justify-center rounded-lg text-neutral-400 transition-colors duration-150 ease-out hover:text-red-600 active:scale-[0.95] motion-reduce:transition-none motion-reduce:active:scale-100 ${focusRing}`}
+              className={`flex size-11 items-center justify-center rounded-control text-label-3 transition-colors duration-150 ease-out hover:text-negative active:scale-[0.95] motion-reduce:transition-none motion-reduce:active:scale-100 ${focusRing}`}
             >
               <Trash2 size={16} aria-hidden="true" />
             </button>

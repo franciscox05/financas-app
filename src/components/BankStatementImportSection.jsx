@@ -7,9 +7,10 @@ import { normalize } from '../lib/categorySuggest'
 import { buildCsvRows, detectColumns, parseCsvFile } from '../lib/csvImportParser'
 import { createTransactionsBulk, listCategoryRules, listTransactionsInRange } from '../lib/db'
 import { eur } from '../lib/format'
+import { inputClass as sharedInputClass } from './ui/styles'
 
-const selectClass =
-  'w-full rounded-lg border border-neutral-300 px-3 py-2.5 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100'
+// Mesmo campo do resto da app (ui/styles.js).
+const selectClass = sharedInputClass
 const inputClass = selectClass
 
 const ROW_TYPES = [
@@ -201,15 +202,15 @@ export default function BankStatementImportSection({ accounts, categories }) {
       open={showSection}
       onToggle={() => setShowSection((v) => !v)}
     >
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-negative">{error}</p>}
 
       {!detection && (
-        <label className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-neutral-300 px-4 py-10 text-center text-sm text-neutral-500 transition-colors hover:border-neutral-400 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800/40">
-          <Upload size={22} className="text-neutral-400" aria-hidden="true" />
-          <span className="font-medium text-neutral-700 dark:text-neutral-300">
+        <label className="flex flex-col items-center justify-center gap-2 rounded-control border-2 border-dashed border-separator px-4 py-10 text-center text-sm text-label-2 transition-colors hover:border-separator hover:bg-fill">
+          <Upload size={22} className="text-label-3" aria-hidden="true" />
+          <span className="font-medium text-label">
             {parsing ? 'A ler o ficheiro...' : 'Clica para escolher o ficheiro CSV'}
           </span>
-          <span className="text-xs text-neutral-400">ou arrasta-o para aqui</span>
+          <span className="text-xs text-label-3">ou arrasta-o para aqui</span>
           <input
             type="file"
             accept=".csv,text/csv"
@@ -226,13 +227,13 @@ export default function BankStatementImportSection({ accounts, categories }) {
 
       {rows && rows.length > 0 && (
         <div className="space-y-3">
-          <div className="space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30">
-            <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+          <div className="space-y-2 rounded-control border border-warning/30 bg-warning/10 p-3">
+            <p className="text-xs font-medium text-warning">
               Ações em bloco — aplicam-se a todas as linhas marcadas abaixo
             </p>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="mb-1 block text-xs text-amber-700 dark:text-amber-400">Conta destino (todas)</label>
+                <label className="mb-1 block text-xs text-warning">Conta destino (todas)</label>
                 <select
                   value={defaultAccountId}
                   onChange={(e) => applyDefaultAccountToAll(e.target.value)}
@@ -246,7 +247,7 @@ export default function BankStatementImportSection({ accounts, categories }) {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs text-amber-700 dark:text-amber-400">Categoria (selecionadas)</label>
+                <label className="mb-1 block text-xs text-warning">Categoria (selecionadas)</label>
                 <div className="flex gap-1">
                   <select
                     value={bulkCategoryId}
@@ -264,7 +265,7 @@ export default function BankStatementImportSection({ accounts, categories }) {
                     type="button"
                     onClick={applyBulkCategory}
                     disabled={!bulkCategoryId}
-                    className="shrink-0 rounded-lg bg-amber-600 px-3 text-xs font-medium text-white disabled:opacity-40"
+                    className="shrink-0 rounded-control bg-warning px-3 text-xs font-medium text-white disabled:opacity-40"
                   >
                     Aplicar
                   </button>
@@ -274,18 +275,18 @@ export default function BankStatementImportSection({ accounts, categories }) {
             <button
               type="button"
               onClick={invertAllTypes}
-              className="flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-amber-300 px-3 text-xs font-medium text-amber-800 dark:border-amber-800 dark:text-amber-300"
+              className="flex min-h-9 w-full items-center justify-center gap-1.5 rounded-control border border-warning/30 px-3 text-xs font-medium text-warning"
             >
               <ArrowLeftRight size={12} aria-hidden="true" />
               Trocar Gasto ↔ Ganho em todas
             </button>
-            <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400">
+            <p className="text-xs leading-relaxed text-warning">
               Usa isto se o teu banco exportar os gastos como valores positivos e o extrato tiver
               entrado todo ao contrário.
             </p>
           </div>
 
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-label-2">
             {rows.length} linhas lidas · {includedCount} selecionadas para importar.
           </p>
 
@@ -306,7 +307,7 @@ export default function BankStatementImportSection({ accounts, categories }) {
             <button
               onClick={handleImport}
               disabled={importing || includedCount === 0}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-neutral-900 py-3 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+              className="flex flex-1 items-center justify-center gap-1.5 min-h-11 rounded-control bg-accent-fill px-4 text-[0.9375rem] font-semibold text-white disabled:opacity-50"
             >
               <Upload size={15} />
               {importing ? 'A importar...' : `Importar ${includedCount} transações`}
@@ -314,7 +315,7 @@ export default function BankStatementImportSection({ accounts, categories }) {
             <button
               onClick={resetAll}
               disabled={importing}
-              className="rounded-lg border border-neutral-300 px-4 py-3 text-sm dark:border-neutral-700"
+              className="min-h-11 rounded-control bg-fill px-4 text-[0.9375rem] font-semibold text-label"
             >
               Cancelar
             </button>
@@ -328,10 +329,10 @@ export default function BankStatementImportSection({ accounts, categories }) {
 function RowCard({ row, accounts, categories, onChange, onTypeChange }) {
   return (
     <li
-      className={`space-y-2 rounded-xl border p-3 ${
+      className={`space-y-2 rounded-control border p-3 ${
         row.invalid
-          ? 'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30'
-          : 'border-neutral-200 dark:border-neutral-800'
+          ? 'border-negative/30 bg-negative/10'
+          : 'border-separator'
       }`}
     >
       <label className="flex items-start gap-2.5">
@@ -344,18 +345,18 @@ function RowCard({ row, accounts, categories, onChange, onTypeChange }) {
         />
         <span className="min-w-0 flex-1 text-sm">
           <span className="flex items-center justify-between gap-2">
-            <span className="text-neutral-500">{row.originalDate || '(sem data)'}</span>
-            <span className={row.type === 'income' ? 'font-semibold text-green-600' : 'font-semibold text-red-600'}>
+            <span className="text-label-2">{row.originalDate || '(sem data)'}</span>
+            <span className={row.type === 'income' ? 'font-semibold text-positive' : 'font-semibold text-negative'}>
               {row.invalid ? row.originalAmount || '—' : eur(row.amount)}
             </span>
           </span>
           {row.invalid && (
-            <span className="mt-0.5 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+            <span className="mt-0.5 flex items-center gap-1 text-xs text-negative">
               <TriangleAlert size={12} /> Não consegui ler esta linha (data ou valor inválido) — ignorada.
             </span>
           )}
           {row.likelyDuplicate && (
-            <span className="mt-0.5 flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+            <span className="mt-0.5 flex items-center gap-1 text-xs text-warning">
               <TriangleAlert size={12} /> Já existe uma transação igual — por defeito não vai ser importada.
             </span>
           )}
@@ -364,7 +365,7 @@ function RowCard({ row, accounts, categories, onChange, onTypeChange }) {
 
       {!row.invalid && (
         <div className="space-y-2 pl-6">
-          <div role="group" aria-label="Gasto ou ganho" className="flex rounded-lg bg-neutral-100 p-0.5 dark:bg-neutral-800">
+          <div role="group" aria-label="Gasto ou ganho" className="flex rounded-control bg-fill p-0.5">
             {ROW_TYPES.map((opt) => (
               <button
                 key={opt.value}
@@ -374,8 +375,8 @@ function RowCard({ row, accounts, categories, onChange, onTypeChange }) {
                 aria-pressed={row.type === opt.value}
                 className={`min-h-8 flex-1 rounded-md text-xs font-medium transition-colors disabled:opacity-50 ${
                   row.type === opt.value
-                    ? 'bg-white text-neutral-900 shadow-sm dark:bg-neutral-700 dark:text-neutral-100'
-                    : 'text-neutral-500 dark:text-neutral-400'
+                    ? 'bg-surface text-label shadow-sm'
+                    : 'text-label-2'
                 }`}
               >
                 {opt.label}
@@ -436,14 +437,14 @@ function ManualColumnMapping({ headers, onConfirm, disabled }) {
   const canConfirm = useMemo(() => Boolean(cols.date) && (Boolean(cols.amount) || (cols.debit && cols.credit)), [cols])
 
   return (
-    <div className="space-y-3 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
-      <p className="text-xs text-neutral-500">
+    <div className="space-y-3 rounded-control border border-separator p-3">
+      <p className="text-xs text-label-2">
         Não consegui reconhecer automaticamente as colunas deste ficheiro. Escolhe o que corresponde a cada campo
         (data e valor são obrigatórios; ou indica débito + crédito em vez de um valor único).
       </p>
       {Object.entries(ROLE_LABELS).map(([role, label]) => (
         <div key={role}>
-          <label className="mb-1 block text-xs font-medium text-neutral-500">{label}</label>
+          <label className="mb-1 block text-xs font-medium text-label-2">{label}</label>
           <select
             value={cols[role]}
             onChange={(e) => setCols((prev) => ({ ...prev, [role]: e.target.value }))}
@@ -462,7 +463,7 @@ function ManualColumnMapping({ headers, onConfirm, disabled }) {
         type="button"
         onClick={() => onConfirm(cols)}
         disabled={!canConfirm || disabled}
-        className="w-full rounded-lg bg-neutral-900 py-2.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+        className="w-full min-h-11 rounded-control bg-accent-fill px-4 text-[0.9375rem] font-semibold text-white disabled:opacity-50"
       >
         Confirmar colunas e continuar
       </button>

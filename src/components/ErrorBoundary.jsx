@@ -21,7 +21,7 @@ export default class ErrorBoundary extends Component {
     return (
       <div
         role="alert"
-        className="space-y-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
+        className="space-y-3 rounded-control border border-negative/30 bg-negative/10 p-4 text-sm text-negative"
       >
         <p className="flex items-center gap-2 font-semibold">
           <AlertTriangle size={16} aria-hidden="true" />
@@ -31,7 +31,7 @@ export default class ErrorBoundary extends Component {
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-red-700 px-3 py-2 font-medium text-white transition-colors duration-150 ease-out hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700 dark:bg-red-600 dark:hover:bg-red-500"
+          className="inline-flex items-center gap-1.5 rounded-control bg-negative px-3 py-2 font-medium text-white transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-negative"
         >
           <RotateCw size={14} aria-hidden="true" />
           Recarregar

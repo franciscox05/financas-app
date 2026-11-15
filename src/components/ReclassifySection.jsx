@@ -107,11 +107,11 @@ export default function ReclassifySection({ accounts, categories }) {
     >
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="mb-1 block text-xs font-medium text-neutral-500">Mês</label>
+          <label className="mb-1 block text-xs font-medium text-label-2">Mês</label>
           <select
             value={month}
             onChange={(e) => setMonth(Number(e.target.value))}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            className="w-full rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
           >
             {MONTH_NAMES.map((name, idx) => (
               <option key={name} value={idx + 1}>
@@ -121,11 +121,11 @@ export default function ReclassifySection({ accounts, categories }) {
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-neutral-500">Ano</label>
+          <label className="mb-1 block text-xs font-medium text-label-2">Ano</label>
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            className="w-full rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
           >
             {yearOptions.map((y) => (
               <option key={y} value={y}>
@@ -136,13 +136,13 @@ export default function ReclassifySection({ accounts, categories }) {
         </div>
       </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-negative">{error}</p>}
 
           {!groups && (
             <button
               onClick={handleLoad}
               disabled={loading}
-              className="w-full rounded-lg bg-neutral-900 py-2.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+              className="w-full min-h-11 rounded-control bg-accent-fill px-4 text-[0.9375rem] font-semibold text-white disabled:opacity-50"
             >
               {loading ? 'A carregar...' : 'Carregar transações deste mês'}
             </button>
@@ -150,7 +150,7 @@ export default function ReclassifySection({ accounts, categories }) {
 
           {groups && (
             <div className="space-y-3">
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-label-2">
                 {groups.reduce((s, g) => s + g.ids.length, 0)} transações, em {groups.length} notas
                 distintas.
               </p>
@@ -161,16 +161,16 @@ export default function ReclassifySection({ accounts, categories }) {
                   return (
                     <li
                       key={g.key}
-                      className="space-y-1.5 rounded-lg border border-neutral-200 p-2 dark:border-neutral-800"
+                      className="space-y-1.5 rounded-control border border-separator p-2"
                     >
                       <p className="text-sm">
-                        <span className="font-medium text-neutral-800 dark:text-neutral-200">
+                        <span className="font-medium text-label">
                           {g.note}
                         </span>
-                        <span className="text-neutral-400">
+                        <span className="text-label-3">
                           {' '}
                           · {g.ids.length}x ·{' '}
-                          <span className={g.type === 'income' ? 'text-green-600' : 'text-red-600'}>
+                          <span className={g.type === 'income' ? 'text-positive' : 'text-negative'}>
                             {eur(g.total)}
                           </span>
                         </span>
@@ -179,7 +179,7 @@ export default function ReclassifySection({ accounts, categories }) {
                         <select
                           value={g.categoryId}
                           onChange={(e) => updateGroup(g.key, { categoryId: e.target.value })}
-                          className="w-full rounded-lg border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                          className="w-full rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
                         >
                           {categoriesForType.map((c) => (
                             <option key={c.id} value={c.id}>
@@ -190,7 +190,7 @@ export default function ReclassifySection({ accounts, categories }) {
                         <select
                           value={g.accountId}
                           onChange={(e) => updateGroup(g.key, { accountId: e.target.value })}
-                          className="w-full rounded-lg border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                          className="w-full rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
                         >
                           {accounts.map((a) => (
                             <option key={a.id} value={a.id}>
@@ -208,7 +208,7 @@ export default function ReclassifySection({ accounts, categories }) {
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-neutral-900 py-2.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+                  className="flex flex-1 items-center justify-center gap-1.5 min-h-11 rounded-control bg-accent-fill px-4 text-[0.9375rem] font-semibold text-white disabled:opacity-50"
                 >
                   <Save size={15} />
                   {saving ? 'A guardar...' : 'Guardar alterações'}
@@ -216,7 +216,7 @@ export default function ReclassifySection({ accounts, categories }) {
                 <button
                   onClick={() => setGroups(null)}
                   disabled={saving}
-                  className="rounded-lg border border-neutral-300 px-4 py-2.5 text-sm dark:border-neutral-700"
+                  className="min-h-11 rounded-control bg-fill px-4 text-[0.9375rem] font-semibold text-label"
                 >
                   Cancelar
                 </button>
