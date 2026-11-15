@@ -11,9 +11,10 @@ import { notifyPendingChanged } from '../lib/pendingEvents'
 import { friendEntryKind, friendEntryMode } from '../lib/quickEntryFriend'
 import { defaultCategoryId, overshootNote } from '../lib/repaymentInput'
 import Segmented from './ui/Segmented'
+import { inputClass } from './ui/styles'
 
-const selectClass =
-  'w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100'
+// Campo comum da app (ui/styles.js): sem borda, fundo de preenchimento, 44 px.
+const selectClass = inputClass
 
 // Seletor de amigo partilhado pelos dois fluxos (devolução única / divisão por
 // vários) — select normal + "+ Novo amigo..." inline, sem sair do formulário.
@@ -61,7 +62,7 @@ function FriendPicker({ id, friends, value, onChange, onFriendCreated, disabled 
           type="button"
           disabled={busy || !newName.trim()}
           onClick={handleCreate}
-          className="min-h-9 shrink-0 rounded-lg bg-neutral-900 px-3 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+          className="min-h-11 shrink-0 rounded-control bg-accent-fill px-4 text-[0.9375rem] font-semibold text-white disabled:opacity-50"
         >
           {busy ? '...' : 'Adicionar'}
         </button>
@@ -72,7 +73,7 @@ function FriendPicker({ id, friends, value, onChange, onFriendCreated, disabled 
             setNewMode(false)
             setNewName('')
           }}
-          className="min-h-9 shrink-0 rounded-lg border border-neutral-300 px-3 text-sm dark:border-neutral-700"
+          className="min-h-11 shrink-0 rounded-control bg-fill px-4 text-[0.9375rem] font-semibold text-label"
         >
           Cancelar
         </button>
@@ -483,7 +484,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       />
 
       <div>
-        <label htmlFor="quick-entry-amount" className="mb-1 block text-xs font-medium text-neutral-500">
+        <label htmlFor="quick-entry-amount" className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">
           Valor
         </label>
         <input
@@ -503,7 +504,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
           className="amount w-full rounded-control border-0 bg-fill px-4 py-3 text-[2rem]! leading-tight font-bold tracking-tight text-label placeholder:text-label-3 focus:ring-2 focus:ring-accent"
         />
         {amountSuggested && (
-          <p className="mt-0.5 text-xs text-neutral-400">valor sugerido a partir do histórico</p>
+          <p className="mt-0.5 text-[0.8125rem] leading-snug text-label-3">valor sugerido a partir do histórico</p>
         )}
       </div>
 
@@ -511,14 +512,14 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
         <>
           <div className="grid grid-cols-2 gap-3">
             <div className="min-w-0">
-              <label className="mb-1 block text-xs font-medium text-neutral-500">Conta origem</label>
+              <label className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">Conta origem</label>
               <select
                 value={accountId}
                 onChange={(e) => {
                   setAccountId(e.target.value)
                   if (e.target.value === transferToId) setTransferToId('')
                 }}
-                className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                className="w-full min-w-0 rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
               >
                 {accounts.map((a) => (
                   <option key={a.id} value={a.id}>
@@ -528,11 +529,11 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
               </select>
             </div>
             <div className="min-w-0">
-              <label className="mb-1 block text-xs font-medium text-neutral-500">Conta destino</label>
+              <label className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">Conta destino</label>
               <select
                 value={transferToId}
                 onChange={(e) => setTransferToId(e.target.value)}
-                className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                className="w-full min-w-0 rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
               >
                 <option value="">Escolhe a conta</option>
                 {accounts
@@ -547,30 +548,30 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
           </div>
 
           <div>
-            <label className="flex min-h-9 items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
+            <label className="flex min-h-11 items-center gap-3 text-[0.9375rem] text-label">
               <input
                 type="checkbox"
                 checked={transferCountsAsExpense}
                 onChange={(e) => setTransferCountsAsExpense(e.target.checked)}
-                className="size-4 rounded border-neutral-300 dark:border-neutral-700"
+                className="size-5 min-h-0! shrink-0 accent-accent"
               />
               Conta como gasto do mês (ex. investimentos)
             </label>
-            <p className="mt-0.5 text-xs text-neutral-400">
+            <p className="mt-0.5 text-[0.8125rem] leading-snug text-label-3">
               {transferCountsAsExpense
                 ? 'Entra no Balanço como Gasto, com categoria — a conta destino atualiza-se sozinha.'
                 : 'Transferência neutra: não conta como Gasto/Ganho, só atualiza as duas contas.'}
             </p>
             {transferCountsAsExpense && (
               <div className="mt-2 min-w-0">
-                <label className="mb-1 block text-xs font-medium text-neutral-500">Categoria</label>
+                <label className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">Categoria</label>
                 <select
                   value={effectiveCategoryId}
                   onChange={(e) => {
                     categoryTouchedRef.current = true
                     setCategoryId(e.target.value)
                   }}
-                  className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                  className="w-full min-w-0 rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
                 >
                   {categoriesForType.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -585,7 +586,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       ) : (
         <div className="grid grid-cols-2 gap-3">
           <div className="min-w-0">
-            <label className="mb-1 block text-xs font-medium text-neutral-500">Categoria</label>
+            <label className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">Categoria</label>
             <select
               value={effectiveCategoryId}
               onChange={(e) => {
@@ -593,7 +594,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
                 setSuggested(false)
                 setCategoryId(e.target.value)
               }}
-              className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              className="w-full min-w-0 rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
             >
               {categoriesForType.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -602,16 +603,16 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
               ))}
             </select>
             {suggested && (
-              <p className="mt-0.5 text-xs text-neutral-400">sugerido a partir do histórico</p>
+              <p className="mt-0.5 text-[0.8125rem] leading-snug text-label-3">sugerido a partir do histórico</p>
             )}
           </div>
 
           <div className="min-w-0">
-            <label className="mb-1 block text-xs font-medium text-neutral-500">Conta</label>
+            <label className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">Conta</label>
             <select
               value={accountId}
               onChange={(e) => setAccountId(e.target.value)}
-              className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              className="w-full min-w-0 rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
             >
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -625,23 +626,23 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
 
       <div className="grid grid-cols-2 gap-3">
         <div className="min-w-0">
-          <label className="mb-1 block text-xs font-medium text-neutral-500">Data</label>
+          <label className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">Data</label>
           <input
             type="date"
             value={occurredOn}
             onChange={(e) => setOccurredOn(e.target.value)}
-            className="w-full min-w-0 appearance-none rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            className="w-full min-w-0 appearance-none rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
           />
         </div>
         <div className="min-w-0">
-          <label className="mb-1 block text-xs font-medium text-neutral-500">Nota</label>
+          <label className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">Nota</label>
           <input
             type="text"
             placeholder="Ex: supermercado"
             required
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            className="w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+            className="w-full min-w-0 rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
           />
         </div>
       </div>
@@ -651,18 +652,18 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
         <button
           type="button"
           onClick={() => setShowFriend((v) => !v)}
-          className="-my-1 flex min-h-9 items-center gap-0.5 text-xs text-neutral-600 underline-offset-2 hover:underline dark:text-neutral-400"
+          className="flex min-h-11 items-center gap-1 text-[0.9375rem] font-medium text-accent"
         >
           {showFriend ? 'Fechar' : (
             <>
-              <Plus size={13} /> {type === 'expense' ? 'Dividir com amigos?' : 'Foi um amigo que te devolveu?'}
+              <Plus size={16} strokeWidth={2.4} aria-hidden="true" /> {type === 'expense' ? 'Dividir com amigos?' : 'Foi um amigo que te devolveu?'}
             </>
           )}
         </button>
 
         {showFriend && type === 'income' && (
-          <div className="mt-2 grid grid-cols-1 gap-2 rounded-lg border border-neutral-200 p-2 dark:border-neutral-800">
-            <label htmlFor="quick-entry-friend" className="mb-1 block text-xs font-medium text-neutral-500">
+          <div className="mt-1 grid grid-cols-1 gap-2 rounded-control border-[0.5px] border-separator p-3">
+            <label htmlFor="quick-entry-friend" className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">
               Quem devolveu
             </label>
             <FriendPicker
@@ -672,9 +673,9 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
               onChange={setFriendId}
               onFriendCreated={(f) => setFriends((prev) => [...prev, f].sort((a, b) => a.name.localeCompare(b.name, 'pt')))}
             />
-            {friendsFailed && <p className="mt-1 text-xs text-red-600">Não foi possível carregar os amigos.</p>}
+            {friendsFailed && <p className="mt-1 text-[0.8125rem] leading-snug text-negative">Não foi possível carregar os amigos.</p>}
             {repaymentFriend?.status === 'connected' && (
-              <p className="mt-1 text-xs text-neutral-500">Ligado: só entra na conta depois da confirmação.</p>
+              <p className="mt-1 text-[0.8125rem] leading-snug text-label-2">Ligado: só entra na conta depois da confirmação.</p>
             )}
             {repaymentFriend &&
               numericAmount > 0 &&
@@ -683,7 +684,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
                 if (!note) return null
                 const prefix = repaymentFriend.balance <= 0 ? `${repaymentFriend.name} não tem dívidas pendentes. ` : ''
                 return (
-                  <p className="mt-1 text-xs text-amber-600 dark:text-amber-500">
+                  <p className="mt-1 text-[0.8125rem] leading-snug text-warning">
                     {prefix}
                     {note}.
                   </p>
@@ -693,7 +694,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
         )}
 
         {showFriend && type === 'expense' && (
-          <div className="mt-2 space-y-2 rounded-lg border border-neutral-200 p-2 dark:border-neutral-800">
+          <div className="mt-1 space-y-2 rounded-control border-[0.5px] border-separator p-3">
             {friendShares.map((share, index) => (
               <div key={index} className="flex items-start gap-2">
                 <div className="min-w-0 flex-1">
@@ -713,53 +714,53 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
                   aria-label="Quanto deve"
                   value={share.amount}
                   onChange={(e) => updateShare(index, { amount: e.target.value })}
-                  className="w-20 min-w-0 shrink-0 rounded-lg border border-neutral-300 px-2 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                  className="w-24 min-w-0 shrink-0 rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
                 />
                 <button
                   type="button"
                   onClick={() => removeShareRow(index)}
                   aria-label="Remover pessoa"
-                  className="flex min-h-9 shrink-0 items-center justify-center rounded-lg px-2 text-neutral-400 hover:text-red-600"
+                  className="flex size-11 shrink-0 items-center justify-center rounded-full text-label-2"
                 >
-                  <Trash2 size={15} />
+                  <Trash2 size={18} aria-hidden="true" />
                 </button>
               </div>
             ))}
 
-            {friendsFailed && <p className="text-xs text-red-600">Não foi possível carregar os amigos.</p>}
+            {friendsFailed && <p className="text-[0.8125rem] leading-snug text-negative">Não foi possível carregar os amigos.</p>}
 
             <div className="flex flex-wrap gap-2 pt-1">
               <button
                 type="button"
                 onClick={addShareRow}
-                className="flex min-h-9 items-center gap-1 rounded-lg border border-neutral-300 px-2.5 text-xs font-medium dark:border-neutral-700"
+                className="flex min-h-11 items-center gap-1 rounded-control bg-fill px-3 text-[0.8125rem] font-semibold text-label"
               >
-                <Plus size={13} /> Adicionar pessoa
+                <Plus size={16} strokeWidth={2.4} aria-hidden="true" /> Adicionar pessoa
               </button>
               <button
                 type="button"
                 onClick={splitEqually}
                 disabled={!friendShares.some((s) => s.friendId) || !numericAmount}
-                className="min-h-9 rounded-lg border border-neutral-300 px-2.5 text-xs font-medium disabled:opacity-40 dark:border-neutral-700"
+                className="min-h-11 rounded-control bg-fill px-3 text-[0.8125rem] font-semibold text-label disabled:opacity-40"
               >
                 Dividir por igual
               </button>
             </div>
 
             {numericAmount > 0 && (
-              <p className={`text-xs ${sharesExceed ? 'text-red-600' : 'text-neutral-500'}`}>
+              <p className={`text-[0.8125rem] leading-snug ${sharesExceed ? 'text-negative' : 'text-label-2'}`}>
                 {sharesExceed
                   ? 'A soma das partes excede o valor total.'
                   : `Sobra para ti: ${eur(Math.max(0, numericAmount - sharesTotal))}`}
               </p>
             )}
-            {splitNotice && <p className="text-xs text-amber-600 dark:text-amber-500">{splitNotice}</p>}
+            {splitNotice && <p className="text-[0.8125rem] leading-snug text-warning">{splitNotice}</p>}
           </div>
         )}
       </div>
       )}
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="text-[0.9375rem] text-negative">{error}</p>}
 
       <button
         type="submit"
