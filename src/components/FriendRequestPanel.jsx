@@ -11,19 +11,11 @@ import {
 } from '../lib/linkedDb'
 import { normalizeEmail } from '../lib/linkedLogic'
 import { notifyPendingChanged } from '../lib/pendingEvents'
-
-const inputClass =
-  'min-h-11 w-full rounded-lg border border-neutral-300 px-3 py-2 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 motion-reduce:transition-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus-visible:outline-neutral-100'
-const focusRing =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
-const buttonBase = `min-h-11 rounded-lg px-3 text-sm font-medium transition duration-150 ease-out active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 ${focusRing}`
-const primaryButton = `${buttonBase} bg-neutral-900 text-white hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300`
-const secondaryButton = `${buttonBase} border border-neutral-300 text-neutral-800 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800`
-const textButton = `${buttonBase} text-neutral-600 underline-offset-4 hover:text-neutral-900 hover:underline dark:text-neutral-300 dark:hover:text-neutral-100`
+import { inputClass, primaryButton, secondaryButton, textButton } from './ui/styles'
 
 const CHANGED_MESSAGE = 'O pedido mudou. Volta a ver quem aceitou.'
 
-const boxClass = 'space-y-3 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800'
+const boxClass = 'space-y-3 rounded-control border border-separator p-4'
 
 // Esconde o número todo menos os 3 últimos dígitos.
 function maskPhone(phone) {
@@ -190,7 +182,7 @@ export default function FriendRequestPanel({ friend, onChanged }) {
 
   if (connected) {
     return (
-      <p className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800 dark:bg-green-950/50 dark:text-green-400">
+      <p className="inline-flex items-center gap-1.5 rounded-full bg-positive/10 px-3 py-1 text-sm font-medium text-positive">
         <Link2 size={14} aria-hidden="true" /> Ligado
       </p>
     )
@@ -201,7 +193,7 @@ export default function FriendRequestPanel({ friend, onChanged }) {
       <div
         role="status"
         aria-label="A carregar"
-        className="h-11 animate-pulse rounded-lg bg-neutral-200 motion-reduce:animate-none dark:bg-neutral-800"
+        className="h-11 animate-pulse rounded-control bg-fill-strong motion-reduce:animate-none"
       />
     )
   }
@@ -213,7 +205,7 @@ export default function FriendRequestPanel({ friend, onChanged }) {
   const hasPhone = Boolean(friend.phone)
 
   const errorLine = error && (
-    <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+    <p role="alert" className="text-sm text-negative">
       {error}
     </p>
   )
@@ -225,17 +217,17 @@ export default function FriendRequestPanel({ friend, onChanged }) {
           <div
             role="status"
             aria-label="A carregar"
-            className="h-10 animate-pulse rounded-lg bg-neutral-200 motion-reduce:animate-none dark:bg-neutral-800"
+            className="h-10 animate-pulse rounded-control bg-fill-strong motion-reduce:animate-none"
           />
         ) : accepter ? (
-          <p className="text-sm text-neutral-800 dark:text-neutral-200">
+          <p className="text-sm text-label">
             <span className="font-medium">
               {accepter.name} ({accepter.emailHint})
             </span>{' '}
             aceitou o teu pedido. É mesmo a pessoa que querias?
           </p>
         ) : (
-          <p className="text-sm text-neutral-800 dark:text-neutral-200">
+          <p className="text-sm text-label">
             Alguém aceitou o teu pedido, mas não foi possível ver quem. Podes cancelar e tentar outra vez.
           </p>
         )}
@@ -262,7 +254,7 @@ export default function FriendRequestPanel({ friend, onChanged }) {
   if (pending) {
     return (
       <div className={boxClass}>
-        <p className="text-sm text-neutral-800 dark:text-neutral-200">
+        <p className="text-sm text-label">
           {request?.to_phone ? (
             <>
               Pedido enviado ao número <span className="font-medium">{maskPhone(request.to_phone)}</span>
@@ -275,7 +267,7 @@ export default function FriendRequestPanel({ friend, onChanged }) {
             'Pedido enviado'
           )}
         </p>
-        <p className="text-xs text-neutral-500">Fica a aguardar que a pessoa aceite.</p>
+        <p className="text-xs text-label-2">Fica a aguardar que a pessoa aceite.</p>
         {errorLine}
         {request ? (
           <button type="button" onClick={handleCancel} disabled={busy} className={secondaryButton}>
@@ -294,7 +286,7 @@ export default function FriendRequestPanel({ friend, onChanged }) {
     return (
       <form onSubmit={handleSend} className={boxClass}>
         <div>
-          <label htmlFor="friend-request-email" className="mb-1 block text-xs font-medium text-neutral-500">
+          <label htmlFor="friend-request-email" className="mb-1 block text-xs font-medium text-label-2">
             Email da pessoa
           </label>
           <input
@@ -308,7 +300,7 @@ export default function FriendRequestPanel({ friend, onChanged }) {
             onChange={(e) => setEmail(e.target.value)}
             className={inputClass}
           />
-          <p className="mt-1 text-xs text-neutral-500">Tem de ser o email com que ela criou a conta.</p>
+          <p className="mt-1 text-xs text-label-2">Tem de ser o email com que ela criou a conta.</p>
         </div>
         {errorLine}
         <div className="flex gap-2">
@@ -328,12 +320,12 @@ export default function FriendRequestPanel({ friend, onChanged }) {
   return (
     <div className={boxClass}>
       {declined ? (
-        <p className="text-sm text-neutral-800 dark:text-neutral-200">
+        <p className="text-sm text-label">
           <span className="font-medium">Recusado</span>
           {request.to_email ? ` por ${request.to_email}` : ''}
         </p>
       ) : (
-        <p className="text-sm text-neutral-600 dark:text-neutral-300">
+        <p className="text-sm text-label-2">
           Liga-te a {friend.name} para os dois verem os mesmos movimentos.
         </p>
       )}
@@ -356,7 +348,7 @@ export default function FriendRequestPanel({ friend, onChanged }) {
           >
             {declined ? 'Reenviar' : 'Pedir amizade'}
           </button>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-label-2">
             Guarda também o número de telemóvel de {friend.name} para o poderes procurar só pelo número.
           </p>
         </>

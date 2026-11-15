@@ -1,7 +1,7 @@
 import { avatarInitials } from '../lib/avatar'
 import { supabase } from '../lib/supabase'
 
-const SIZE_CLASS = { sm: 'size-9 text-xs', md: 'size-11 text-sm' }
+const SIZE_CLASS = { sm: 'size-9 text-xs', md: 'size-11 text-sm', lg: 'size-20 text-2xl' }
 
 // Foto do amigo (se ligado e tiver uma) ou um círculo com as iniciais.
 export default function FriendAvatar({ name, avatarPath, size = 'sm' }) {
@@ -21,7 +21,7 @@ export default function FriendAvatar({ name, avatarPath, size = 'sm' }) {
   return (
     <div
       aria-hidden="true"
-      className={`flex ${sizeClass} shrink-0 items-center justify-center rounded-full bg-neutral-200 font-semibold text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300`}
+      className={`flex ${sizeClass} shrink-0 items-center justify-center rounded-full bg-fill-strong font-semibold text-label-2`}
     >
       {avatarInitials(name)}
     </div>

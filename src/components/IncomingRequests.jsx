@@ -2,12 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { listIncomingRequests, respondFriendRequest } from '../lib/linkedDb'
 import { notifyPendingChanged, onPendingChanged } from '../lib/pendingEvents'
-
-const focusRing =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
-const buttonBase = `min-h-11 rounded-lg px-3 text-sm font-medium transition duration-150 ease-out active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 ${focusRing}`
-const primaryButton = `${buttonBase} bg-neutral-900 text-white hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300`
-const secondaryButton = `${buttonBase} border border-neutral-300 text-neutral-800 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800`
+import { primaryButton, secondaryButton } from './ui/styles'
 
 // Faixa no topo dos Amigos com os pedidos de ligação que recebi.
 // `onChanged` é chamado depois de aceitar/recusar (para recarregar a lista).
@@ -75,31 +70,31 @@ export default function IncomingRequests({ onChanged }) {
   return (
     <section
       aria-label="Pedidos de amizade"
-      className="space-y-3 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
+      className="space-y-3 rounded-control border border-separator bg-surface p-4"
     >
-      <h3 className="text-sm font-semibold text-neutral-500">Pedidos de amizade ({requests.length})</h3>
+      <h3 className="text-sm font-semibold text-label-2">Pedidos de amizade ({requests.length})</h3>
 
       {error && (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+        <p role="alert" className="text-sm text-negative">
           {error}
         </p>
       )}
 
-      <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+      <ul className="divide-y divide-separator">
         {requests.map((request) => (
           <li key={request.id} className="space-y-2 py-3 first:pt-0 last:pb-0">
             {request.awaiting ? (
-              <p className="text-sm text-neutral-800 dark:text-neutral-200">
+              <p className="text-sm text-label">
                 Aceitaste o pedido de <span className="font-medium">{request.from_name}</span>. À espera que
                 confirme.
               </p>
             ) : (
-              <p className="text-sm text-neutral-800 dark:text-neutral-200">
+              <p className="text-sm text-label">
                 <span className="font-medium">{request.from_name}</span> quer ligar contas
               </p>
             )}
             {request.via === 'phone' && !request.awaiting && (
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-label-2">
                 Ao aceitares, {request.from_name} vê o teu nome e o teu email.
               </p>
             )}

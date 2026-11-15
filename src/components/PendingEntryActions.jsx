@@ -12,14 +12,7 @@ import { canRequestCancel, canRespond, isCancelRequestForMe } from '../lib/linke
 import { notifyPendingChanged } from '../lib/pendingEvents'
 import ConfirmDialog from './ConfirmDialog'
 import SettlementFields from './SettlementFields'
-
-const inputClass =
-  'min-h-11 w-full rounded-lg border border-neutral-300 px-3 py-2 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 motion-reduce:transition-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus-visible:outline-neutral-100'
-const focusRing =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
-const buttonBase = `min-h-11 rounded-lg px-3 text-sm font-medium transition duration-150 ease-out active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 ${focusRing}`
-const primaryButton = `${buttonBase} bg-neutral-900 text-white hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300`
-const secondaryButton = `${buttonBase} border border-neutral-300 text-neutral-800 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800`
+import { inputClass, primaryButton, secondaryButton } from './ui/styles'
 
 const EMPTY_CHOICE = { ready: false, settlement: '', accountId: null, categoryId: null }
 
@@ -68,7 +61,7 @@ export default function PendingEntryActions({ entry, friend, viewerId, onChanged
 
   const isRepayment = entry.kind === 'repaid_to_me' || entry.kind === 'repaid_to_them'
   const errorLine = error && (
-    <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+    <p role="alert" className="text-sm text-negative">
       {error}
     </p>
   )
@@ -83,7 +76,7 @@ export default function PendingEntryActions({ entry, friend, viewerId, onChanged
             run(() => respondEntry({ id: entry.id, accept: false, note: note.trim() }), 'Movimento contestado.')
           }}
         >
-          <label htmlFor={`contest-${entry.id}`} className="block text-xs font-medium text-neutral-500">
+          <label htmlFor={`contest-${entry.id}`} className="block text-xs font-medium text-label-2">
             O que não está certo? (opcional)
           </label>
           <input
@@ -151,7 +144,7 @@ export default function PendingEntryActions({ entry, friend, viewerId, onChanged
 
     return (
       <div className="space-y-2">
-        <p className="text-sm text-neutral-700 dark:text-neutral-300">Está certo?</p>
+        <p className="text-sm text-label">Está certo?</p>
         {errorLine}
         <div className="flex gap-2">
           <button

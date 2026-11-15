@@ -5,10 +5,7 @@ import { describeBalance } from '../lib/ledgerMath'
 import { shareOpeningBalance } from '../lib/linkedDb'
 import { notifyPendingChanged } from '../lib/pendingEvents'
 import ConfirmDialog from './ConfirmDialog'
-
-const focusRing =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
-const primaryButton = `min-h-11 rounded-lg bg-neutral-900 px-3 text-sm font-medium text-white transition duration-150 ease-out hover:bg-neutral-700 active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300 ${focusRing}`
+import { primaryButton } from './ui/styles'
 
 // Cartão para partilhar a conta que já existia antes da ligação.
 // `balance` é o saldo dos movimentos privados; `onShared` recarrega o ecrã.
@@ -52,15 +49,15 @@ export default function OpeningBalanceOffer({ friend, balance, onShared }) {
   }
 
   return (
-    <div className="space-y-3 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
+    <div className="space-y-3 rounded-control border border-separator p-4">
       <div className="space-y-1">
-        <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200">Partilhar a conta que já tinham?</p>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm font-medium text-label">Partilhar a conta que já tinham?</p>
+        <p className="text-sm text-label-2">
           {friend.name} vai ter de aceitar. Os movimentos anteriores ficam arquivados e a conta passa para um só valor, "Saldo anterior". Se {friend.name} recusar, voltam a contar.
         </p>
       </div>
       {error && (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+        <p role="alert" className="text-sm text-negative">
           {error}
         </p>
       )}
