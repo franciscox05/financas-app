@@ -66,6 +66,20 @@ export function receivablesAndPayables(entriesByFriend) {
   return { receivable, payable, net: receivable - payable }
 }
 
+// Igual a `receivablesAndPayables`, mas a partir dos saldos já calculados por
+// amigo (a lista de Amigos recebe-os da vista `friend_balances`, sem os
+// movimentos). Soma em cêntimos para não acumular erros de vírgula flutuante.
+export function positionsFromBalances(balances) {
+  let receivable = 0
+  let payable = 0
+  for (const balance of balances) {
+    const c = cents(balance ?? 0)
+    if (c > 0) receivable += c
+    else if (c < 0) payable -= c
+  }
+  return { receivable: receivable / 100, payable: payable / 100, net: (receivable - payable) / 100 }
+}
+
 export function describeBalance(balance) {
   const c = cents(balance)
   if (c > 0) return { state: 'owes_me', amount: c / 100 }

@@ -1,5 +1,5 @@
-import { ChevronRight, Plus } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Plus, X } from 'lucide-react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState, ErrorNotice, PageSkeleton } from '../components/Feedback'
 import FriendAvatar from '../components/FriendAvatar'
@@ -8,32 +8,29 @@ import Money from '../components/Money'
 import PendingEntriesStrip from '../components/PendingEntriesStrip'
 import { useToast } from '../context/toastContext'
 import { createFriend, listFriendsWithBalance } from '../lib/friendsDb'
-import { describeBalance } from '../lib/ledgerMath'
+import { describeBalance, positionsFromBalances } from '../lib/ledgerMath'
 import { listPendingForMe } from '../lib/linkedDb'
 import { friendStateLabel } from '../lib/linkedLogic'
 import { onPendingChanged } from '../lib/pendingEvents'
-import Card from '../components/Card'
+import Modal from '../components/Modal'
+import Group, { Row } from '../components/ui/Group'
+import IconButton from '../components/ui/IconButton'
+import PageHeader from '../components/ui/PageHeader'
 
+// Campo de escrita das folhas novas: sem borda, fundo de preenchimento e anel
+// na cor de destaque ao focar (o `border-color` global não se vê sem borda).
 const inputClass =
-  'min-h-11 w-full rounded-lg border border-neutral-300 px-3 py-2 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-neutral-900 motion-reduce:transition-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:focus-visible:outline-neutral-100'
-
-const focusRing =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
+  'min-h-11 w-full rounded-control border-0 bg-fill px-3.5 text-[1.0625rem] text-label placeholder:text-label-3 focus:ring-2 focus:ring-accent'
 
 const STATE_STYLES = {
-  owes_me: { text: 'text-green-700 dark:text-green-500', label: 'Deve-te' },
-  i_owe: { text: 'text-red-700 dark:text-red-500', label: 'Deves-lhe' },
-  even: { text: 'text-neutral-500 dark:text-neutral-400', label: 'Quites' },
-}
-
-function totalLabel(state) {
-  if (state === 'owes_me') return 'Devem-te'
-  if (state === 'i_owe') return 'Deves'
-  return 'Quites'
+  owes_me: { text: 'text-positive', label: 'Deve-te' },
+  i_owe: { text: 'text-negative', label: 'Deves-lhe' },
+  even: { text: 'text-label-2', label: 'Quites' },
 }
 
 export default function Friends() {
   const toast = useToast()
+  const formTitleId = useId()
   const [friends, setFriends] = useState([])
   const [pendingEntries, setPendingEntries] = useState([])
   const [loading, setLoading] = useState(true)
@@ -90,11 +87,9 @@ export default function Friends() {
     [friends],
   )
 
-  // Soma em cêntimos para não acumular erros de vírgula flutuante.
-  const total = useMemo(
-    () => describeBalance(friends.reduce((sum, f) => sum + Math.round(f.balance * 100), 0) / 100),
-    [friends],
-  )
+  // Duas posições, não um líquido: 50 € a receber de um amigo e 30 € a pagar a
+  // outro não são "devem-te 20 €" — são dois valores que não se cancelam.
+  const positions = useMemo(() => positionsFromBalances(friends.map((f) => f.balance)), [friends])
 
   async function handleCreate(e) {
     e.preventDefault()
@@ -136,166 +131,181 @@ export default function Friends() {
     setShowForm(false)
   }
 
-  if (loading) return <PageSkeleton />
+  // Fechar a folha não apaga o que já foi escrito (como o antigo "Fechar"):
+  // só o guardar com sucesso limpa os campos.
+  function closeForm() {
+    if (submitting) return
+    setFormError('')
+    setShowForm(false)
+  }
 
-  if (error && friends.length === 0) return <ErrorNotice message={error} onRetry={load} />
+  const addButton = (
+    <IconButton label="Adicionar amigo" tone="accent" onClick={() => setShowForm(true)}>
+      <Plus size={26} strokeWidth={2.1} aria-hidden="true" />
+    </IconButton>
+  )
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <PageHeader title="Amigos" />
+        <PageSkeleton />
+      </div>
+    )
+  }
+
+  if (error && friends.length === 0) {
+    return (
+      <div className="space-y-8">
+        <PageHeader title="Amigos" />
+        <ErrorNotice message={error} onRetry={load} />
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      <PageHeader title="Amigos" trailing={addButton} />
+
       {error && <ErrorNotice message={error} onRetry={load} />}
 
       <IncomingRequests onChanged={() => load({ silent: true })} />
 
       <PendingEntriesStrip entries={pendingEntries} friends={friends} />
 
-      <Card>
-        <p className="text-xs text-neutral-500">No total</p>
-        <p className={`text-2xl font-semibold tracking-tight ${STATE_STYLES[total.state].text}`}>
-          {total.state === 'even' ? (
-            'Quites'
-          ) : (
-            <>
-              {totalLabel(total.state)} <Money value={total.amount} />
-            </>
-          )}
-        </p>
-      </Card>
-
-      <Card as="section" className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-neutral-500">Amigos</h3>
-          <button
-            type="button"
-            onClick={() => setShowForm((v) => !v)}
-            aria-expanded={showForm}
-            className={`flex min-h-11 items-center gap-0.5 rounded-lg px-2 text-sm text-neutral-600 transition-colors duration-150 ease-out hover:text-neutral-900 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100 dark:text-neutral-300 dark:hover:text-neutral-100 ${focusRing}`}
-          >
-            {showForm ? (
-              'Fechar'
-            ) : (
-              <>
-                <Plus size={14} /> Adicionar amigo
-              </>
-            )}
-          </button>
-        </div>
-
-        {showForm && (
-          <form
-            onSubmit={handleCreate}
-            className="space-y-3 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800"
-          >
-            <div>
-              <label htmlFor="friend-name" className="mb-1 block text-xs font-medium text-neutral-500">
-                Nome
-              </label>
-              <input
-                id="friend-name"
-                type="text"
-                placeholder="Ex: João"
-                autoComplete="off"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label htmlFor="friend-phone" className="mb-1 block text-xs font-medium text-neutral-500">
-                Telemóvel (opcional)
-              </label>
-              <input
-                id="friend-phone"
-                type="tel"
-                inputMode="tel"
-                placeholder="Ex: 912 345 678"
-                autoComplete="off"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className={inputClass}
-              />
-            </div>
-
-            {phone.trim() !== '' && (
-              <div>
-                <label className="flex min-h-11 items-center gap-3 text-sm text-neutral-800 dark:text-neutral-200">
-                  <input
-                    type="checkbox"
-                    checked={requestLink}
-                    disabled={submitting}
-                    onChange={(e) => setRequestLink(e.target.checked)}
-                    className={`size-5 shrink-0 accent-neutral-900 dark:accent-neutral-100 ${focusRing}`}
-                    aria-describedby="friend-request-link-hint"
-                  />
-                  Pedir para ligar contas
-                </label>
-                <p id="friend-request-link-hint" className="text-xs text-neutral-500">
-                  Só funciona se a pessoa tiver a app e este número no perfil. Para contactos sem app, desmarca.
-                </p>
-              </div>
-            )}
-
-            {formError && (
-              <p role="alert" className="text-sm text-red-600 dark:text-red-400">
-                {formError}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className={`min-h-11 w-full rounded-lg bg-neutral-900 font-medium text-white transition duration-150 ease-out hover:bg-neutral-700 active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300 ${focusRing}`}
+      {sorted.length > 0 && (
+        <section aria-label="Resumo" className="grid grid-cols-2 gap-3">
+          <div className="min-w-0 rounded-group bg-surface p-4">
+            <p className="text-[0.8125rem] text-label-2">A receber</p>
+            <p
+              className={`amount mt-1 truncate text-[1.625rem] leading-tight font-bold tracking-tight ${
+                positions.receivable > 0 ? 'text-positive' : 'text-label-3'
+              }`}
             >
-              {submitting ? 'A guardar...' : 'Guardar amigo'}
-            </button>
-          </form>
-        )}
+              <Money value={positions.receivable} />
+            </p>
+          </div>
+          <div className="min-w-0 rounded-group bg-surface p-4">
+            <p className="text-[0.8125rem] text-label-2">A pagar</p>
+            <p
+              className={`amount mt-1 truncate text-[1.625rem] leading-tight font-bold tracking-tight ${
+                positions.payable > 0 ? 'text-negative' : 'text-label-3'
+              }`}
+            >
+              <Money value={positions.payable} />
+            </p>
+          </div>
+        </section>
+      )}
 
-        {sorted.length === 0 ? (
-          <EmptyState
-            title="Ainda não tens amigos aqui"
-            description="Adiciona um amigo para registares o que pagaste e o que te pagaram."
-            actionLabel={showForm ? undefined : '+ Adicionar amigo'}
-            onAction={showForm ? undefined : () => setShowForm(true)}
-          />
-        ) : (
-          <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
-            {sorted.map((friend) => {
-              const { state, amount } = describeBalance(friend.balance)
-              const style = STATE_STYLES[state]
-              const link = friendStateLabel(friend, null)
-              return (
-                <li key={friend.id}>
-                  <Link
-                    to={`/dividas/${friend.id}`}
-                    className={`-mx-2 flex min-h-14 items-center justify-between gap-3 rounded-lg px-2 py-2 transition-colors duration-150 ease-out hover:bg-neutral-100 active:bg-neutral-200 motion-reduce:transition-none dark:hover:bg-neutral-800 dark:active:bg-neutral-700 ${focusRing}`}
-                  >
-                    <span className="flex min-w-0 items-center gap-2.5">
-                      <FriendAvatar name={friend.name} avatarPath={friend.avatarPath} />
-                      <span className="min-w-0 truncate font-medium text-neutral-800 dark:text-neutral-200">
-                        {friend.name}
-                        {link !== 'Local' && (
-                          <span className="ml-2 text-xs font-normal text-neutral-500">{link}</span>
-                        )}
-                      </span>
-                    </span>
-                    <span className="flex shrink-0 items-center gap-1.5 text-sm">
-                      <span className="text-right">
-                        <span className={`block font-semibold ${style.text}`}>
-                          {state === 'even' ? 'Quites' : <Money value={amount} />}
-                        </span>
-                        {state !== 'even' && (
-                          <span className={`block text-xs ${style.text}`}>{style.label}</span>
-                        )}
-                      </span>
-                      <ChevronRight size={16} aria-hidden="true" className="text-neutral-400" />
-                    </span>
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </Card>
+      {sorted.length === 0 ? (
+        <EmptyState
+          title="Ainda não tens amigos aqui"
+          description="Adiciona um amigo para registares o que pagaste e o que te pagaram."
+          actionLabel="Adicionar amigo"
+          onAction={() => setShowForm(true)}
+        />
+      ) : (
+        // 4rem = margem (16) + avatar (36) + espaço (12): o separador começa
+        // onde começa o nome, não por baixo da fotografia.
+        <Group list inset="4rem">
+          {sorted.map((friend) => {
+            const { state, amount } = describeBalance(friend.balance)
+            const style = STATE_STYLES[state]
+            const link = friendStateLabel(friend, null)
+            return (
+              <Row
+                key={friend.id}
+                as={Link}
+                to={`/dividas/${friend.id}`}
+                leading={<FriendAvatar name={friend.name} avatarPath={friend.avatarPath} />}
+                title={friend.name}
+                subtitle={link !== 'Local' ? link : undefined}
+                value={state === 'even' ? 'Quites' : <Money value={amount} />}
+                valueNote={state !== 'even' ? style.label : undefined}
+                valueClassName={`${style.text} ${state === 'even' ? '' : 'font-semibold'}`}
+                chevron
+              />
+            )
+          })}
+        </Group>
+      )}
+
+      <Modal open={showForm} onClose={closeForm} labelledBy={formTitleId}>
+        <form onSubmit={handleCreate} className="space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <h2 id={formTitleId} className="text-[1.375rem] font-bold tracking-tight text-label">
+              Novo amigo
+            </h2>
+            <IconButton label="Fechar" onClick={closeForm} className="-mr-2">
+              <X size={22} aria-hidden="true" />
+            </IconButton>
+          </div>
+
+          <div>
+            <label htmlFor="friend-name" className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">
+              Nome
+            </label>
+            <input
+              id="friend-name"
+              type="text"
+              placeholder="Ex: João"
+              autoComplete="off"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label htmlFor="friend-phone" className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">
+              Telemóvel (opcional)
+            </label>
+            <input
+              id="friend-phone"
+              type="tel"
+              inputMode="tel"
+              placeholder="Ex: 912 345 678"
+              autoComplete="off"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
+          {phone.trim() !== '' && (
+            <div>
+              <label className="flex min-h-11 items-center gap-3 text-[1.0625rem] text-label">
+                <input
+                  type="checkbox"
+                  checked={requestLink}
+                  disabled={submitting}
+                  onChange={(e) => setRequestLink(e.target.checked)}
+                  className="size-5 min-h-0 shrink-0 accent-[var(--accent)]"
+                  aria-describedby="friend-request-link-hint"
+                />
+                Pedir para ligar contas
+              </label>
+              <p id="friend-request-link-hint" className="text-[0.8125rem] leading-snug text-label-2">
+                Só funciona se a pessoa tiver a app e este número no perfil. Para contactos sem app, desmarca.
+              </p>
+            </div>
+          )}
+
+          {formError && (
+            <p role="alert" className="text-[0.9375rem] text-negative">
+              {formError}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="min-h-12 w-full rounded-control bg-accent text-[1.0625rem] font-semibold text-white transition-opacity duration-150 active:opacity-70 disabled:opacity-50"
+          >
+            {submitting ? 'A guardar...' : 'Guardar amigo'}
+          </button>
+        </form>
+      </Modal>
     </div>
   )
 }
