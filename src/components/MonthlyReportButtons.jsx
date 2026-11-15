@@ -5,11 +5,11 @@ import { monthlyReportText } from '../lib/monthlyReport'
 import { downloadMonthlyReportPdf } from '../lib/monthlyReportPdf'
 
 const base =
-  'inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium transition duration-150 ease-out active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2'
+  'inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-control px-4 text-sm font-medium transition duration-150 ease-out active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2'
 
-const primaryClass = `${base} bg-neutral-900 text-white hover:bg-neutral-700 focus-visible:outline-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300 dark:focus-visible:outline-neutral-100`
+const primaryClass = `${base} bg-accent-fill text-white focus-visible:outline-accent`
 
-const secondaryClass = `${base} border border-neutral-300 text-neutral-800 hover:bg-neutral-100 focus-visible:outline-neutral-900 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800 dark:focus-visible:outline-neutral-100`
+const secondaryClass = `${base} border border-separator text-label hover:bg-fill focus-visible:outline-accent`
 
 // Exportar o mês que está no ecrã — o atual no fecho do mês ou qualquer um do
 // histórico, porque o relatório é construído a partir do mês selecionado no
@@ -47,14 +47,14 @@ export default function MonthlyReportButtons({ report, monthKey }) {
   }
 
   return (
-    <div className="space-y-2 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
+    <div className="space-y-2 rounded-control border border-separator p-4">
       {/* O mês exportado é sempre o que está ativo no MonthPicker no topo do
           ecrã — nunca "hoje". Nomeá-lo aqui explicitamente evita a dúvida de
           gerar o relatório a pensar que é de um mês e descarregar de outro;
           trocar de mês é mexer no MonthPicker já visível em cima, não precisa
           de um segundo seletor duplicado aqui. */}
-      <h3 className="text-sm font-semibold text-neutral-500">Relatório de {report.monthLabel}</h3>
-      <p className="text-xs leading-relaxed text-neutral-400">
+      <h3 className="text-sm font-semibold text-label-2">Relatório de {report.monthLabel}</h3>
+      <p className="text-xs leading-relaxed text-label-3">
         Extrato em PDF com os KPIs do mês, despesas e receitas por categoria e as maiores despesas —
         pronto a guardar ou partilhar. Para exportar outro mês, muda-o no seletor no topo do ecrã.
       </p>

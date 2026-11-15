@@ -28,7 +28,7 @@ const LINKED_BADGE_TEXT = {
 }
 
 const rowButtonClass =
-  'flex w-full min-h-14 items-center justify-between gap-3 rounded-lg py-2 text-left transition-colors duration-150 ease-out hover:bg-neutral-50 active:bg-neutral-100 dark:hover:bg-neutral-800/60 dark:active:bg-neutral-800'
+  'flex w-full min-h-14 items-center justify-between gap-3 rounded-control py-2 text-left transition-colors duration-150 ease-out hover:bg-fill active:bg-fill'
 
 // Todas as linhas são só de leitura e clicáveis: abrem o modal de detalhe, que
 // trata de edição/apagar com as regras certas para cada tipo de movimento.
@@ -40,17 +40,17 @@ function TransferRow({ tx, onOpen }) {
       <li>
         <button type="button" onClick={() => onOpen(tx)} className={rowButtonClass}>
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+            <p className="truncate text-sm font-medium text-label">
               {tx.note || tx.category_name || 'Investimento'}
             </p>
-            <p className="flex items-center gap-1 truncate text-xs text-neutral-500">
+            <p className="flex items-center gap-1 truncate text-xs text-label-2">
               {ptDate(tx.occurred_on)}
               {tx.note && ` · ${tx.category_name ?? 'Sem categoria'}`} · {tx.account_name ?? 'Conta'}
               <ArrowRightLeft size={11} aria-hidden="true" className="shrink-0" />
               {tx.counter_account_name ?? 'Conta'}
             </p>
           </div>
-          <span className="shrink-0 text-sm font-semibold text-red-600">
+          <span className="shrink-0 text-sm font-semibold text-negative">
             <Money>{formatAmount(tx.amount, 'expense')}</Money>
           </span>
         </button>
@@ -62,15 +62,15 @@ function TransferRow({ tx, onOpen }) {
     <li>
       <button type="button" onClick={() => onOpen(tx)} className={rowButtonClass}>
         <div className="min-w-0">
-          <p className="flex items-center gap-1.5 truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
-            <ArrowRightLeft size={13} className="shrink-0 text-blue-500" />
+          <p className="flex items-center gap-1.5 truncate text-sm font-medium text-label">
+            <ArrowRightLeft size={13} className="shrink-0 text-accent" />
             {tx.note || 'Transferência'}
           </p>
-          <p className="truncate text-xs text-neutral-500">
+          <p className="truncate text-xs text-label-2">
             {ptDate(tx.occurred_on)} · {tx.account_name ?? 'Conta'} → {tx.counter_account_name ?? 'Conta'}
           </p>
         </div>
-        <span className="shrink-0 text-sm font-semibold text-blue-500">
+        <span className="shrink-0 text-sm font-semibold text-accent">
           <Money>{eur(tx.amount)}</Money>
         </span>
       </button>
@@ -83,17 +83,17 @@ function LedgerMovementRow({ tx, onOpen }) {
     <li>
       <button type="button" onClick={() => onOpen(tx)} className={rowButtonClass}>
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+          <p className="truncate text-sm font-medium text-label">
             {tx.note || entryLabel(tx.ledger_kind)}
           </p>
-          <p className="flex items-center gap-1 text-xs text-neutral-500">
+          <p className="flex items-center gap-1 text-xs text-label-2">
             {ptDate(tx.occurred_on)}
             <Link2 size={11} aria-hidden="true" className="shrink-0" />
             {tx.friend_name}
             {LINKED_BADGE_TEXT[tx.ledger_status] ? ` · ${LINKED_BADGE_TEXT[tx.ledger_status]}` : ''}
           </p>
         </div>
-        <span className={`shrink-0 text-sm font-semibold ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+        <span className={`shrink-0 text-sm font-semibold ${tx.type === 'income' ? 'text-positive' : 'text-negative'}`}>
           <Money>{formatAmount(tx.amount, tx.type)}</Money>
         </span>
       </button>
@@ -106,22 +106,22 @@ function TransactionRow({ tx, linkedEntry, onOpen }) {
     <li>
       <button type="button" onClick={() => onOpen(tx)} className={rowButtonClass}>
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+          <p className="truncate text-sm font-medium text-label">
             {tx.note || tx.category_name || 'Sem nota'}
           </p>
-          <p className="truncate text-xs text-neutral-500">
+          <p className="truncate text-xs text-label-2">
             {ptDate(tx.occurred_on)}
             {tx.note && ` · ${tx.category_name ?? 'Sem categoria'}`} · {tx.account_name ?? 'Sem conta'}
           </p>
           {linkedEntry && (
-            <p className="mt-0.5 flex items-center gap-1 text-xs text-neutral-500">
+            <p className="mt-0.5 flex items-center gap-1 text-xs text-label-2">
               <Link2 size={11} aria-hidden="true" />
               {linkedEntry.friendName}
               {LINKED_BADGE_TEXT[linkedEntry.status] ? ` · ${LINKED_BADGE_TEXT[linkedEntry.status]}` : ''}
             </p>
           )}
         </div>
-        <span className={`shrink-0 text-sm font-semibold ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+        <span className={`shrink-0 text-sm font-semibold ${tx.type === 'income' ? 'text-positive' : 'text-negative'}`}>
           <Money>{formatAmount(tx.amount, tx.type)}</Money>
         </span>
       </button>
@@ -136,7 +136,7 @@ const TYPE_OPTIONS = [
 ]
 
 const fieldClass =
-  'w-full rounded-lg border border-neutral-300 px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100'
+  'w-full rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent text-sm'
 
 function TransactionFilters({ filters, onChange, categories, accounts }) {
   const categoryOptions =
@@ -397,7 +397,7 @@ export default function TransactionList({ categories, accounts, refreshToken, on
       ) : (
         <>
           <ul
-            className={`divide-y divide-neutral-200 transition-opacity duration-150 dark:divide-neutral-800 ${
+            className={`divide-y divide-separator transition-opacity duration-150 ${
               loading ? 'opacity-60' : ''
             }`}
           >

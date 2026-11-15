@@ -34,7 +34,7 @@ export function FormSkeleton() {
 
 export function ListSkeleton({ rows = 5 }) {
   return (
-    <ul role="status" aria-label="A carregar" className="divide-y divide-neutral-200 dark:divide-neutral-800">
+    <ul role="status" aria-label="A carregar" className="divide-y divide-separator">
       {Array.from({ length: rows }, (_, i) => (
         <li key={i} className="flex items-center justify-between gap-3 py-3">
           <div className="min-w-0 flex-1 space-y-1.5">
