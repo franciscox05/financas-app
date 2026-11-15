@@ -169,7 +169,7 @@ html,
 body,
 #root {
   margin: 0;
-  background-color: #fafafa;
+  background-color: var(--canvas);
 }
 
 body {
@@ -216,13 +216,7 @@ body {
 /* Um tom abaixo dos cartoes (neutral-900, #171717): com a pagina e o cartao na
    mesma cor, cada bloco dependia so de uma borda de 1px para se distinguir.
    Hierarquia: pagina #0a0a0a < cartao #171717 < campo de escrita #262626. */
-@media (prefers-color-scheme: dark) {
-  html,
-  body,
-  #root {
-    background-color: #0a0a0a;
-  }
-}
+/* (O fundo da página vem agora de --canvas, que já tem par claro/escuro.) */
 
 /* iOS Safari desalinha o texto de <input type="date"> (fica à direita e
    verticalmente deslocado) — força alinhamento consistente com os outros
@@ -264,11 +258,11 @@ input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: #2a78d6;
+  border-color: var(--accent);
 }
 
 button:focus-visible {
-  outline: 2px solid #2a78d6;
+  outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 

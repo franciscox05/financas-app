@@ -10,10 +10,13 @@
 // depender só de uma borda de 1px. Os campos de escrita dentro do cartão são
 // neutral-800, mais claros que ele, mantendo a hierarquia página < cartão <
 // campo.
-export const CARD_CLASS =
-  'rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900'
+//
+// Redesenho 2026-11: a caixa passa a ser uma superfície agrupada ao estilo iOS
+// — sem borda, raio maior, e as cores vêm dos tokens de index.css (página
+// --canvas < cartão --surface), que já trazem o par claro/escuro.
+export const CARD_CLASS = 'rounded-group bg-surface p-4'
 
-const CARD = 'rounded-xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900'
+const CARD = 'rounded-group bg-surface'
 
 const PADDING = { none: '', sm: 'p-3', md: 'p-4' }
 

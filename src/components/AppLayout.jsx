@@ -1,4 +1,4 @@
-import { RefreshCw, UserCircle2, Wallet } from 'lucide-react'
+import { RefreshCw, UserCircle2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
@@ -13,9 +13,51 @@ import ErrorBoundary from './ErrorBoundary'
 import NotificationToggle from './NotificationToggle'
 import PrivacyToggle from './PrivacyToggle'
 
+// Título pequeno da barra de cima, por rota. Nos ecrãs com título grande
+// (`large`) só aparece depois de esse título sair do ecrã ao fazer scroll, como
+// no iOS; nos restantes está sempre visível. Sub-rotas (ex.: um amigo) usam o
+// título do separador a que pertencem.
+const ROUTE_TITLES = [
+  { path: '/', exact: true, title: 'Registo', large: true },
+  { path: '/balanco', title: 'Balanço', large: true },
+  { path: '/patrimonio', exact: true, title: 'Património', large: true },
+  { path: '/patrimonio', title: 'Património' },
+  { path: '/dividas', exact: true, title: 'Amigos', large: true },
+  { path: '/dividas', title: 'Amigos' },
+  { path: '/gestao', title: 'Gestão', large: true },
+  { path: '/perfil', title: 'Perfil' },
+]
+
+function routeTitle(pathname) {
+  return (
+    ROUTE_TITLES.find((r) => (r.exact ? pathname === r.path : pathname.startsWith(r.path))) ?? {
+      title: '',
+      large: false,
+    }
+  )
+}
+
+// A partir de quantos px de scroll o título grande já saiu de vista.
+const LARGE_TITLE_SCROLL = 44
+
 export default function AppLayout() {
   const { user } = useAuth()
   const location = useLocation()
+  const { title: barTitle, large: hasLargeTitle } = routeTitle(location.pathname)
+  const [scrolled, setScrolled] = useState(false)
+
+  // Só guarda um booleano (passou ou não o limiar), por isso o scroll não
+  // provoca renders a cada frame — só quando o estado muda de facto.
+  useEffect(() => {
+    function onScroll() {
+      setScrolled(window.scrollY > LARGE_TITLE_SCROLL)
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [location.pathname])
+
+  const showBarTitle = !hasLargeTitle || scrolled
   const [avatarPath, setAvatarPath] = useState(null)
   // Incrementar remonta a página atual: cada página volta a pedir os seus dados ao montar, por
   // isso puxar para atualizar funciona em todas sem cada uma ter de saber recarregar-se.
@@ -85,7 +127,7 @@ export default function AppLayout() {
     // O +1px torna o documento sempre ligeiramente "scrollável". No iOS (PWA),
     // quando a página não faz scroll o ecrã útil encolhe e a barra fixa fica
     // a meio do ecrã (só acontecia em páginas curtas, como as Dívidas).
-    <div className="min-h-[calc(100lvh+1px)] bg-neutral-50 dark:bg-neutral-950">
+    <div className="min-h-[calc(100lvh+1px)] bg-canvas text-label">
       {/* Folga extra além do que o iOS reporta como safe-area-inset-top: num
           ecrã (iPhone 17 Pro) o cabeçalho ficava tapado pela zona da
           câmara/Dynamic Island mesmo respeitando o mínimo reportado — um
@@ -95,25 +137,39 @@ export default function AppLayout() {
           espaço a mais num 15 Pro — 1.1rem é o meio-termo a testar agora.
           Fixo no topo (sticky), como a BottomNav no fundo: ao fazer scroll o
           conteúdo deixava de passar por trás do relógio/Dynamic Island. Sem
-          backdrop-blur pelo mesmo motivo da BottomNav (fantasma no Safari iOS). */}
-      <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-neutral-200 bg-neutral-50 p-4 pt-[calc(max(1rem,env(safe-area-inset-top))+1.1rem)] dark:border-neutral-800 dark:bg-neutral-900">
-        <span className="flex items-center gap-1.5 text-sm font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
-          <Wallet size={18} className="text-green-600" />
-          FinancasApp
-        </span>
-        <div className="flex items-center gap-3">
-          <span className="hidden text-sm text-neutral-500 sm:inline">{user.email}</span>
+          backdrop-blur pelo mesmo motivo da BottomNav (fantasma no Safari iOS)
+          — `material-bar` é opaco por omissão, ver index.css.
+          Redesenho 2026-11: o padding de cima (a parte afinada no aparelho)
+          ficou igual; a barra em si passou a ter 44 px, com o título do ecrã
+          ao centro (aparece quando o título grande sai de vista) e as ações
+          com alvos de 44 px. A linha de baixo só se vê depois de haver scroll. */}
+      <header
+        className={`material-bar sticky top-0 z-20 grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b-[0.5px] px-2 pt-[calc(max(1rem,env(safe-area-inset-top))+1.1rem)] transition-[border-color] duration-200 ${
+          scrolled ? 'border-separator' : 'border-transparent'
+        }`}
+      >
+        <div className="flex h-11 items-center">
           <Link
             to="/perfil"
             aria-label="Perfil"
-            className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-neutral-500 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100"
+            className="pressable flex size-11 shrink-0 items-center justify-center rounded-full text-label-2"
           >
             {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="size-9 rounded-full object-cover" />
+              <img src={avatarUrl} alt="" className="size-8 rounded-full object-cover" />
             ) : (
-              <UserCircle2 size={20} aria-hidden="true" />
+              <UserCircle2 size={26} strokeWidth={1.6} aria-hidden="true" />
             )}
           </Link>
+        </div>
+        <p
+          aria-hidden={!showBarTitle}
+          className={`truncate text-center text-[1.0625rem] font-semibold tracking-tight text-label transition-opacity duration-200 ease-apple motion-reduce:transition-none ${
+            showBarTitle ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          {barTitle}
+        </p>
+        <div className="flex h-11 items-center justify-end">
           <PrivacyToggle />
           <NotificationToggle />
         </div>
@@ -126,7 +182,7 @@ export default function AppLayout() {
       <div className="relative z-10 h-0" role="status">
         <div
           ref={indicatorRef}
-          className="absolute top-0 left-1/2 flex size-9 items-center justify-center rounded-full bg-white opacity-0 shadow-md ring-1 ring-neutral-200 will-change-transform dark:bg-neutral-800 dark:ring-neutral-700"
+          className="material-float absolute top-0 left-1/2 flex size-9 items-center justify-center rounded-full opacity-0 shadow-[var(--shadow-raised)] will-change-transform"
           style={{ transform: 'translate3d(-50%, -36px, 0) scale(0.5)' }}
         >
           <span
@@ -135,7 +191,7 @@ export default function AppLayout() {
             <RefreshCw
               size={17}
               strokeWidth={2.25}
-              className={`transition-colors duration-200 ${pullReady ? 'text-green-600' : 'text-neutral-400'} ${refreshing ? 'motion-safe:animate-spin' : ''}`}
+              className={`transition-colors duration-200 ${pullReady ? 'text-accent' : 'text-label-3'} ${refreshing ? 'motion-safe:animate-spin' : ''}`}
               style={refreshing ? undefined : { transform: 'rotate(var(--ptr-rotate, 0deg))' }}
             />
           </span>
@@ -145,7 +201,7 @@ export default function AppLayout() {
 
       <main
         ref={contentRef}
-        className="mx-auto max-w-md space-y-6 px-4 pt-4 pb-[calc(5rem+env(safe-area-inset-bottom))]"
+        className="mx-auto max-w-md space-y-6 px-4 pt-2 pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
       >
         <ErrorBoundary key={`${location.pathname}:${reloadKey}`}>
           <Outlet />

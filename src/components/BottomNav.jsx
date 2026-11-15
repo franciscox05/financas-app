@@ -12,11 +12,12 @@ const TABS = [
   { to: '/gestao', label: 'Gestão', Icon: Settings2 },
 ]
 
+// 49 px de altura (a da barra de separadores do iOS) e cada separador ocupa um
+// quinto da largura — alvo de toque sempre acima dos 44 px. O ativo distingue-se
+// pela cor de destaque e pelo traço mais grosso, não só por ser mais escuro.
 const linkClass = ({ isActive }) =>
-  `flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[11px] font-medium ${
-    isActive
-      ? 'text-neutral-900 dark:text-neutral-100'
-      : 'text-neutral-400 dark:text-neutral-500'
+  `flex min-h-[3.0625rem] flex-1 flex-col items-center justify-center gap-0.5 text-[0.625rem] font-medium tracking-wide transition-colors duration-150 ease-apple motion-reduce:transition-none ${
+    isActive ? 'text-accent' : 'text-label-3'
   }`
 
 // Número de pedidos/movimentos por responder; qualquer falha = sem emblema.
@@ -54,7 +55,9 @@ export default function BottomNav() {
       // num iPhone 17 Pro, não reproduzido num 15 Pro). Fundo 100% opaco
       // (sem /95) — a transparência deixava o conteúdo transparecer ao
       // fazer scroll, mesmo ponto corrigido no cabeçalho (Fase 1 do UI/UX).
-      className="fixed inset-x-0 bottom-0 z-20 border-t border-neutral-200 bg-white pb-[env(safe-area-inset-bottom)] dark:border-neutral-800 dark:bg-neutral-900"
+      // `material-bar` (index.css) mantém isto: opaco por omissão, com o
+      // desfoque atrás de um interruptor para testar no aparelho.
+      className="material-bar fixed inset-x-0 bottom-0 z-20 border-t-[0.5px] border-separator pb-[env(safe-area-inset-bottom)]"
       aria-label="Navegação principal"
     >
       <div className="mx-auto flex max-w-md">
@@ -63,11 +66,11 @@ export default function BottomNav() {
             {({ isActive }) => (
               <>
                 <span className="relative">
-                  <Icon size={20} strokeWidth={isActive ? 2.25 : 1.75} />
+                  <Icon size={24} strokeWidth={isActive ? 2.1 : 1.7} aria-hidden="true" />
                   {to === '/dividas' && pending > 0 && (
                     <span
                       aria-hidden="true"
-                      className="absolute -right-2.5 -top-1.5 flex min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-medium leading-4 text-white"
+                      className="absolute -right-2.5 -top-1.5 flex min-w-4 items-center justify-center rounded-full bg-negative px-1 text-[10px] font-semibold leading-4 text-white"
                     >
                       {pending > 9 ? '9+' : pending}
                     </span>

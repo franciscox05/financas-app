@@ -90,12 +90,12 @@ export default function NotificationToggle() {
       title={title}
       aria-label={title}
       aria-pressed={subscribed}
-      className="rounded-lg border border-neutral-300 p-1.5 disabled:opacity-50 dark:border-neutral-700"
+      className="pressable flex size-11 shrink-0 items-center justify-center rounded-full text-label-2 disabled:opacity-50"
     >
       {subscribed ? (
-        <Bell size={16} />
+        <Bell size={21} strokeWidth={1.9} aria-hidden="true" className="text-accent" />
       ) : (
-        <BellOff size={16} className={blocked ? 'text-red-500' : 'text-neutral-400'} />
+        <BellOff size={21} strokeWidth={1.9} aria-hidden="true" className={blocked ? 'text-negative' : ''} />
       )}
     </button>
   )
