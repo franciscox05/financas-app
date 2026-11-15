@@ -9,6 +9,7 @@ import { EmptyState, ErrorNotice, ListSkeleton, Pager } from './Feedback'
 import Money from './Money'
 import MonthPicker from './MonthPicker'
 import TransactionDetailModal from './TransactionDetailModal'
+import Segmented from './ui/Segmented'
 import { eur, ptDate } from '../lib/format'
 
 const PAGE_SIZE = 25
@@ -165,8 +166,9 @@ function TransactionFilters({ filters, onChange, categories, accounts }) {
     <div className="space-y-2.5">
       <form onSubmit={submitSearch} className="relative">
         <Search
-          size={15}
-          className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400"
+          size={17}
+          aria-hidden="true"
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-label-2"
         />
         <input
           type="search"
@@ -179,7 +181,7 @@ function TransactionFilters({ filters, onChange, categories, accounts }) {
           enterKeyHint="search"
           placeholder="Pesquisar transações..."
           aria-label="Pesquisar transações"
-          className={`${fieldClass} pl-8 ${draft ? 'pr-9' : ''}`}
+          className={`w-full rounded-control border-0 bg-fill py-2 pl-9 text-label placeholder:text-label-2 focus:ring-2 focus:ring-accent ${draft ? 'pr-11' : 'pr-3'}`}
         />
         {draft && (
           <button
@@ -189,30 +191,14 @@ function TransactionFilters({ filters, onChange, categories, accounts }) {
               onChange({ ...filters, query: '' })
             }}
             aria-label="Limpar pesquisa"
-            className="absolute right-1.5 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
+            className="absolute right-0 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full text-label-2"
           >
             <X size={15} aria-hidden="true" />
           </button>
         )}
       </form>
 
-      <div role="group" aria-label="Filtrar por tipo" className="grid grid-cols-3 gap-2">
-        {TYPE_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            aria-pressed={filters.type === opt.value}
-            onClick={() => setType(opt.value)}
-            className={`rounded-lg py-1.5 text-xs font-medium transition-colors ${
-              filters.type === opt.value
-                ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
-                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700'
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
+      <Segmented label="Filtrar por tipo" options={TYPE_OPTIONS} value={filters.type} onChange={setType} />
 
       <div className="grid grid-cols-2 gap-2.5">
         <select
@@ -378,13 +364,13 @@ export default function TransactionList({ categories, accounts, refreshToken, on
         accounts={accounts}
       />
 
-      <div className="flex items-center justify-between text-xs text-neutral-500" aria-live="polite">
-        <span>{totalCount} {totalCount === 1 ? 'transação' : 'transações'}</span>
+      <div className="flex min-h-6 items-center justify-between text-[0.8125rem] text-label-2" aria-live="polite">
+        <span className="amount">{totalCount} {totalCount === 1 ? 'transação' : 'transações'}</span>
         {hasActiveFilters && (
           <button
             type="button"
             onClick={() => setFilters(EMPTY_FILTERS)}
-            className="underline-offset-2 hover:underline"
+            className="-my-2 min-h-11 px-1 font-medium text-accent"
           >
             Limpar filtros
           </button>

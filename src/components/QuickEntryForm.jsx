@@ -10,6 +10,7 @@ import { cancelPendingEntry, createSharedEntry } from '../lib/linkedDb'
 import { notifyPendingChanged } from '../lib/pendingEvents'
 import { friendEntryKind, friendEntryMode } from '../lib/quickEntryFriend'
 import { defaultCategoryId, overshootNote } from '../lib/repaymentInput'
+import Segmented from './ui/Segmented'
 
 const selectClass =
   'w-full min-w-0 rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100'
@@ -460,45 +461,21 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-3 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
+      className="space-y-3 rounded-group bg-surface p-4"
     >
-      <div className={`grid gap-2 ${accounts.length > 1 ? 'grid-cols-3' : 'grid-cols-2'}`}>
-        <button
-          type="button"
-          onClick={() => setType('expense')}
-          className={`rounded-lg py-2 text-sm font-medium ${
-            type === 'expense'
-              ? 'bg-red-600 text-white'
-              : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'
-          }`}
-        >
-          Gasto
-        </button>
-        <button
-          type="button"
-          onClick={() => setType('income')}
-          className={`rounded-lg py-2 text-sm font-medium ${
-            type === 'income'
-              ? 'bg-green-600 text-white'
-              : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'
-          }`}
-        >
-          Ganho
-        </button>
-        {accounts.length > 1 && (
-          <button
-            type="button"
-            onClick={() => setType('transfer')}
-            className={`rounded-lg py-2 text-sm font-medium ${
-              type === 'transfer'
-                ? 'bg-blue-600 text-white'
-                : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'
-            }`}
-          >
-            Transferência
-          </button>
-        )}
-      </div>
+      {/* A cor deixou de pintar o botão inteiro: a opção escolhida é a pastilha
+          elevada, e a cor (vermelho/verde/azul) fica só no texto dela. A
+          Transferência só existe com mais de uma conta, como antes. */}
+      <Segmented
+        label="Tipo de registo"
+        value={type}
+        onChange={setType}
+        options={[
+          { value: 'expense', label: 'Gasto', tone: 'negative' },
+          { value: 'income', label: 'Ganho', tone: 'positive' },
+          ...(accounts.length > 1 ? [{ value: 'transfer', label: 'Transferência', tone: 'accent' }] : []),
+        ]}
+      />
 
       <div>
         <label htmlFor="quick-entry-amount" className="mb-1 block text-xs font-medium text-neutral-500">
@@ -518,7 +495,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
             setAmountSuggested(false)
             setAmount(e.target.value)
           }}
-          className="w-full rounded-lg border border-neutral-300 px-3 py-3 text-2xl font-semibold dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+          className="amount w-full rounded-control border-0 bg-fill px-4 py-3 text-[2rem] leading-tight font-bold tracking-tight text-label placeholder:text-label-3 focus:ring-2 focus:ring-accent"
         />
         {amountSuggested && (
           <p className="mt-0.5 text-xs text-neutral-400">valor sugerido a partir do histórico</p>
@@ -782,7 +759,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       <button
         type="submit"
         disabled={submitting}
-        className="min-h-12 w-full rounded-lg bg-neutral-900 py-3 font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+        className="min-h-12 w-full rounded-control bg-accent py-3 text-[1.0625rem] font-semibold text-white transition-opacity duration-150 active:opacity-70 disabled:opacity-50"
       >
         {submitting ? 'A guardar...' : type === 'transfer' && !transferCountsAsExpense ? 'Transferir' : 'Registar'}
       </button>

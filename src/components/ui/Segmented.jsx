@@ -4,6 +4,9 @@
 // ('negative' para Gasto, 'positive' para Ganho, 'accent' para Transferência).
 //
 // A calha tem 44 px de altura para o alvo de toque; a pastilha fica com 36.
+// As opções crescem por igual a partir da largura do seu texto (flex-auto), em
+// vez de colunas iguais: com três opções, "Transferência" não cabia num terço
+// do cartão num iPhone e ficava cortada.
 const TONE = {
   neutral: 'text-label',
   accent: 'text-accent',
@@ -16,8 +19,7 @@ export default function Segmented({ options, value, onChange, label, className =
     <div
       role="group"
       aria-label={label}
-      className={`grid min-h-11 gap-1 rounded-control bg-fill p-1 ${className}`}
-      style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
+      className={`flex min-h-11 gap-1 rounded-control bg-fill p-1 ${className}`}
     >
       {options.map((opt) => {
         const active = opt.value === value
@@ -27,7 +29,7 @@ export default function Segmented({ options, value, onChange, label, className =
             type="button"
             aria-pressed={active}
             onClick={() => onChange(opt.value)}
-            className={`min-w-0 truncate rounded-[0.5625rem] px-2 text-[0.9375rem] transition-[background-color,color,box-shadow] duration-200 ease-apple focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent motion-reduce:transition-none ${
+            className={`min-w-0 flex-auto truncate rounded-[0.5625rem] px-2 text-[0.9375rem] transition-[background-color,color,box-shadow] duration-200 ease-apple focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent motion-reduce:transition-none ${
               active
                 ? `bg-surface-raised font-semibold shadow-[0_1px_3px_rgb(0_0_0/0.12),0_0_0_0.5px_rgb(0_0_0/0.04)] ${TONE[opt.tone ?? 'neutral']}`
                 : 'font-medium text-label-2'
