@@ -216,7 +216,7 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
         {OPTIONS.map((opt) => (
           <label
             key={opt.value}
-            className="flex min-h-14 cursor-pointer items-start gap-3 rounded-control border border-separator px-3 py-2.5 transition-colors duration-150 ease-out has-[:checked]:border-separator has-[:checked]:bg-fill has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-1 has-[:focus-visible]:outline-accent motion-reduce:transition-none dark:has-[:checked]:border-separator dark:has-[:checked]:bg-accent-fill dark:has-[:focus-visible]:outline-accent"
+            className="flex min-h-14 cursor-pointer items-start gap-3 rounded-control border border-separator px-3 py-2.5 transition-colors duration-150 ease-out has-[:checked]:border-accent has-[:checked]:bg-accent/10 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-1 has-[:focus-visible]:outline-accent motion-reduce:transition-none"
           >
             <input
               type="radio"
