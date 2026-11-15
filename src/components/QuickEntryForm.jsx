@@ -225,6 +225,12 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
   const sharesTotal = friendShares.reduce((sum, s) => sum + (Number(s.amount) || 0), 0)
   const sharesExceed = showFriend && type === 'expense' && sharesTotal > numericAmount + 0.001
 
+  // Ganho: o amigo (um só) que devolveu o valor todo. Tem de existir aqui, no
+  // corpo do componente, porque o JSX também o usa (aviso de "ligado" e de
+  // devolução a mais) — estava declarado só dentro do handleSubmit, e abrir
+  // "Foi um amigo que te devolveu?" rebentava com "repaymentFriend is not defined".
+  const repaymentFriend = type === 'income' && showFriend ? (friends.find((f) => f.id === friendId) ?? null) : null
+
   function updateShare(index, patch) {
     setSplitNotice('')
     setFriendShares((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)))
@@ -331,8 +337,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       return
     }
 
-    // Ganho: amigo único, devolveu o valor todo.
-    const repaymentFriend = type === 'income' && showFriend ? friends.find((f) => f.id === friendId) : null
+    // Ganho: amigo único, devolveu o valor todo (`repaymentFriend`, acima).
     if (type === 'income' && showFriend && !repaymentFriend) {
       setError('Escolhe o amigo, ou fecha essa secção.')
       return
