@@ -7,12 +7,7 @@ import { notifyAvatarChanged } from '../lib/avatarEvents'
 import { getAvatarPath, getFullName, updateFullName, uploadAvatar } from '../lib/profileDb'
 import { supabase } from '../lib/supabase'
 import AvatarCropModal from './AvatarCropModal'
-import { CARD_CLASS } from './Card'
-
-const focusRing =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
-
-const inputClass = `min-h-11 min-w-0 flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm transition-colors duration-150 ease-out disabled:opacity-50 motion-reduce:transition-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 ${focusRing}`
+import { focusRing, inputClass, primaryButton, secondaryButton } from './ui/styles'
 
 // Cabeçalho do Perfil: foto (ou iniciais) com upload, nome editável (mesmo
 // padrão de edição em linha usado no nome de um amigo) e email (da conta,
@@ -103,99 +98,89 @@ export default function PersonalInfoSection() {
   const avatarUrl =
     avatarPath && `${supabase.storage.from('avatars').getPublicUrl(avatarPath).data.publicUrl}?v=${avatarVersion}`
 
+  // Bloco de identidade ao centro, sem caixa: fotografia grande com o botão da
+  // câmara, nome e email. O botão da câmara tem 44 px de alvo (o círculo
+  // visível é mais pequeno).
   return (
-    <section className={CARD_CLASS}>
-      <div className="flex items-center gap-4">
-        <div className="relative shrink-0">
-          {avatarUrl ? (
-            <img src={avatarUrl} alt="" className="size-14 rounded-full object-cover" />
-          ) : (
-            <div
-              aria-hidden="true"
-              className="flex size-14 items-center justify-center rounded-full bg-neutral-900 text-lg font-semibold text-white dark:bg-neutral-100 dark:text-neutral-900"
-            >
-              {avatarInitials(value, user?.email)}
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploadingAvatar}
-            aria-label="Mudar foto de perfil"
-            className={`absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full border-2 border-white bg-neutral-900 text-white transition-opacity disabled:opacity-60 dark:border-neutral-900 dark:bg-neutral-100 dark:text-neutral-900 ${focusRing}`}
+    <section className="flex flex-col items-center text-center">
+      <div className="relative shrink-0">
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="" className="size-24 rounded-full object-cover" />
+        ) : (
+          <div
+            aria-hidden="true"
+            className="display flex size-24 items-center justify-center rounded-full bg-accent-fill text-[2rem] font-semibold text-white"
           >
-            <Camera size={12} aria-hidden="true" />
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleAvatarChange}
-            className="sr-only"
-          />
-        </div>
+            {avatarInitials(value, user?.email)}
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploadingAvatar}
+          aria-label="Mudar foto de perfil"
+          className={`absolute -right-3 -bottom-3 flex size-11 items-center justify-center rounded-full transition-opacity disabled:opacity-60 ${focusRing}`}
+        >
+          <span className="flex size-8 items-center justify-center rounded-full bg-surface-raised text-label shadow-[var(--shadow-raised)]">
+            <Camera size={16} aria-hidden="true" />
+          </span>
+        </button>
+        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} className="sr-only" />
+      </div>
 
-        <div className="min-w-0 flex-1">
-          {editing ? (
-            <form onSubmit={handleSubmit} className="space-y-2">
-              <input
-                type="text"
-                autoFocus
-                autoComplete="name"
-                placeholder="O teu nome"
-                value={draft}
-                disabled={busy}
-                onChange={(e) => setDraft(e.target.value)}
-                className={inputClass}
-              />
-              {error && (
-                <p role="alert" className="text-sm text-red-600 dark:text-red-400">
-                  {error}
-                </p>
-              )}
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={busy}
-                  className={`min-h-9 rounded-lg bg-neutral-900 px-3 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900 ${focusRing}`}
-                >
-                  {busy ? 'A guardar...' : 'Guardar'}
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => setEditing(false)}
-                  className={`min-h-9 rounded-lg border border-neutral-300 px-3 text-sm dark:border-neutral-700 ${focusRing}`}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div className="flex items-center gap-1">
-              <h2 className="min-w-0 truncate text-base font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
-                {loaded ? value || 'Sem nome' : '...'}
-              </h2>
-              <button
-                type="button"
-                onClick={() => {
-                  setDraft(value)
-                  setError('')
-                  setEditing(true)
-                }}
-                aria-label="Editar nome"
-                disabled={!loaded}
-                className={`flex size-9 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors duration-150 ease-out hover:text-neutral-900 disabled:opacity-40 motion-reduce:transition-none dark:hover:text-neutral-100 ${focusRing}`}
-              >
-                <Pencil size={14} aria-hidden="true" />
+      <div className="mt-3 w-full min-w-0">
+        {editing ? (
+          <form onSubmit={handleSubmit} className="space-y-3 rounded-group bg-surface p-4 text-left">
+            <input
+              type="text"
+              autoFocus
+              autoComplete="name"
+              placeholder="O teu nome"
+              value={draft}
+              disabled={busy}
+              onChange={(e) => setDraft(e.target.value)}
+              className={inputClass}
+            />
+            {error && (
+              <p role="alert" className="text-[0.9375rem] text-negative">
+                {error}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <button type="button" disabled={busy} onClick={() => setEditing(false)} className={`${secondaryButton} flex-1`}>
+                Cancelar
+              </button>
+              <button type="submit" disabled={busy} className={`${primaryButton} flex-[2]`}>
+                {busy ? 'A guardar...' : 'Guardar'}
               </button>
             </div>
-          )}
-          {!editing && <p className="truncate text-sm text-neutral-500">{user?.email}</p>}
-        </div>
+          </form>
+        ) : (
+          <div className="flex items-center justify-center">
+            {/* espaço igual ao do lápis, para o nome ficar mesmo ao centro */}
+            <span aria-hidden="true" className="size-11 shrink-0" />
+            <h1 className="min-w-0 truncate text-[1.75rem] leading-tight font-bold tracking-tight text-label">
+              {loaded ? value || 'Sem nome' : '...'}
+            </h1>
+            <button
+              type="button"
+              onClick={() => {
+                setDraft(value)
+                setError('')
+                setEditing(true)
+              }}
+              aria-label="Editar nome"
+              disabled={!loaded}
+              className={`pressable flex size-11 shrink-0 items-center justify-center rounded-full text-accent disabled:opacity-40 ${focusRing}`}
+            >
+              <Pencil size={18} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+        {!editing && <p className="truncate text-[0.9375rem] text-label-2">{user?.email}</p>}
       </div>
       {avatarError && (
-        <p role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">
+        <p role="alert" className="mt-2 text-[0.9375rem] text-negative">
           {avatarError}
         </p>
       )}

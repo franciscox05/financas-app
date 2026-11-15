@@ -6,11 +6,7 @@ import OptionalDateField from './OptionalDateField'
 import { useToast } from '../context/toastContext'
 import { shortDate } from '../lib/format'
 import { createGoal, deleteGoal, listGoals, toggleGoalDone } from '../lib/profileDb'
-
-const focusRing =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100'
-
-const inputClass = `min-h-11 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm transition-colors duration-150 ease-out dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 ${focusRing}`
+import { focusRing, inputClass } from './ui/styles'
 
 // Objetivos pessoais em texto livre, com prazo opcional — sem ligação a
 // dinheiro (ao contrário da antiga feature de metas de poupança, removida).
@@ -103,8 +99,8 @@ export default function GoalsSection() {
 
   return (
     <div className="space-y-3">
-      <form onSubmit={handleAdd} className="space-y-2 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
-        <label htmlFor="goal-title" className="block text-xs font-medium text-neutral-500">
+      <form onSubmit={handleAdd} className="space-y-2 rounded-control border border-separator p-3">
+        <label htmlFor="goal-title" className="block text-xs font-medium text-label-2">
           Novo objetivo
         </label>
         <input
@@ -124,14 +120,14 @@ export default function GoalsSection() {
           inputClass={inputClass}
         />
         {error && (
-          <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+          <p role="alert" className="text-sm text-negative">
             {error}
           </p>
         )}
         <button
           type="submit"
           disabled={adding || !title.trim()}
-          className={`flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg bg-neutral-900 text-sm font-medium text-white transition duration-150 ease-out hover:bg-neutral-700 active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300 ${focusRing}`}
+          className={`flex min-h-11 w-full items-center justify-center gap-1.5 rounded-control bg-accent-fill text-sm font-medium text-white transition duration-150 ease-out active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 ${focusRing}`}
         >
           <Plus size={16} aria-hidden="true" /> {adding ? 'A guardar...' : 'Adicionar'}
         </button>
@@ -140,7 +136,7 @@ export default function GoalsSection() {
       {!loading && goals.length === 0 ? (
         <EmptyState title="Ainda sem objetivos" description="Adiciona o primeiro acima." />
       ) : (
-        <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+        <ul className="divide-y divide-separator">
           {pageItems.map((goal) => (
             <li key={goal.id} className="flex min-h-12 items-center gap-3 py-2">
               <input
@@ -148,27 +144,27 @@ export default function GoalsSection() {
                 checked={goal.done}
                 onChange={() => handleToggle(goal)}
                 aria-label={`Marcar "${goal.title}" como ${goal.done ? 'por fazer' : 'feito'}`}
-                className="size-5 shrink-0 accent-neutral-900 dark:accent-neutral-100"
+                className="size-5 shrink-0 accent-accent"
               />
               <div className="min-w-0 flex-1">
                 <p
                   className={`truncate text-sm ${
                     goal.done
-                      ? 'text-neutral-400 line-through dark:text-neutral-500'
-                      : 'text-neutral-800 dark:text-neutral-200'
+                      ? 'text-label-3 line-through'
+                      : 'text-label'
                   }`}
                 >
                   {goal.title}
                 </p>
                 {goal.due_on && (
-                  <p className="text-xs text-neutral-500">Prazo: {shortDate(goal.due_on, { withYear: true })}</p>
+                  <p className="text-xs text-label-2">Prazo: {shortDate(goal.due_on, { withYear: true })}</p>
                 )}
               </div>
               <button
                 type="button"
                 onClick={() => setDeleteTarget(goal)}
                 aria-label={`Apagar objetivo: ${goal.title}`}
-                className={`flex size-11 shrink-0 items-center justify-center rounded-lg text-neutral-400 transition-colors duration-150 ease-out hover:text-red-600 active:scale-[0.95] motion-reduce:transition-none motion-reduce:active:scale-100 ${focusRing}`}
+                className={`flex size-11 shrink-0 items-center justify-center rounded-control text-label-3 transition-colors duration-150 ease-out hover:text-negative active:scale-[0.95] motion-reduce:transition-none motion-reduce:active:scale-100 ${focusRing}`}
               >
                 <Trash2 size={16} aria-hidden="true" />
               </button>
