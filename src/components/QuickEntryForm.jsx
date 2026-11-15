@@ -495,7 +495,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
             setAmountSuggested(false)
             setAmount(e.target.value)
           }}
-          className="amount w-full rounded-control border-0 bg-fill px-4 py-3 text-[2rem] leading-tight font-bold tracking-tight text-label placeholder:text-label-3 focus:ring-2 focus:ring-accent"
+          className="amount w-full rounded-control border-0 bg-fill px-4 py-3 text-[2rem]! leading-tight font-bold tracking-tight text-label placeholder:text-label-3 focus:ring-2 focus:ring-accent"
         />
         {amountSuggested && (
           <p className="mt-0.5 text-xs text-neutral-400">valor sugerido a partir do histórico</p>

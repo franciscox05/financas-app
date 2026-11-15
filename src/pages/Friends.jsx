@@ -280,7 +280,7 @@ export default function Friends() {
                   checked={requestLink}
                   disabled={submitting}
                   onChange={(e) => setRequestLink(e.target.checked)}
-                  className="size-5 min-h-0 shrink-0 accent-[var(--accent)]"
+                  className="size-5 min-h-0! shrink-0 accent-[var(--accent)]"
                   aria-describedby="friend-request-link-hint"
                 />
                 Pedir para ligar contas
