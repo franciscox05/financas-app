@@ -6,9 +6,12 @@ import { MAX_NAME_LENGTH, validateName } from '../lib/names'
 import { eur } from '../lib/format'
 import ConfirmDialog from './ConfirmDialog'
 import DragReorderList from './DragReorderList'
+import Money from './Money'
+import Segmented from './ui/Segmented'
+import { inputClass, primaryButton, secondaryButton } from './ui/styles'
 
-const inputClass =
-  'w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100'
+// Botão de ícone das linhas: 44 px de alvo de toque (antes eram ~24 px).
+const iconButton = 'pressable flex size-11 shrink-0 items-center justify-center rounded-full'
 
 function ManageRow({
   item,
@@ -114,7 +117,7 @@ function ManageRow({
             className={inputClass}
           />
           {error && (
-            <p role="alert" className="text-xs text-red-600">
+            <p role="alert" className="text-xs text-negative">
               {error}
             </p>
           )}
@@ -122,7 +125,7 @@ function ManageRow({
             <button
               type="submit"
               disabled={busy}
-              className="flex-1 rounded-lg bg-neutral-900 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+              className={`${primaryButton} flex-1`}
             >
               {busy ? 'A guardar...' : 'Guardar'}
             </button>
@@ -130,7 +133,7 @@ function ManageRow({
               type="button"
               onClick={handleCancel}
               disabled={busy}
-              className="flex-1 rounded-lg border border-neutral-300 py-1.5 text-sm dark:border-neutral-700"
+              className={`${secondaryButton} flex-1`}
             >
               Cancelar
             </button>
@@ -141,27 +144,29 @@ function ManageRow({
   }
 
   return (
-    <div className={`py-2 ${isDragging ? 'bg-neutral-50 dark:bg-neutral-800' : ''}`}>
-      <div className="flex items-center justify-between gap-3">
-        <span className="flex min-w-0 items-center gap-1.5">
+    <div className={`py-1 ${isDragging ? 'bg-fill' : ''}`}>
+      <div className="flex min-h-11 items-center justify-between gap-1">
+        <span className="flex min-w-0 items-center gap-1">
           {dragHandleProps && (
             <button
               type="button"
               aria-label={`Arrastar para reordenar ${item.name}`}
-              className="-ml-1 flex shrink-0 items-center justify-center rounded p-1 text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
+              className="-ml-3 flex h-11 w-9 shrink-0 items-center justify-center rounded-control text-label-3"
               {...dragHandleProps}
             >
-              <GripVertical size={16} />
+              <GripVertical size={18} aria-hidden="true" />
             </button>
           )}
-          <span className="min-w-0 truncate text-sm text-neutral-900 dark:text-neutral-100">
-            {item.name}
+          <span className="min-w-0">
+            <span className="block truncate text-[1.0625rem] leading-snug text-label">{item.name}</span>
             {balance !== undefined && (
-              <span className="ml-1.5 text-xs text-neutral-400">· {eur(balance)}</span>
+              <span className="amount block truncate text-[0.8125rem] leading-snug text-label-2">
+                <Money value={balance} />
+              </span>
             )}
           </span>
         </span>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="-mr-2 flex shrink-0 items-center">
           {onToggleSavings && item.type === 'expense' && (
             <button
               type="button"
@@ -171,13 +176,17 @@ function ManageRow({
                   ? 'Marcada como poupança/investimento — não conta como gasto do dia a dia no resumo'
                   : 'Marcar como poupança/investimento'
               }
-              className={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${
+              aria-label={item.is_savings ? 'Poupança/investimento: ativo' : 'Marcar como poupança/investimento'}
+              aria-pressed={item.is_savings}
+              className={`flex size-11 shrink-0 items-center justify-center rounded-full ${
                 item.is_savings
-                  ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
-                  : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'
+                  ? 'text-positive'
+                  : 'text-label-3'
               }`}
             >
-              <PiggyBank size={14} />
+              <span className={`flex size-8 items-center justify-center rounded-full ${item.is_savings ? 'bg-positive/15' : ''}`}>
+                <PiggyBank size={18} aria-hidden="true" />
+              </span>
             </button>
           )}
           {onQuickSnapshot && (
@@ -186,18 +195,18 @@ function ManageRow({
               onClick={() => setUpdatingBalance((v) => !v)}
               aria-label={`Atualizar saldo de ${item.name}`}
               title="Atualizar saldo (regista o valor de hoje)"
-              className="rounded p-1 text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
+              className={`${iconButton} text-accent`}
             >
-              <TrendingUp size={16} />
+              <TrendingUp size={19} aria-hidden="true" />
             </button>
           )}
           <button
             type="button"
             onClick={() => setEditing(true)}
             aria-label={`Renomear ${item.name}`}
-            className="rounded p-1 text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
+            className={`${iconButton} text-label-2`}
           >
-            <Pencil size={16} />
+            <Pencil size={18} aria-hidden="true" />
           </button>
           <button
             type="button"
@@ -205,9 +214,9 @@ function ManageRow({
             disabled={!canDelete || busy}
             title={canDelete ? undefined : deleteHint}
             aria-label={`Apagar ${item.name}`}
-            className="rounded p-1 text-neutral-400 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-neutral-400"
+            className={`${iconButton} text-label-2 disabled:cursor-not-allowed disabled:opacity-30`}
           >
-            <Trash2 size={16} />
+            <Trash2 size={18} aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -232,7 +241,7 @@ function ManageRow({
           <button
             type="submit"
             disabled={busy || newBalance.trim() === ''}
-            className="rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+            className={primaryButton}
           >
             OK
           </button>
@@ -259,7 +268,7 @@ function ManageRow({
         onCancel={() => setConfirmingDelete(false)}
       />
       {updatingBalance && error && (
-        <p role="alert" className="mt-1 text-xs text-red-600">
+        <p role="alert" className="mt-1 text-xs text-negative">
           {error}
         </p>
       )}
@@ -275,7 +284,7 @@ export default function EntityManager({
   icon: Icon, // componente lucide-react opcional, visual de "hub" de definições
   noun, // ex.: 'conta', 'categoria'
   items,
-  groups, // [{ type, label, activeClass? }]
+  groups, // [{ type, label, tone? }] — `tone` pinta o texto do separador ativo
   scope,
   tabbed = false, // mostra um grupo de cada vez, em separadores como no Balanço
   deleteWarning,
@@ -394,29 +403,18 @@ export default function EntityManager({
   }
 
   return (
-    <section className="space-y-4">
-      <h2 className="flex items-center gap-1.5 text-sm font-semibold text-neutral-500">
-        {Icon && <Icon size={14} aria-hidden="true" />} {title}
+    <section className="space-y-3">
+      <h2 className="flex items-center gap-2 text-[1.25rem] font-bold tracking-tight text-label">
+        {Icon && <Icon size={20} strokeWidth={2.1} aria-hidden="true" className="text-accent" />} {title}
       </h2>
 
       {tabbed && (
-        <div role="group" aria-label={`Tipo de ${noun}`} className="grid grid-cols-2 gap-2">
-          {groups.map((group) => (
-            <button
-              key={group.type}
-              type="button"
-              aria-pressed={newType === group.type}
-              onClick={() => selectType(group.type)}
-              className={`rounded-lg py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-neutral-100 ${
-                newType === group.type
-                  ? group.activeClass
-                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700'
-              }`}
-            >
-              {group.label}
-            </button>
-          ))}
-        </div>
+        <Segmented
+          label={`Tipo de ${noun}`}
+          value={newType}
+          onChange={selectType}
+          options={groups.map((group) => ({ value: group.type, label: group.label, tone: group.tone }))}
+        />
       )}
 
       {visibleGroups.map((group) => {
@@ -425,15 +423,15 @@ export default function EntityManager({
         return (
           <div key={group.type}>
             {!tabbed && (
-              <h3 className="mb-1 text-xs uppercase tracking-wide text-neutral-400">{group.label}</h3>
+              <h3 className="mt-1 text-[0.8125rem] font-semibold tracking-wide text-label-2 uppercase">{group.label}</h3>
             )}
             {groupItems.length === 0 ? (
-              <p className="py-2 text-sm text-neutral-500">Sem {noun}s deste tipo.</p>
+              <p className="py-3 text-[0.9375rem] text-label-2">Sem {noun}s deste tipo.</p>
             ) : onReorder ? (
               <DragReorderList
                 items={groupItems}
                 onReorder={handleReorder}
-                className="divide-y divide-neutral-200 dark:divide-neutral-800"
+                className="divide-y divide-separator"
                 renderItem={(item, { dragHandleProps, isDragging }) => (
                   <ManageRow
                     item={item}
@@ -452,7 +450,7 @@ export default function EntityManager({
                 )}
               />
             ) : (
-              <ul className="divide-y divide-neutral-200 dark:divide-neutral-800">
+              <ul className="divide-y divide-separator">
                 {groupItems.map((item) => (
                   <li key={item.id}>
                     <ManageRow
@@ -477,30 +475,19 @@ export default function EntityManager({
 
       <form
         onSubmit={handleCreate}
-        className="space-y-2 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800"
+        className="space-y-2 border-t-[0.5px] border-separator pt-4"
       >
-        <p className="text-xs font-medium text-neutral-500">
+        <p className="text-[0.8125rem] font-medium text-label-2">
           Nova {noun}
           {tabbed && ` · ${activeGroup.label}`}
         </p>
         {!tabbed && (
-          <div role="group" aria-label={`Tipo de ${noun}`} className="grid grid-cols-2 gap-1.5">
-            {groups.map((group) => (
-              <button
-                key={group.type}
-                type="button"
-                aria-pressed={newType === group.type}
-                onClick={() => selectType(group.type)}
-                className={`rounded-lg py-1.5 text-xs font-medium transition-colors ${
-                  newType === group.type
-                    ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
-                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700'
-                }`}
-              >
-                {group.label}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            label={`Tipo de ${noun}`}
+            value={newType}
+            onChange={selectType}
+            options={groups.map((group) => ({ value: group.type, label: group.label }))}
+          />
         )}
         <input
           value={newName}
@@ -511,14 +498,14 @@ export default function EntityManager({
           className={inputClass}
         />
         {error && (
-          <p role="alert" className="text-xs text-red-600">
+          <p role="alert" className="text-xs text-negative">
             {error}
           </p>
         )}
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-lg bg-neutral-900 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+          className={`${primaryButton} w-full`}
         >
           {submitting ? 'A criar...' : `Adicionar ${noun}`}
         </button>

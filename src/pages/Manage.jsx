@@ -33,8 +33,8 @@ const ACCOUNT_GROUPS = [
 ]
 
 const CATEGORY_GROUPS = [
-  { type: 'expense', label: 'Gastos', activeClass: 'bg-red-600 text-white' },
-  { type: 'income', label: 'Ganhos', activeClass: 'bg-green-600 text-white' },
+  { type: 'expense', label: 'Gastos', tone: 'negative' },
+  { type: 'income', label: 'Ganhos', tone: 'positive' },
 ]
 
 const byName = (a, b) => a.name.localeCompare(b.name, 'pt')
@@ -172,9 +172,11 @@ export default function Manage() {
         />
       </div>
 
-      <div className={`${cardClass} space-y-3`}>
-        <h2 className="flex items-center gap-1.5 text-sm font-semibold text-neutral-500">
-          <SlidersHorizontal size={14} aria-hidden="true" /> Ferramentas avançadas
+      {/* As ferramentas deixam de estar dentro de um cartão: cada uma é uma
+          linha própria sobre o fundo da página, que abre no sítio. */}
+      <div className="space-y-2">
+        <h2 className="flex items-center gap-2 px-1 pb-1 text-[1.25rem] font-bold tracking-tight text-label">
+          <SlidersHorizontal size={20} strokeWidth={2.1} aria-hidden="true" className="text-accent" /> Ferramentas avançadas
         </h2>
         <CategoryRulesSection categories={categories} />
         <BankStatementImportSection accounts={accounts} categories={categories} />

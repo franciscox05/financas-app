@@ -176,11 +176,11 @@ export default function ImportSection({ accounts, categories }) {
       <div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="mb-1 block text-xs font-medium text-neutral-500">Mês</label>
+            <label className="mb-1 block text-xs font-medium text-label-2">Mês</label>
             <select
               value={month}
               onChange={(e) => setMonth(Number(e.target.value))}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              className="w-full rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
             >
               {MONTH_NAMES.map((name, idx) => (
                 <option key={name} value={idx + 1}>
@@ -190,11 +190,11 @@ export default function ImportSection({ accounts, categories }) {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-neutral-500">Ano</label>
+            <label className="mb-1 block text-xs font-medium text-label-2">Ano</label>
             <select
               value={year}
               onChange={(e) => setYear(Number(e.target.value))}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              className="w-full rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
             >
               {yearOptions.map((y) => (
                 <option key={y} value={y}>
@@ -207,23 +207,23 @@ export default function ImportSection({ accounts, categories }) {
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-neutral-500">Texto a importar</label>
+        <label className="mb-1 block text-xs font-medium text-label-2">Texto a importar</label>
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={'Dia 3 -100€ aparelho\nDia 4 -20€ gasóleo\n...'}
           rows={8}
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+          className="w-full rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
         />
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-negative">{error}</p>}
 
       {!groups && (
             <button
               onClick={handleAnalyze}
               disabled={analyzing || !text.trim()}
-              className="w-full rounded-lg bg-neutral-900 py-2.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+              className="w-full min-h-11 rounded-control bg-accent-fill px-4 text-[0.9375rem] font-semibold text-white disabled:opacity-50"
             >
               {analyzing ? 'A analisar...' : 'Analisar texto'}
             </button>
@@ -232,11 +232,11 @@ export default function ImportSection({ accounts, categories }) {
           {groups && (
             <div className="space-y-3">
               {monthNotice && (
-                <p className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+                <p className="rounded-control border border-warning/30 bg-warning/10 p-2 text-xs text-warning">
                   {monthNotice}
                 </p>
               )}
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-label-2">
                 A importar para <strong>{MONTH_NAMES[month - 1]} {year}</strong> ·{' '}
                 {groups.reduce((s, g) => s + g.occurrences.length, 0)} transações encontradas, em{' '}
                 {groups.length} notas distintas. Escolhe a categoria/conta de cada nota (aplica-se a
@@ -249,7 +249,7 @@ export default function ImportSection({ accounts, categories }) {
                   return (
                     <li
                       key={g.key}
-                      className="space-y-1.5 rounded-lg border border-neutral-200 p-2 dark:border-neutral-800"
+                      className="space-y-1.5 rounded-control border border-separator p-2"
                     >
                       <label className="flex items-start gap-2 text-sm">
                         <input
@@ -259,18 +259,18 @@ export default function ImportSection({ accounts, categories }) {
                           className="mt-0.5"
                         />
                         <span className="min-w-0 flex-1">
-                          <span className="font-medium text-neutral-800 dark:text-neutral-200">
+                          <span className="font-medium text-label">
                             {g.note || '(sem nota)'}
                           </span>
-                          <span className="text-neutral-400">
+                          <span className="text-label-3">
                             {' '}
                             · {g.occurrences.length}x ·{' '}
-                            <span className={g.type === 'income' ? 'text-green-600' : 'text-red-600'}>
+                            <span className={g.type === 'income' ? 'text-positive' : 'text-negative'}>
                               {eur(g.total)}
                             </span>
                           </span>
                           {g.duplicateCount > 0 && (
-                            <span className="ml-1.5 inline-flex items-center gap-0.5 text-xs text-amber-600 dark:text-amber-400">
+                            <span className="ml-1.5 inline-flex items-center gap-0.5 text-xs text-warning">
                               <TriangleAlert size={12} />
                               {g.duplicateCount} já parece{g.duplicateCount === 1 ? '' : 'm'} existir
                             </span>
@@ -282,7 +282,7 @@ export default function ImportSection({ accounts, categories }) {
                           value={g.categoryId}
                           onChange={(e) => updateGroup(g.key, { categoryId: e.target.value })}
                           disabled={!g.included}
-                          className="w-full rounded-lg border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                          className="w-full rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
                         >
                           {categoriesForType.map((c) => (
                             <option key={c.id} value={c.id}>
@@ -294,7 +294,7 @@ export default function ImportSection({ accounts, categories }) {
                           value={g.accountId}
                           onChange={(e) => updateGroup(g.key, { accountId: e.target.value })}
                           disabled={!g.included}
-                          className="w-full rounded-lg border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                          className="w-full rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
                         >
                           {accounts.map((a) => (
                             <option key={a.id} value={a.id}>
@@ -312,7 +312,7 @@ export default function ImportSection({ accounts, categories }) {
                 <button
                   onClick={handleImport}
                   disabled={importing}
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-neutral-900 py-2.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+                  className="flex flex-1 items-center justify-center gap-1.5 min-h-11 rounded-control bg-accent-fill px-4 text-[0.9375rem] font-semibold text-white disabled:opacity-50"
                 >
                   <Upload size={15} />
                   {importing
@@ -322,7 +322,7 @@ export default function ImportSection({ accounts, categories }) {
                 <button
                   onClick={() => setGroups(null)}
                   disabled={importing}
-                  className="rounded-lg border border-neutral-300 px-4 py-2.5 text-sm dark:border-neutral-700"
+                  className="min-h-11 rounded-control bg-fill px-4 text-[0.9375rem] font-semibold text-label"
                 >
                   Cancelar
                 </button>
