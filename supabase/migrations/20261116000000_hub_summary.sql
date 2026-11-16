@@ -1,6 +1,6 @@
 -- hub_summary: função só de leitura para o tiago-hub (dashboard pessoal do Tiago) ler os agregados
 -- de um mês (ganhos, gastos, gastos por categoria). O Francisco aprovou a ideia a 16/11/2026.
--- AINDA NÃO ESTÁ APLICADA NA SUPABASE: só se aplica depois de o Francisco aprovar este SQL no PR.
+-- APLICADA a 16/11/2026 na Supabase (projeto de produção), depois de o Francisco aprovar este SQL no PR.
 --
 -- O quê: uma função só de leitura para o tiago-hub (dashboard pessoal do Tiago) ler os
 -- AGREGADOS de um mês (ganhos, gastos, gastos por categoria) com um token próprio.
