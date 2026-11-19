@@ -5,7 +5,7 @@ import { useToast } from '../context/toastContext'
 import { createTransaction, createTransfer, deleteTransaction, deleteTransfer, getCurrentUserId, updateTransaction } from '../lib/db'
 import { deleteEntry, getLedgerEntry } from '../lib/friendsDb'
 import { blocksTransactionEdit, transactionLinkedMessage } from '../lib/linkedLogic'
-import { eur } from '../lib/format'
+import { currencySymbol, eur } from '../lib/format'
 import ConfirmDialog from './ConfirmDialog'
 import LedgerEntryRow from './LedgerEntryRow'
 import Modal from './Modal'
@@ -181,7 +181,7 @@ function TransactionBody({ tx, categories, accounts, linkedEntry, titleId, onClo
 
       <div>
         <label htmlFor="modal-amount" className="mb-1 block text-xs font-medium text-label-2">
-          Valor (€)
+          Valor ({currencySymbol()})
         </label>
         <input
           id="modal-amount"

@@ -9,6 +9,7 @@ import { isSharedGuardError } from '../lib/linkedLogic'
 import { notifyPendingChanged } from '../lib/pendingEvents'
 import OptionalDateField from './OptionalDateField'
 import { focusRing, inputClass, labelClass } from './ui/styles'
+import { currencySymbol } from '../lib/format'
 
 const OPTIONS = [
   { kind: 'paid_for_them', title: 'Paguei eu', hint: 'Fica a dever-me (ex.: bilhete, almoço)' },
@@ -160,7 +161,7 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
 
       <div>
         <label htmlFor="expense-amount" className={labelClass}>
-          Valor (€)
+          Valor ({currencySymbol()})
         </label>
         <input
           id="expense-amount"

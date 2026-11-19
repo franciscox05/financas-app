@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { parseBalanceValue } from '../lib/balanceInput'
 import { MAX_NAME_LENGTH, validateName } from '../lib/names'
-import { eur } from '../lib/format'
+import { currencySymbol, eur } from '../lib/format'
 import ConfirmDialog from './ConfirmDialog'
 import DragReorderList from './DragReorderList'
 import Money from './Money'
@@ -249,7 +249,7 @@ function ManageRow({
             autoFocus
             type="text"
             inputMode="decimal"
-            placeholder="Valor atual (€)"
+            placeholder={`Valor atual (${currencySymbol()})`}
             value={newBalance}
             onChange={(e) => {
               setNewBalance(e.target.value)

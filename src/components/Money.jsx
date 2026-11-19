@@ -1,10 +1,10 @@
 import { usePrivacy } from '../context/privacyContext'
-import { eur } from '../lib/format'
+import { currencySymbol, eur } from '../lib/format'
 
 // Mostra um montante; com o modo privacidade ativo mostra uma máscara fixa
 // ("•••• €"), que não revela nem o valor nem quantos dígitos tem.
 // Usa `value` (formata como "12,50 €") ou `children` (texto já formatado).
-export default function Money({ value, children, mask = '•••• €' }) {
+export default function Money({ value, children, mask = `•••• ${currencySymbol()}` }) {
   const { hidden } = usePrivacy()
   if (hidden) {
     return (
