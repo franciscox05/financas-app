@@ -125,3 +125,22 @@ export async function updateNote(id, body) {
   if (error) throw error
   return data
 }
+
+// Estado do onboarding do utilizador atual. Se a coluna ainda não existir na base
+// de dados (migração por aplicar), trata-o como "já feito": nunca bloqueia a app.
+export async function getOnboardingState() {
+  const userId = await getCurrentUserId()
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('onboarded_at, locale, currency')
+    .eq('id', userId)
+    .maybeSingle()
+  if (error) return { onboarded: true, locale: null, currency: null }
+  return { onboarded: !data || Boolean(data.onboarded_at), locale: data?.locale ?? null, currency: data?.currency ?? null }
+}
+
+// Cria contas e categorias escolhidas e marca o onboarding como feito (função SQL transacional).
+export async function completeOnboarding(payload) {
+  const { error } = await supabase.rpc('complete_onboarding', { p_payload: payload })
+  if (error) throw error
+}

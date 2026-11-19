@@ -11,6 +11,7 @@ import FriendLedger from './pages/FriendLedger'
 import Friends from './pages/Friends'
 import Login from './pages/Login'
 import Manage from './pages/Manage'
+import Onboarding from './pages/Onboarding'
 import NetWorth from './pages/NetWorth'
 import Profile from './pages/Profile'
 import ResetPassword from './pages/ResetPassword'
@@ -43,6 +44,7 @@ function App() {
           <Route path="/recuperar-password" element={<ForgotPassword />} />
           <Route path="/nova-password" element={<ResetPassword />} />
           <Route element={<ProtectedRoute />}>
+            <Route path="/bem-vindo" element={<Onboarding />} />
             <Route element={<AppLayout />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/balanco" element={<Balance />} />

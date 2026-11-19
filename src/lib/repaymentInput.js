@@ -16,6 +16,8 @@ export function defaultCategoryId(categories, kind) {
   const type = kind === 'repaid_to_me' ? 'income' : 'expense'
   const names = type === 'income' ? ['Devoluções', 'Outros Ganhos'] : ['Empréstimos', 'Outros Gastos']
   const ofType = categories.filter((c) => c.type === type)
+  const flagged = ofType.find((c) => c.is_lending)
+  if (flagged) return flagged.id
   for (const name of names) {
     const match = ofType.find((c) => c.name === name)
     if (match) return match.id
