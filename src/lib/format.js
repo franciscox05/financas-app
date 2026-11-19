@@ -4,7 +4,9 @@
 const eurFormatter = new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' })
 
 export function eur(value) {
-  return eurFormatter.format(Number(value))
+  const n = Number(value)
+  // Zero normalizado: somas em vírgula flutuante dão -5.5e-17 e o Intl mostraria "-0,00 €".
+  return eurFormatter.format(Math.abs(n) < 0.005 ? 0 : n)
 }
 
 // Montante com sinal explícito ("+479,02 €" / "-11,06 €"), para saldos e totais.

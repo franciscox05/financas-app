@@ -494,7 +494,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
           step="0.01"
           min="0"
           required
-          placeholder="0.00 €"
+          placeholder={eur(0)}
           value={amount}
           onChange={(e) => {
             amountTouchedRef.current = true
