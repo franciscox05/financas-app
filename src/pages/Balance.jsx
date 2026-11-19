@@ -25,6 +25,7 @@ import Money from '../components/Money'
 import { usePrivacy } from '../context/privacyContext'
 import HiddenChartNotice from '../components/HiddenChartNotice'
 import { eur, eurSigned } from '../lib/format'
+import { monthTotals } from '../lib/monthTotals'
 
 // Cores pelos tokens de index.css (com par claro/escuro).
 const INCOME_COLOR = 'var(--positive)'
@@ -40,11 +41,12 @@ const BREAKDOWN_TABS = [
 
 // Total por categoria dos movimentos de um tipo, do maior para o menor — cada
 // categoria guarda também as suas transações, para o drill-down ao clicar.
-function breakdownByCategory(bucket, type) {
+function breakdownByCategory(bucket, type, excludeCategoryIds = new Set()) {
   if (!bucket) return []
   const groups = new Map()
   for (const tx of bucket.txs) {
     if (tx.type !== type) continue
+    if (excludeCategoryIds.has(tx.category_id)) continue
     const name = tx.categories?.name ?? 'Sem categoria'
     if (!groups.has(name)) groups.set(name, { name, amount: 0, txs: [] })
     const g = groups.get(name)
@@ -127,17 +129,18 @@ export default function Balance() {
         const byMonth = new Map()
         for (let i = 0; i < 6; i++) {
           const d = addMonths(rangeStart, i)
-          byMonth.set(monthKey(d), { date: d, income: 0, expense: 0, txs: [] })
+          byMonth.set(monthKey(d), { date: d, txs: [] })
         }
         for (const tx of txs) {
           const d = new Date(`${tx.occurred_on}T00:00:00`)
           const bucket = byMonth.get(monthKey(d))
           if (!bucket) continue
           bucket.txs.push(tx)
-          if (tx.type === 'income') bucket.income += Number(tx.amount)
-          else bucket.expense += Number(tx.amount)
         }
-        setSixMonthData([...byMonth.values()])
+        // Ganhos e gastos sem empréstimos/devoluções (ver lib/monthTotals.js).
+        setSixMonthData(
+          [...byMonth.values()].map((b) => ({ ...b, ...monthTotals(b.txs, cats) })),
+        )
       } catch (err) {
         if (!cancelled) setError(err.message)
       } finally {
@@ -155,20 +158,23 @@ export default function Balance() {
     (b) => monthKey(b.date) === monthKey(selectedMonth),
   )
 
-  const categoryBreakdown = useMemo(() => breakdownByCategory(selectedBucket, 'expense'), [selectedBucket])
-  const incomeBreakdown = useMemo(() => breakdownByCategory(selectedBucket, 'income'), [selectedBucket])
-
-  const savingsCategoryIds = useMemo(
-    () => new Set(categories.filter((c) => c.is_savings).map((c) => c.id)),
+  const lendingCategoryIds = useMemo(
+    () => new Set(categories.filter((c) => c.is_lending).map((c) => c.id)),
     [categories],
   )
 
-  const savingsAmount = useMemo(() => {
-    if (!selectedBucket) return 0
-    return selectedBucket.txs
-      .filter((tx) => tx.type === 'expense' && savingsCategoryIds.has(tx.category_id))
-      .reduce((sum, tx) => sum + Number(tx.amount), 0)
-  }, [selectedBucket, savingsCategoryIds])
+  const categoryBreakdown = useMemo(
+    () => breakdownByCategory(selectedBucket, 'expense', lendingCategoryIds),
+    [selectedBucket, lendingCategoryIds],
+  )
+  const incomeBreakdown = useMemo(
+    () => breakdownByCategory(selectedBucket, 'income', lendingCategoryIds),
+    [selectedBucket, lendingCategoryIds],
+  )
+
+  const savingsAmount = selectedBucket?.savings ?? 0
+  const lentOut = selectedBucket?.lentOut ?? 0
+  const lentBack = selectedBucket?.lentBack ?? 0
 
   // Insight: categorias com gasto este mês >=20% acima da média dos 3 meses anteriores.
   const insights = useMemo(() => {
@@ -180,7 +186,7 @@ export default function Balance() {
     const priorByCategory = new Map()
     for (const bucket of priorBuckets) {
       for (const tx of bucket.txs) {
-        if (tx.type !== 'expense') continue
+        if (tx.type !== 'expense' || lendingCategoryIds.has(tx.category_id)) continue
         const name = tx.categories?.name ?? 'Sem categoria'
         priorByCategory.set(name, (priorByCategory.get(name) ?? 0) + Number(tx.amount))
       }
@@ -196,7 +202,7 @@ export default function Balance() {
       }
     }
     return results.sort((a, b) => b.diffPct - a.diffPct).slice(0, 3)
-  }, [sixMonthData, selectedMonth, categoryBreakdown])
+  }, [sixMonthData, selectedMonth, categoryBreakdown, lendingCategoryIds])
 
   const monthSummary = useMemo(() => {
     const idx = sixMonthData.findIndex((b) => monthKey(b.date) === monthKey(selectedMonth))
@@ -303,13 +309,19 @@ export default function Balance() {
           </div>
         </div>
 
-        {(monthSummary || savingsAmount > 0) && (
+        {(monthSummary || savingsAmount > 0 || lentOut > 0 || lentBack > 0) && (
           <div className="mt-4 space-y-1 text-[0.8125rem] leading-snug text-label-2">
             {monthSummary && <p>{monthSummary}</p>}
             {savingsAmount > 0 && (
               <p>
                 Dessas, <Money value={savingsAmount} /> foram para poupança/investimento — não contam como
                 gasto do dia a dia.
+              </p>
+            )}
+            {(lentOut > 0 || lentBack > 0) && (
+              <p>
+                Empréstimos (fora dos ganhos e gastos): emprestaste <Money value={lentOut} /> e recebeste de volta{' '}
+                <Money value={lentBack} />.
               </p>
             )}
           </div>

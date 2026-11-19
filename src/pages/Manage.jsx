@@ -25,6 +25,7 @@ import {
   renameCategory,
   reorderAccounts,
   updateCategorySavingsFlag,
+  updateCategoryLendingFlag,
 } from '../lib/db'
 
 const ACCOUNT_GROUPS = [
@@ -167,6 +168,10 @@ export default function Manage() {
           }}
           onToggleSavings={async (item, isSavings) => {
             const updated = await updateCategorySavingsFlag(item.id, isSavings)
+            setCategories((prev) => prev.map((c) => (c.id === item.id ? updated : c)).sort(byName))
+          }}
+          onToggleLending={async (item, isLending) => {
+            const updated = await updateCategoryLendingFlag(item.id, isLending)
             setCategories((prev) => prev.map((c) => (c.id === item.id ? updated : c)).sort(byName))
           }}
         />

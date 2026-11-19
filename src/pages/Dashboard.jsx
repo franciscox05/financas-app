@@ -18,6 +18,7 @@ import Money from '../components/Money'
 import Card from '../components/Card'
 import PageHeader from '../components/ui/PageHeader'
 import { eurSigned } from '../lib/format'
+import { monthTotals } from '../lib/monthTotals'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -47,16 +48,8 @@ export default function Dashboard() {
       setAccounts(accs)
       setCategories(cats)
       setTransactions(txs)
-      setMonthSummary(
-        monthTxs.reduce(
-          (acc, tx) => {
-            if (tx.type === 'income') acc.income += Number(tx.amount)
-            else acc.expense += Number(tx.amount)
-            return acc
-          },
-          { income: 0, expense: 0 },
-        ),
-      )
+      // Empréstimos e devoluções ficam fora do saldo do mês (ver monthTotals).
+      setMonthSummary(monthTotals(monthTxs, cats))
     } catch (err) {
       setLoadError(err.message)
     } finally {

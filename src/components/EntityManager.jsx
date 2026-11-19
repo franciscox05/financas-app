@@ -1,4 +1,4 @@
-import { GripVertical, Pencil, PiggyBank, TrendingUp, Trash2 } from 'lucide-react'
+import { GripVertical, HandCoins, Pencil, PiggyBank, TrendingUp, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { parseBalanceValue } from '../lib/balanceInput'
@@ -23,6 +23,7 @@ function ManageRow({
   onRename,
   onDelete,
   onToggleSavings,
+  onToggleLending,
   onQuickSnapshot,
   dragHandleProps, // ligado à asa de arrastar; ausente = esta lista não é reordenável
   isDragging,
@@ -189,6 +190,26 @@ function ManageRow({
               </span>
             </button>
           )}
+          {onToggleLending && (
+            <button
+              type="button"
+              onClick={() => onToggleLending(item, !item.is_lending)}
+              title={
+                item.is_lending
+                  ? 'Marcada como empréstimo/devolução — não conta como gasto nem ganho do mês, aparece à parte'
+                  : 'Marcar como empréstimo/devolução'
+              }
+              aria-label={item.is_lending ? 'Empréstimo/devolução: ativo' : 'Marcar como empréstimo/devolução'}
+              aria-pressed={Boolean(item.is_lending)}
+              className={`flex size-11 shrink-0 items-center justify-center rounded-full ${
+                item.is_lending ? 'text-accent' : 'text-label-3'
+              }`}
+            >
+              <span className={`flex size-8 items-center justify-center rounded-full ${item.is_lending ? 'bg-accent/15' : ''}`}>
+                <HandCoins size={18} aria-hidden="true" />
+              </span>
+            </button>
+          )}
           {onQuickSnapshot && (
             <button
               type="button"
@@ -293,6 +314,7 @@ export default function EntityManager({
   onRename,
   onDelete,
   onToggleSavings,
+  onToggleLending,
   onQuickSnapshot,
   onReorder, // (groupItems, id, 'up'|'down') => Promise; só as contas usam
 }) {
@@ -389,6 +411,19 @@ export default function EntityManager({
     }
   }
 
+  async function handleToggleLending(item, value) {
+    try {
+      await onToggleLending(item, value)
+      toast.success(
+        value
+          ? `"${item.name}" marcada como empréstimo/devolução: fica fora dos ganhos e gastos do mês.`
+          : `"${item.name}" volta a contar nos ganhos e gastos do mês.`,
+      )
+    } catch (err) {
+      toast.error(`Não foi possível atualizar: ${err.message}`)
+    }
+  }
+
   async function handleToggleSavings(item, value) {
     try {
       await onToggleSavings(item, value)
@@ -445,6 +480,7 @@ export default function EntityManager({
                     onRename={handleRename}
                     onDelete={handleDelete}
                     onToggleSavings={onToggleSavings ? handleToggleSavings : undefined}
+                    onToggleLending={onToggleLending ? handleToggleLending : undefined}
                     onQuickSnapshot={onQuickSnapshot ? handleQuickSnapshot : undefined}
                   />
                 )}
@@ -463,6 +499,7 @@ export default function EntityManager({
                       onRename={handleRename}
                       onDelete={handleDelete}
                       onToggleSavings={onToggleSavings ? handleToggleSavings : undefined}
+                    onToggleLending={onToggleLending ? handleToggleLending : undefined}
                       onQuickSnapshot={onQuickSnapshot ? handleQuickSnapshot : undefined}
                     />
                   </li>
