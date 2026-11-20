@@ -426,6 +426,18 @@ export async function updateCategorySavingsFlag(id, isSavings) {
   return data
 }
 
+export async function updateCategoryLendingFlag(id, isLending) {
+  const { data, error } = await supabase
+    .from('categories')
+    .update({ is_lending: isLending })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  categoriesCache = null
+  return data
+}
+
 export async function deleteCategory(id) {
   const { error } = await supabase.from('categories').delete().eq('id', id)
   if (error?.code === FK_VIOLATION) {

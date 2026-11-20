@@ -4,7 +4,7 @@ import { suggestAmount, suggestCategoryId } from '../lib/categorySuggest'
 import { useToast } from '../context/toastContext'
 import { today } from '../lib/dates'
 import { createTransaction, createTransfer, deleteTransaction } from '../lib/db'
-import { eur } from '../lib/format'
+import { currencySymbol, eur } from '../lib/format'
 import { createFriend, createLinkedEntry, deleteLocalEntryById, listFriendsWithBalance } from '../lib/friendsDb'
 import { cancelPendingEntry, createSharedEntry } from '../lib/linkedDb'
 import { notifyPendingChanged } from '../lib/pendingEvents'
@@ -494,7 +494,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
           step="0.01"
           min="0"
           required
-          placeholder="0.00 €"
+          placeholder={eur(0)}
           value={amount}
           onChange={(e) => {
             amountTouchedRef.current = true
@@ -710,7 +710,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
                   inputMode="decimal"
                   step="0.01"
                   min="0"
-                  placeholder="€"
+                  placeholder={currencySymbol()}
                   aria-label="Quanto deve"
                   value={share.amount}
                   onChange={(e) => updateShare(index, { amount: e.target.value })}

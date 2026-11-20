@@ -9,7 +9,7 @@ import { isSharedGuardError } from '../lib/linkedLogic'
 import { notifyPendingChanged } from '../lib/pendingEvents'
 import { forgivenessEntry, suggestedRepayment } from '../lib/ledgerMath'
 import { defaultCategoryId, overshootNote } from '../lib/repaymentInput'
-import { eur } from '../lib/format'
+import { currencySymbol, eur } from '../lib/format'
 import { focusRing, inputClass, labelClass } from './ui/styles'
 
 const OPTIONS = [
@@ -182,7 +182,7 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
 
       <div>
         <label htmlFor="repayment-amount" className={labelClass}>
-          Valor (€)
+          Valor ({currencySymbol()})
         </label>
         <input
           id="repayment-amount"
