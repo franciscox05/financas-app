@@ -75,7 +75,7 @@ export default function Dashboard() {
         { label: 'Conta destino', value: (t) => t.counter_account_name ?? '' },
         { label: 'Nota', value: (t) => t.note ?? '' },
       ])
-      downloadCsv(`financasapp-transacoes-${today()}.csv`, csv)
+      downloadCsv(`stingy-transacoes-${today()}.csv`, csv)
       toast.success(`CSV exportado (${all.length} transações).`)
     } catch (err) {
       toast.error(`Não foi possível exportar: ${err.message}`)

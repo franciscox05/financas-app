@@ -67,7 +67,7 @@ function drawHeader(doc, monthLabel) {
   doc.setTextColor('#ffffff')
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(17)
-  doc.text('FinancasApp', MARGIN, 14)
+  doc.text('Stingy', MARGIN, 14)
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
@@ -94,7 +94,7 @@ function drawContinuationHeader(doc, monthLabel) {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
   doc.setTextColor(INK)
-  doc.text('FinancasApp', MARGIN, 15)
+  doc.text('Stingy', MARGIN, 15)
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
@@ -294,7 +294,7 @@ function drawWatermark(doc, pageCount) {
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(58)
     doc.setTextColor(WATERMARK_GRAY)
-    doc.text('FinancasApp', PAGE_WIDTH / 2, PAGE_HEIGHT / 2, { align: 'center', angle: 35 })
+    doc.text('Stingy', PAGE_WIDTH / 2, PAGE_HEIGHT / 2, { align: 'center', angle: 35 })
     doc.restoreGraphicsState()
   }
 }
@@ -313,7 +313,7 @@ function drawFooters(doc, pageCount) {
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(7.5)
     doc.setTextColor(MUTED)
-    doc.text('Documento confidencial — gerado pela FinancasApp, para uso pessoal.', MARGIN, y)
+    doc.text('Documento confidencial — gerado pela Stingy, para uso pessoal.', MARGIN, y)
     doc.text(`Página ${i} de ${pageCount}`, PAGE_WIDTH - MARGIN, y, { align: 'right' })
   }
 }

@@ -33,7 +33,7 @@ export default function NewPasswordStep({ onDone }) {
       stepKey="password"
       icon={<KeyRound size={26} />}
       title="Escolhe uma nova password"
-      subtitle="Vais usá-la para entrar na FinancasApp a partir de agora."
+      subtitle="Vais usá-la para entrar na Stingy a partir de agora."
       onSubmit={handleSubmit}
     >
       <div className="space-y-3">

@@ -10,7 +10,7 @@ self.addEventListener('push', (event) => {
   if (!event.data) return
   const data = event.data.json()
   event.waitUntil(
-    self.registration.showNotification(data.title ?? 'FinancasApp', {
+    self.registration.showNotification(data.title ?? 'Stingy', {
       body: data.body,
       icon: '/pwa-192x192.png',
       badge: '/pwa-192x192.png',
