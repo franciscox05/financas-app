@@ -24,7 +24,7 @@ export default function ResetPassword() {
         stepKey="done"
         icon={<CheckCircle2 size={28} />}
         title="Password alterada"
-        subtitle="Se tens a FinancasApp instalada no ecrã principal, podes fechar este separador e entrar lá com a nova password."
+        subtitle="Se tens a Stingy instalada no ecrã principal, podes fechar este separador e entrar lá com a nova password."
         onSubmit={(e) => {
           e.preventDefault()
           navigate('/', { replace: true })

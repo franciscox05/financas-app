@@ -1,7 +1,7 @@
 <!--
-  Email "Reset password" da FinancasApp. Em produção: Supabase → Authentication → Emails →
+  Email "Reset password" da Stingy. Em produção: Supabase → Authentication → Emails →
   Reset password → colar este HTML (precisa de SMTP próprio configurado).
-  Assunto: O teu código da FinancasApp: {{ .Token }}
+  Assunto: O teu código da Stingy: {{ .Token }}
   O código é escrito dentro da app; não há link, porque no iPhone um link abriria o browser em vez
   da app instalada. Estilos inline e tabelas: é o que os clientes de email (Gmail, Outlook) suportam.
 -->
@@ -11,7 +11,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
-    <title>O teu código da FinancasApp</title>
+    <title>O teu código da Stingy</title>
   </head>
   <body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#18181b;">
     <!-- Pré-visualização na lista de emails (escondida no corpo). -->
@@ -25,7 +25,7 @@
             <tr>
               <td style="padding:32px 28px 8px;text-align:center;">
                 <div style="display:inline-block;width:48px;height:48px;line-height:48px;border-radius:14px;background-color:#16a34a;color:#ffffff;font-size:24px;font-weight:700;">€</div>
-                <p style="margin:12px 0 0;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#71717a;">FinancasApp</p>
+                <p style="margin:12px 0 0;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#71717a;">Stingy</p>
                 <h1 style="margin:6px 0 0;font-size:22px;line-height:1.3;font-weight:700;letter-spacing:-0.01em;color:#18181b;">Recuperar a password</h1>
               </td>
             </tr>
@@ -52,7 +52,7 @@
               </td>
             </tr>
           </table>
-          <p style="margin:20px 0 0;font-size:12px;color:#a1a1aa;">FinancasApp · as tuas finanças e as contas com amigos</p>
+          <p style="margin:20px 0 0;font-size:12px;color:#a1a1aa;">Stingy · as tuas finanças e as contas com amigos</p>
         </td>
       </tr>
     </table>

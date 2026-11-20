@@ -4,7 +4,7 @@ import { useToast } from '../context/toastContext'
 import { getExistingSubscription, isPushSupported, subscribeToPush, unsubscribeFromPush } from '../lib/push'
 
 const BLOCKED_MESSAGE =
-  'Notificações bloqueadas. Ativa-as em Definições → Notificações → FinancasApp.'
+  'Notificações bloqueadas. Ativa-as em Definições → Notificações → Stingy.'
 
 export default function NotificationToggle() {
   const toast = useToast()

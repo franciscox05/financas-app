@@ -19,11 +19,11 @@ export default defineConfig({
       filename: 'sw.js',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'FinancasApp',
-        short_name: 'Finanças',
+        name: 'Stingy',
+        short_name: 'Stingy',
         description: 'Registo diário de gastos/ganhos, balanço e património.',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
+        theme_color: '#001260',
+        background_color: '#001260',
         display: 'standalone',
         start_url: '/',
         icons: [
