@@ -1,4 +1,4 @@
-import { ChevronLeft, Database, Phone, ShieldCheck, Target, StickyNote } from 'lucide-react'
+import { ChevronLeft, Database, Languages, Phone, ShieldCheck, Target, StickyNote } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import AppLockSection from '../components/AppLockSection'
 import Card from '../components/Card'
@@ -8,9 +8,10 @@ import MbwayPhoneSection from '../components/MbwayPhoneSection'
 import MyPhoneSection from '../components/MyPhoneSection'
 import NotesCalendar from '../components/NotesCalendar'
 import PersonalInfoSection from '../components/PersonalInfoSection'
+import LanguageSection from '../components/LanguageSection'
 import SignOutButton from '../components/SignOutButton'
 import { focusRing } from '../components/ui/styles'
-import { useT } from '../i18n'
+import { t, useT } from '../i18n'
 
 // Mesmo contentor e mesma hierarquia de título em todos os blocos da página —
 // antes o Perfil usava cartões sem fundo e a Gestão usava rounded-2xl com
@@ -55,6 +56,13 @@ export default function Profile() {
           <StickyNote size={14} aria-hidden="true" /> {t('prof.notes')}
         </h2>
         <NotesCalendar />
+      </Card>
+
+      <Card as="section" className="space-y-3">
+        <h2 className={cardTitleClass}>
+          <Languages size={14} aria-hidden="true" /> {t('lang.title')}
+        </h2>
+        <LanguageSection />
       </Card>
 
       <Card as="section" className="space-y-3">

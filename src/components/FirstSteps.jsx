@@ -1,8 +1,7 @@
-import { Bell, Check, ChevronRight, Flame, PiggyBank, Wallet, X } from 'lucide-react'
+import { Bell, Check, ChevronRight, PiggyBank, Wallet, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useT } from '../i18n'
-import { isMilestone } from '../lib/streak'
 import { getExistingSubscription, isPushSupported } from '../lib/push'
 import Card from './Card'
 import MascotTile from './MascotTile'
@@ -39,47 +38,9 @@ function useNotificationsOn() {
   return on
 }
 
-// Sequência de dias seguidos a registar, com o mascote. Festeja nos marcos
-// (3, 7, 14, 30... dias) e lembra quando ainda falta registar hoje.
-export function StreakCard({ streak }) {
-  const t = useT()
-  if (!streak) return null
-  const { days, loggedToday, best } = streak
-  const celebrating = loggedToday && isMilestone(days)
-  const title = days === 0 ? t('habit.startTitle') : t(days === 1 ? 'habit.days1' : 'habit.daysN', { n: days })
-  const body = loggedToday
-    ? celebrating
-      ? t('habit.milestone', { n: days })
-      : t('habit.doneToday')
-    : days > 0
-      ? t('habit.keepItUp')
-      : t('habit.start')
-
-  return (
-    <Card as="section" aria-label={t('habit.aria')} className="flex items-center gap-4">
-      <MascotTile size={64} motion={celebrating ? 'cheer' : 'idle'} key={celebrating ? 'c' : 'i'} />
-      <div className="min-w-0 flex-1">
-        <p className="flex items-center gap-1.5 text-[1.0625rem] font-bold tracking-tight text-label">
-          <Flame
-            size={18}
-            strokeWidth={2.3}
-            aria-hidden="true"
-            className={days > 0 ? 'text-warning' : 'text-label-3'}
-          />
-          {title}
-        </p>
-        <p className="mt-0.5 text-[0.8125rem] leading-snug text-label-2">{body}</p>
-        {best > days && best > 1 && (
-          <p className="mt-0.5 text-[0.75rem] text-label-3">{t('habit.best', { n: best })}</p>
-        )}
-      </div>
-    </Card>
-  )
-}
-
 // Primeiros passos para quem começa: registar, definir um orçamento e ligar o
 // lembrete diário. Desaparece quando está tudo feito ou quando se fecha.
-export function FirstSteps({ hasTransactions, hasBudget, onAddFirst }) {
+export default function FirstSteps({ hasTransactions, hasBudget, onAddFirst }) {
   const t = useT()
   const notificationsOn = useNotificationsOn()
   const [dismissed, setDismissed] = useState(readDismissed)
