@@ -83,4 +83,11 @@ export default {
   'cat.savings': 'Poupança',
   'cat.loans': 'Empréstimos',
   'cat.repayments': 'Devoluções',
+  'data.title': 'Os teus dados',
+  'data.body': 'Descarrega tudo o que tens na app (contas, movimentos, categorias, amigos, notas) num ficheiro JSON.',
+  'data.button': 'Exportar todos os dados',
+  'data.busy': 'A preparar o ficheiro…',
+  'data.done': 'Dados exportados ({n} registos).',
+  'data.partial': 'Exportado, mas {n} tabela(s) não foram lidas. Vê "errors" no ficheiro.',
+  'data.error': 'Não foi possível exportar: {message}',
 }

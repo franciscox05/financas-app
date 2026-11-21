@@ -83,4 +83,11 @@ export default {
   'cat.savings': 'Savings',
   'cat.loans': 'Loans',
   'cat.repayments': 'Repayments',
+  'data.title': 'Your data',
+  'data.body': 'Download everything you have in the app (accounts, entries, categories, friends, notes) as a JSON file.',
+  'data.button': 'Export all data',
+  'data.busy': 'Preparing the file…',
+  'data.done': 'Data exported ({n} records).',
+  'data.partial': 'Exported, but {n} table(s) could not be read. See "errors" in the file.',
+  'data.error': 'Could not export: {message}',
 }
