@@ -16,37 +16,12 @@ import ErrorBoundary from './ErrorBoundary'
 import NotificationToggle from './NotificationToggle'
 import PrivacyToggle from './PrivacyToggle'
 
-// Título pequeno da barra de cima, por rota. Nos ecrãs com título grande
-// (`large`) só aparece depois de esse título sair do ecrã ao fazer scroll, como
-// no iOS; nos restantes está sempre visível. Sub-rotas (ex.: um amigo) usam o
-// título do separador a que pertencem.
-const ROUTE_TITLES = [
-  { path: '/', exact: true, title: 'Registo', large: true },
-  { path: '/balanco', title: 'Balanço', large: true },
-  { path: '/patrimonio', exact: true, title: 'Património', large: true },
-  { path: '/patrimonio', title: 'Património' },
-  { path: '/dividas', exact: true, title: 'Amigos', large: true },
-  { path: '/dividas', title: 'Amigos' },
-  { path: '/gestao', title: 'Gestão', large: true },
-  { path: '/perfil', title: 'Perfil' },
-]
-
-function routeTitle(pathname) {
-  return (
-    ROUTE_TITLES.find((r) => (r.exact ? pathname === r.path : pathname.startsWith(r.path))) ?? {
-      title: '',
-      large: false,
-    }
-  )
-}
-
-// A partir de quantos px de scroll o título grande já saiu de vista.
+// A partir de quantos px de scroll aparece a linha por baixo do topo.
 const LARGE_TITLE_SCROLL = 44
 
 export default function AppLayout() {
   const { user } = useAuth()
   const location = useLocation()
-  const { title: barTitle, large: hasLargeTitle } = routeTitle(location.pathname)
   const [scrolled, setScrolled] = useState(false)
 
   // Só guarda um booleano (passou ou não o limiar), por isso o scroll não
@@ -60,7 +35,6 @@ export default function AppLayout() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [location.pathname])
 
-  const showBarTitle = !hasLargeTitle || scrolled
   const [avatarPath, setAvatarPath] = useState(null)
   // Incrementar remonta a página atual: cada página volta a pedir os seus dados ao montar, por
   // isso puxar para atualizar funciona em todas sem cada uma ter de saber recarregar-se.
@@ -157,32 +131,31 @@ export default function AppLayout() {
           ao centro (aparece quando o título grande sai de vista) e as ações
           com alvos de 44 px. A linha de baixo só se vê depois de haver scroll. */}
       <header
-        className={`material-bar sticky top-0 z-20 grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b-[0.5px] px-2 pt-[calc(max(1rem,env(safe-area-inset-top))+1.1rem)] transition-[border-color] duration-200 ${
+        className={`material-bar sticky top-0 z-20 flex items-center justify-between gap-2 border-b-[0.5px] px-2 pt-[calc(max(1rem,env(safe-area-inset-top))+1.1rem)] transition-[border-color] duration-200 ${
           scrolled ? 'border-separator' : 'border-transparent'
         }`}
       >
-        <div className="flex h-11 items-center">
+        {/* Topo (2026-11-21): marca à esquerda; à direita as ações num grupo e a foto de perfil
+            no fim. Sem título do ecrã: o separador ativo da barra de baixo já diz onde se está. */}
+        <Link to="/" aria-label="Stingy, início" className="pressable flex h-11 min-w-0 items-center justify-self-start rounded-full pl-2">
+          <BrandMark size={32} text="Stingy" />
+        </Link>
+        <div className="flex h-11 items-center justify-end gap-1">
+          <div className="flex items-center rounded-full bg-fill">
+            <PrivacyToggle />
+            <NotificationToggle />
+          </div>
           <Link
             to="/perfil"
             aria-label="Perfil"
             className="pressable flex size-11 shrink-0 items-center justify-center rounded-full text-label-2"
           >
             {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="size-8 rounded-full object-cover" />
+              <img src={avatarUrl} alt="" className="size-9 rounded-full object-cover ring-2 ring-fill" />
             ) : (
-              <UserCircle2 size={26} strokeWidth={1.6} aria-hidden="true" />
+              <UserCircle2 size={30} strokeWidth={1.6} aria-hidden="true" />
             )}
           </Link>
-        </div>
-        {/* Ao centro: a marca enquanto o título grande do ecrã está à vista; ao fazer scroll
-            troca (com fade) pelo título pequeno, como no iOS. Ecrãs sem título grande mostram
-            sempre o título. */}
-        <div className="relative grid min-w-0 place-items-center">
-          <BrandMark size={28} text={showBarTitle ? barTitle : 'Stingy'} />
-        </div>
-        <div className="flex h-11 items-center justify-end">
-          <PrivacyToggle />
-          <NotificationToggle />
         </div>
       </header>
 
