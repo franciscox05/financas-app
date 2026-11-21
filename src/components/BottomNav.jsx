@@ -3,13 +3,14 @@ import { useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { countPendingForMe } from '../lib/linkedDb'
 import { onPendingChanged } from '../lib/pendingEvents'
+import { t } from '../i18n'
 
 const TABS = [
-  { to: '/', end: true, label: 'Registo', Icon: Wallet },
-  { to: '/balanco', label: 'Balanço', Icon: BarChart3 },
-  { to: '/patrimonio', label: 'Património', Icon: PiggyBank },
-  { to: '/dividas', label: 'Amigos', Icon: Users },
-  { to: '/gestao', label: 'Gestão', Icon: Settings2 },
+  { to: '/', end: true, labelKey: 'nav.register', Icon: Wallet },
+  { to: '/balanco', labelKey: 'nav.balance', Icon: BarChart3 },
+  { to: '/patrimonio', labelKey: 'nav.networth', Icon: PiggyBank },
+  { to: '/dividas', labelKey: 'nav.friends', Icon: Users },
+  { to: '/gestao', labelKey: 'nav.manage', Icon: Settings2 },
 ]
 
 // 49 px de altura (a da barra de separadores do iOS) e cada separador ocupa um
@@ -58,10 +59,10 @@ export default function BottomNav() {
       // `material-bar` (index.css) mantém isto: opaco por omissão, com o
       // desfoque atrás de um interruptor para testar no aparelho.
       className="material-bar fixed inset-x-0 bottom-0 z-20 border-t-[0.5px] border-separator pb-[env(safe-area-inset-bottom)]"
-      aria-label="Navegação principal"
+      aria-label={t('nav.main')}
     >
       <div className="mx-auto flex max-w-md">
-        {TABS.map(({ to, end, label, Icon }) => (
+        {TABS.map(({ to, end, labelKey, Icon }) => (
           <NavLink key={to} to={to} end={end} className={linkClass}>
             {({ isActive }) => (
               <>
@@ -76,7 +77,7 @@ export default function BottomNav() {
                     </span>
                   )}
                 </span>
-                {label}
+                {t(labelKey)}
                 {to === '/dividas' && pending > 0 && <span className="sr-only">, {pending} por responder</span>}
               </>
             )}

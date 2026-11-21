@@ -16,6 +16,7 @@ import Modal from '../components/Modal'
 import Group, { Row } from '../components/ui/Group'
 import IconButton from '../components/ui/IconButton'
 import PageHeader from '../components/ui/PageHeader'
+import { t } from '../i18n'
 
 // Campo de escrita das folhas novas: sem borda, fundo de preenchimento e anel
 // na cor de destaque ao focar (o `border-color` global não se vê sem borda).
@@ -148,7 +149,7 @@ export default function Friends() {
   if (loading) {
     return (
       <div className="space-y-8">
-        <PageHeader title="Amigos" />
+        <PageHeader title={t('nav.friends')} />
         <PageSkeleton />
       </div>
     )
@@ -157,7 +158,7 @@ export default function Friends() {
   if (error && friends.length === 0) {
     return (
       <div className="space-y-8">
-        <PageHeader title="Amigos" />
+        <PageHeader title={t('nav.friends')} />
         <ErrorNotice message={error} onRetry={load} />
       </div>
     )
@@ -165,7 +166,7 @@ export default function Friends() {
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Amigos" trailing={addButton} />
+      <PageHeader title={t('nav.friends')} trailing={addButton} />
 
       {error && <ErrorNotice message={error} onRetry={load} />}
 

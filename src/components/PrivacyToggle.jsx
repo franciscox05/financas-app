@@ -1,5 +1,6 @@
 import { Eye, EyeOff } from 'lucide-react'
 import { usePrivacy } from '../context/privacyContext'
+import { t } from '../i18n'
 
 export default function PrivacyToggle() {
   const { hidden, toggle } = usePrivacy()
@@ -8,7 +9,7 @@ export default function PrivacyToggle() {
       type="button"
       onClick={toggle}
       aria-pressed={hidden}
-      aria-label={hidden ? 'Mostrar valores' : 'Esconder valores'}
+      aria-label={hidden ? t('privacy.show') : t('privacy.hide')}
       className="pressable flex size-11 shrink-0 items-center justify-center rounded-full text-label-2"
     >
       {hidden ? (

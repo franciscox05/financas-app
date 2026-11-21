@@ -2,6 +2,7 @@ import { CELEBRATE_EVENT } from './BrandMark'
 import Mascot from './Mascot'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ToastContext } from '../context/toastContext'
+import { t } from '../i18n'
 
 const DURATION_MS = { success: 3000, info: 3500, error: 5500 }
 // Toasts com uma ação (ex. "Desfazer") ficam mais tempo visíveis — a pessoa
@@ -55,7 +56,7 @@ function ToastItem({ toast, onDismiss }) {
       <button
         type="button"
         onClick={() => onDismiss(toast.id)}
-        aria-label="Fechar notificação"
+        aria-label={t('toast.close')}
         className="shrink-0 px-1 opacity-50 transition-opacity hover:opacity-100"
       >
         ✕

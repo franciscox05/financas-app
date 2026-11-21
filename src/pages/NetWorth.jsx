@@ -19,6 +19,7 @@ import PageHeader from '../components/ui/PageHeader'
 import { usePrivacy } from '../context/privacyContext'
 import HiddenChartNotice from '../components/HiddenChartNotice'
 import { eur, ptDate } from '../lib/format'
+import { t } from '../i18n'
 
 // Cores do gráfico pelos tokens de index.css (já com par claro/escuro).
 const LINE_COLOR = 'var(--accent)'
@@ -160,7 +161,7 @@ export default function NetWorth() {
   if (loading) {
     return (
       <div className="space-y-8">
-        <PageHeader title="Património" />
+        <PageHeader title={t('nav.networth')} />
         <Skeleton className="h-20" />
         <Skeleton className="h-40" />
         <Skeleton className="h-56" />
@@ -171,7 +172,7 @@ export default function NetWorth() {
   if (error) {
     return (
       <div className="space-y-8">
-        <PageHeader title="Património" />
+        <PageHeader title={t('nav.networth')} />
         <ErrorNotice message={error} onRetry={loadAll} />
       </div>
     )
@@ -187,7 +188,7 @@ export default function NetWorth() {
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Património" />
+      <PageHeader title={t('nav.networth')} />
 
       {/* O número que interessa neste ecrã, sozinho e grande — sem caixa à
           volta, para ser a primeira coisa que se lê. */}

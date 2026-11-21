@@ -30,6 +30,7 @@ import { eur, eurSigned } from '../lib/format'
 import { applyFriendShares, monthTotals } from '../lib/monthTotals'
 import { listFriendSharesByTransaction } from '../lib/friendsDb'
 import { categoryInsights } from '../lib/insights'
+import { t } from '../i18n'
 
 // Cores pelos tokens de index.css (com par claro/escuro).
 const INCOME_COLOR = 'var(--positive)'
@@ -243,7 +244,7 @@ export default function Balance() {
   if (loading) {
     return (
       <div className="space-y-8">
-        <PageHeader title="Balanço" />
+        <PageHeader title={t('nav.balance')} />
         <Skeleton className="h-11" />
         <Skeleton className="h-44" />
         <Skeleton className="h-56" />
@@ -255,7 +256,7 @@ export default function Balance() {
   if (error) {
     return (
       <div className="space-y-8">
-        <PageHeader title="Balanço" />
+        <PageHeader title={t('nav.balance')} />
         <ErrorNotice message={error} />
       </div>
     )
@@ -270,7 +271,7 @@ export default function Balance() {
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Balanço" />
+      <PageHeader title={t('nav.balance')} />
 
       <MonthPicker value={selectedMonth} onChange={setSelectedMonth} disableFuture />
 

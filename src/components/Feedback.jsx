@@ -2,6 +2,7 @@
 // call-to-action e aviso de erro. A animação respeita prefers-reduced-motion.
 import { X } from 'lucide-react'
 import MascotTile from './MascotTile'
+import { t } from '../i18n'
 
 export function Skeleton({ className = '' }) {
   return (
@@ -16,7 +17,7 @@ export function FormSkeleton() {
   return (
     <div
       role="status"
-      aria-label="A carregar"
+      aria-label={t('common.loading')}
       className="space-y-3 rounded-group bg-surface p-4"
     >
       <div className="grid grid-cols-2 gap-2">
@@ -35,7 +36,7 @@ export function FormSkeleton() {
 
 export function ListSkeleton({ rows = 5 }) {
   return (
-    <ul role="status" aria-label="A carregar" className="divide-y divide-separator">
+    <ul role="status" aria-label={t('common.loading')} className="divide-y divide-separator">
       {Array.from({ length: rows }, (_, i) => (
         <li key={i} className="flex items-center justify-between gap-3 py-3">
           <div className="min-w-0 flex-1 space-y-1.5">
@@ -52,7 +53,7 @@ export function ListSkeleton({ rows = 5 }) {
 export function PageSkeleton() {
   return (
     <div className="space-y-6">
-      <div role="status" aria-label="A carregar" className="pt-2">
+      <div role="status" aria-label={t('common.loading')} className="pt-2">
         <MascotTile size={96} motion="load" className="mx-auto mb-3" />
       </div>
       <FormSkeleton />
@@ -92,10 +93,10 @@ export function Pager({ page, totalPages, onChange }) {
         disabled={page <= 1}
         className="pressable min-h-11 rounded-control px-3 text-[0.9375rem] font-medium text-accent disabled:text-label-3"
       >
-        Anterior
+        {t('common.prev')}
       </button>
       <span className="amount text-[0.8125rem] text-label-2">
-        Página {page} de {totalPages}
+        {t('common.page', { page, total: totalPages })}
       </span>
       <button
         type="button"
@@ -103,7 +104,7 @@ export function Pager({ page, totalPages, onChange }) {
         disabled={page >= totalPages}
         className="pressable min-h-11 rounded-control px-3 text-[0.9375rem] font-medium text-accent disabled:text-label-3"
       >
-        Seguinte
+        {t('common.next')}
       </button>
     </div>
   )
@@ -120,14 +121,14 @@ export function ErrorNotice({ message, onRetry, onDismiss }) {
       <span className="flex shrink-0 gap-2">
         {onRetry && (
           <button type="button" onClick={onRetry} className="min-h-11 px-1 font-semibold">
-            Tentar de novo
+            {t('common.retry')}
           </button>
         )}
         {onDismiss && (
           <button
             type="button"
             onClick={onDismiss}
-            aria-label="Fechar"
+            aria-label={t('common.close')}
             className="-mr-2 flex size-11 items-center justify-center opacity-70 hover:opacity-100"
           >
             <X size={18} aria-hidden="true" />
