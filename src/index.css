@@ -426,33 +426,50 @@ button {
   animation: brand-pop 620ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@keyframes mascot-float {
-  0%, 100% { transform: translateY(0) rotate(-2deg); }
-  50% { transform: translateY(-8px) rotate(2deg); }
-}
+/* Mascote em camadas (ver components/Mascot.jsx) */
+.mascot { overflow: visible; }
+.mascot .m-tail, .mascot .m-head, .mascot .m-eyes, .mascot .m-coinwrap, .mascot .m-coin,
+.mascot .m-paw, .mascot .m-spark, .mascot .m-whole { transform-box: fill-box; }
+.mascot .m-tail { transform-origin: 100% 40%; }
+.mascot .m-head { transform-origin: 55% 100%; }
+.mascot .m-eyes, .mascot .m-coinwrap, .mascot .m-coin { transform-origin: 50% 50%; }
+.mascot .m-paw { transform-origin: 50% 60%; }
+.mascot .m-spark { transform-origin: 0% 100%; }
+.mascot .m-whole { transform-origin: 50% 100%; }
 
-@keyframes mascot-wiggle {
-  0%, 100% { transform: rotate(0); }
-  20% { transform: rotate(-9deg); }
-  40% { transform: rotate(8deg); }
-  60% { transform: rotate(-5deg); }
-  80% { transform: rotate(3deg); }
-}
+.mascot-idle .m-whole { animation: m-breathe 3.6s ease-in-out infinite; }
+.mascot-idle .m-eyes { animation: m-blink 4.2s infinite; }
+.mascot-idle .m-tail { animation: m-tail 3s ease-in-out infinite; }
+.mascot-idle .m-head { animation: m-tilt 5s ease-in-out infinite; }
+.mascot-idle .m-coinwrap { animation: m-bob 2.4s ease-in-out infinite; }
+.mascot-idle .m-spark { animation: m-spark 2.2s ease-in-out infinite; }
+.mascot-cheer .m-whole { animation: m-hop 1s cubic-bezier(0.3, 0.7, 0.4, 1) 2; }
+.mascot-cheer .m-coin { animation: m-spin 1s ease-in-out 2; }
+.mascot-cheer .m-tail { animation: m-tail 0.5s ease-in-out 4; }
+.mascot-cheer .m-paw { animation: m-squeeze 0.5s ease-in-out 4; }
+.mascot-cheer .m-spark { animation: m-spark 0.5s ease-in-out 4; }
+.mascot-load .m-coin { animation: m-spin 1.3s ease-in-out infinite; }
+.mascot-load .m-whole { animation: m-breathe 2s ease-in-out infinite; }
+.mascot-oops .m-head { animation: m-shake 0.7s ease-in-out 2; }
+.mascot-oops .m-spark { opacity: 0; }
+.mascot-enter .m-whole { animation: m-enter 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.mascot-enter .m-eyes { animation: m-blink 4.2s 1.2s infinite; }
 
-@keyframes mascot-pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(0.92); opacity: 0.7; }
-}
-
-.mascot-float { animation: mascot-float 3.4s ease-in-out infinite; }
-.mascot-wiggle { animation: mascot-wiggle 900ms ease-in-out 1; }
-.mascot-pulse { animation: mascot-pulse 1.4s ease-in-out infinite; }
+@keyframes m-breathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.015, 1.03); } }
+@keyframes m-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.08); } }
+@keyframes m-tail { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(7deg); } }
+@keyframes m-tilt { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-2.5deg); } 60% { transform: rotate(2deg); } }
+@keyframes m-bob { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-4px) rotate(2deg); } }
+@keyframes m-spark { 0%, 100% { opacity: 0.35; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.1); } }
+@keyframes m-hop { 0%, 100% { transform: translateY(0) scale(1, 1); } 12% { transform: translateY(0) scale(1.07, 0.92); } 45% { transform: translateY(-34px) scale(0.97, 1.04); } 78% { transform: translateY(0) scale(1.06, 0.94); } 90% { transform: translateY(-6px); } }
+@keyframes m-spin { 0% { transform: scaleX(1); } 50% { transform: scaleX(-1); } 100% { transform: scaleX(1); } }
+@keyframes m-squeeze { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+@keyframes m-shake { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-7deg); } 40% { transform: rotate(6deg); } 60% { transform: rotate(-4deg); } 80% { transform: rotate(2deg); } }
+@keyframes m-enter { 0% { transform: translateY(60px) scale(0.5); opacity: 0; } 60% { transform: translateY(-8px) scale(1.05); opacity: 1; } 100% { transform: none; opacity: 1; } }
 
 @media (prefers-reduced-motion: reduce) {
   .brand-pop,
-  .mascot-float,
-  .mascot-wiggle,
-  .mascot-pulse,
+  .mascot *,
   .toast-in,
   .toast-out,
   .modal-overlay,

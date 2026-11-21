@@ -1,7 +1,7 @@
 import { Check, ChevronLeft, Plus, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import mascot from '../assets/mascote.svg'
+import Mascot from '../components/Mascot'
 import { inputClass, labelClass, primaryButton, secondaryButton } from '../components/ui/styles'
 import { READY_LANGUAGES, getLanguage, languageInfo, setLanguage, t, useT } from '../i18n'
 import { parseBalanceValue } from '../lib/balanceInput'
@@ -175,7 +175,7 @@ export default function Onboarding() {
         <main className="flex flex-1 flex-col gap-6 py-6">
           {stepName === 'welcome' && (
             <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
-              <img src={mascot} alt="" className="size-40" />
+              <Mascot size={160} motion="enter" />
               <div className="space-y-2">
                 <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight text-label">{t('onb.welcome.title')}</h1>
                 <p className="text-[1.0625rem] leading-snug text-label-2">{t('onb.welcome.body')}</p>
@@ -298,7 +298,7 @@ export default function Onboarding() {
 
           {stepName === 'done' && (
             <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
-              <img src={mascot} alt="" className="size-32" />
+              <Mascot size={128} motion="idle" />
               <Heading title={t('onb.done.title')} body={t('onb.done.body')} centered />
               <ul className="w-full space-y-1 rounded-group bg-surface p-4 text-left text-[0.9375rem] text-label">
                 <li>{t('onb.done.accounts', { count: validAccounts.length })}</li>
