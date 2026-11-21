@@ -178,20 +178,7 @@ export default function AppLayout() {
             troca (com fade) pelo título pequeno, como no iOS. Ecrãs sem título grande mostram
             sempre o título. */}
         <div className="relative grid min-w-0 place-items-center">
-          <BrandMark
-            size={24}
-            className={`col-start-1 row-start-1 transition-opacity duration-200 ease-apple motion-reduce:transition-none ${
-              showBarTitle ? 'pointer-events-none opacity-0' : 'opacity-100'
-            }`}
-          />
-          <p
-            aria-hidden={!showBarTitle}
-            className={`col-start-1 row-start-1 truncate text-center text-[1.0625rem] font-semibold tracking-tight text-label transition-opacity duration-200 ease-apple motion-reduce:transition-none ${
-              showBarTitle ? 'opacity-100' : 'opacity-0'
-            }`}
-          >
-            {barTitle}
-          </p>
+          <BrandMark size={28} text={showBarTitle ? barTitle : 'Stingy'} />
         </div>
         <div className="flex h-11 items-center justify-end">
           <PrivacyToggle />

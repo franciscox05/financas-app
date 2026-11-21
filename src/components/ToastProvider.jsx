@@ -1,3 +1,4 @@
+import { CELEBRATE_EVENT } from './BrandMark'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ToastContext } from '../context/toastContext'
 
@@ -68,6 +69,7 @@ export default function ToastProvider({ children }) {
   }, [])
 
   const push = useCallback((kind, message, { action } = {}) => {
+    if (kind === 'success') window.dispatchEvent(new Event(CELEBRATE_EVENT))
     setToasts((prev) => {
       // Mesmo aviso já visível (ex. vários toques seguidos no sino): não
       // duplica, só renova o tempo de vida.
