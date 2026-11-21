@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { suggestAmount, suggestCategoryId } from '../lib/categorySuggest'
@@ -35,7 +36,7 @@ function FriendPicker({ id, friends, value, onChange, onFriendCreated, disabled 
       setNewMode(false)
       setNewName('')
     } catch (err) {
-      toast.error(err.message || 'Não foi possível adicionar. Tenta outra vez.')
+      toast.error(err.message || t('qe.addFailed'))
     } finally {
       setBusy(false)
     }
@@ -49,7 +50,7 @@ function FriendPicker({ id, friends, value, onChange, onFriendCreated, disabled 
         <input
           type="text"
           autoFocus
-          placeholder="Nome do amigo"
+          placeholder={t('qe.friendName')}
           value={newName}
           disabled={busy}
           onChange={(e) => setNewName(e.target.value)}
@@ -64,7 +65,7 @@ function FriendPicker({ id, friends, value, onChange, onFriendCreated, disabled 
           onClick={handleCreate}
           className="min-h-11 shrink-0 rounded-control bg-accent-fill px-4 text-[0.9375rem] font-semibold text-white disabled:opacity-50"
         >
-          {busy ? '...' : 'Adicionar'}
+          {busy ? '...' : t('common.add')}
         </button>
         <button
           type="button"
@@ -75,7 +76,7 @@ function FriendPicker({ id, friends, value, onChange, onFriendCreated, disabled 
           }}
           className="min-h-11 shrink-0 rounded-control bg-fill px-4 text-[0.9375rem] font-semibold text-label"
         >
-          Cancelar
+          {t('common.cancel')}
         </button>
       </div>
     )
@@ -95,13 +96,13 @@ function FriendPicker({ id, friends, value, onChange, onFriendCreated, disabled 
       }}
       className={selectClass}
     >
-      <option value="">Escolhe um amigo</option>
+      <option value="">{t('qe.pickFriend')}</option>
       {friends.map((f) => (
         <option key={f.id} value={f.id}>
           {f.name}
         </option>
       ))}
-      <option value="__new__">+ Novo amigo...</option>
+      <option value="__new__">{t('qe.newFriend')}</option>
     </select>
   )
 }
@@ -252,7 +253,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
   // baixo e os cêntimos que sobram ficam na tua parte — e avisa, em vez de esconder.
   function splitEqually() {
     if (friendShares.some((s) => !s.friendId)) {
-      setError('Escolhe o amigo em todas as linhas (ou remove as vazias) antes de dividir.')
+      setError(t('qe.err.pickAllFriends'))
       return
     }
     setError('')
@@ -264,23 +265,23 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
     setSplitNotice(
       totalCents % people === 0
         ? ''
-        : `${eur(totalCents / 100)} não divide em ${people} partes iguais: cada amigo fica com ${eur(shareCents / 100)} e a tua parte é ${eur(yourCents / 100)}.`,
+        : t('qe.err.uneven', { total: eur(totalCents / 100), people, share: eur(shareCents / 100), yours: eur(yourCents / 100) }),
     )
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (!numericAmount || numericAmount <= 0) {
-      setError('Indica um valor válido.')
+      setError(t('qe.err.amount'))
       return
     }
 
     if (!accountId) {
-      setError('Escolhe a conta.')
+      setError(t('qe.err.account'))
       return
     }
     if (!note.trim()) {
-      setError('Indica uma nota.')
+      setError(t('qe.err.note'))
       return
     }
 
@@ -289,15 +290,15 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
     // neutra. Não há segunda forma de o fazer.
     if (type === 'transfer') {
       if (!transferToId) {
-        setError('Escolhe a conta destino.')
+        setError(t('qe.err.toAccount'))
         return
       }
       if (transferToId === accountId) {
-        setError('A conta destino tem de ser diferente da conta de origem.')
+        setError(t('qe.err.sameAccount'))
         return
       }
       if (transferCountsAsExpense && !effectiveCategoryId) {
-        setError('Escolhe a categoria do gasto.')
+        setError(t('qe.err.expenseCategory'))
         return
       }
       setSubmitting(true)
@@ -322,11 +323,11 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
         onTransferCreated?.()
         toast.success(
           transferCountsAsExpense
-            ? `Gasto de ${eur(numericAmount)} registado. Saldo da conta destino atualizado.`
-            : `Transferência de ${eur(numericAmount)} registada.`,
+            ? t('qe.ok.transferExpense', { value: eur(numericAmount) })
+            : t('qe.ok.transfer', { value: eur(numericAmount) }),
         )
       } catch (err) {
-        toast.error(`Não foi possível registar: ${err.message}`)
+        toast.error(t('qe.err.save', { msg: err.message }))
       } finally {
         setSubmitting(false)
       }
@@ -334,13 +335,13 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
     }
 
     if (!effectiveCategoryId) {
-      setError('Escolhe a categoria.')
+      setError(t('qe.err.category'))
       return
     }
 
     // Ganho: amigo único, devolveu o valor todo (`repaymentFriend`, acima).
     if (type === 'income' && showFriend && !repaymentFriend) {
-      setError('Escolhe o amigo, ou fecha essa secção.')
+      setError(t('qe.err.friendOrClose'))
       return
     }
 
@@ -348,20 +349,20 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
     const activeShares = type === 'expense' && showFriend ? friendShares.filter((s) => s.friendId) : []
     if (type === 'expense' && showFriend) {
       if (activeShares.length === 0) {
-        setError('Escolhe pelo menos um amigo, ou fecha essa secção.')
+        setError(t('qe.err.oneFriend'))
         return
       }
       if (activeShares.some((s) => !Number(s.amount) || Number(s.amount) <= 0)) {
-        setError('Indica quanto deve cada pessoa (valor válido).')
+        setError(t('qe.err.shareAmount'))
         return
       }
       const ids = activeShares.map((s) => s.friendId)
       if (new Set(ids).size !== ids.length) {
-        setError('Não podes repetir o mesmo amigo.')
+        setError(t('qe.err.repeatFriend'))
         return
       }
       if (sharesExceed) {
-        setError('A soma das partes não pode exceder o valor total.')
+        setError(t('qe.err.sharesExceed'))
         return
       }
     }
@@ -450,15 +451,15 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       if (created) onCreated(created)
 
       if (repaymentFriend) {
-        toast.success(`Já conta do teu lado. Enviado a ${repaymentFriend.name} para confirmar também.`)
+        toast.success(t('qe.ok.repaid', { name: repaymentFriend.name }))
       } else if (activeShares.length > 0) {
         const names = activeShares.map((s) => friends.find((f) => f.id === s.friendId)?.name).join(', ')
-        toast.success(`Gasto de ${eur(numericAmount)} registado. Já conta do teu lado — dividido com ${names}.`)
+        toast.success(t('qe.ok.split', { value: eur(numericAmount), names }))
       } else {
-        toast.success(`${type === 'income' ? 'Ganho' : 'Gasto'} de ${eur(numericAmount)} registado.`)
+        toast.success(t(type === 'income' ? 'qe.ok.income' : 'qe.ok.expense', { value: eur(numericAmount) }))
       }
     } catch (err) {
-      toast.error(`Não foi possível registar: ${err.message}`)
+      toast.error(t('qe.err.save', { msg: err.message }))
     } finally {
       setSubmitting(false)
     }
@@ -473,19 +474,19 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
           elevada, e a cor (vermelho/verde/azul) fica só no texto dela. A
           Transferência só existe com mais de uma conta, como antes. */}
       <Segmented
-        label="Tipo de registo"
+        label={t('qe.typeLabel')}
         value={type}
         onChange={setType}
         options={[
-          { value: 'expense', label: 'Gasto', tone: 'negative' },
-          { value: 'income', label: 'Ganho', tone: 'positive' },
-          ...(accounts.length > 1 ? [{ value: 'transfer', label: 'Transferência', tone: 'accent' }] : []),
+          { value: 'expense', label: t('kind.expense'), tone: 'negative' },
+          { value: 'income', label: t('kind.income'), tone: 'positive' },
+          ...(accounts.length > 1 ? [{ value: 'transfer', label: t('kind.transfer'), tone: 'accent' }] : []),
         ]}
       />
 
       <div>
         <label htmlFor="quick-entry-amount" className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">
-          Valor
+          {t('common.amount')}
         </label>
         <input
           id="quick-entry-amount"
@@ -504,7 +505,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
           className="amount w-full rounded-control border-0 bg-fill px-4 py-3 text-[2rem]! leading-tight font-bold tracking-tight text-label placeholder:text-label-3 focus:ring-2 focus:ring-accent"
         />
         {amountSuggested && (
-          <p className="mt-0.5 text-[0.8125rem] leading-snug text-label-3">valor sugerido a partir do histórico</p>
+          <p className="mt-0.5 text-[0.8125rem] leading-snug text-label-3">{t('qe.suggestedAmount')}</p>
         )}
       </div>
 
@@ -512,7 +513,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
         <>
           <div className="grid grid-cols-2 gap-3">
             <div className="min-w-0">
-              <label className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">Conta origem</label>
+              <label className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">{t('qe.fromAccount')}</label>
               <select
                 value={accountId}
                 onChange={(e) => {
@@ -529,13 +530,13 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
               </select>
             </div>
             <div className="min-w-0">
-              <label className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">Conta destino</label>
+              <label className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">{t('qe.toAccount')}</label>
               <select
                 value={transferToId}
                 onChange={(e) => setTransferToId(e.target.value)}
                 className="w-full min-w-0 rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
               >
-                <option value="">Escolhe a conta</option>
+                <option value="">{t('qe.pickAccount')}</option>
                 {accounts
                   .filter((a) => a.id !== accountId)
                   .map((a) => (
@@ -555,16 +556,16 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
                 onChange={(e) => setTransferCountsAsExpense(e.target.checked)}
                 className="size-5 min-h-0! shrink-0 accent-accent"
               />
-              Conta como gasto do mês (ex. investimentos)
+              {t('qe.countsAsExpense')}
             </label>
             <p className="mt-0.5 text-[0.8125rem] leading-snug text-label-3">
               {transferCountsAsExpense
-                ? 'Entra no Balanço como Gasto, com categoria — a conta destino atualiza-se sozinha.'
-                : 'Transferência neutra: não conta como Gasto/Ganho, só atualiza as duas contas.'}
+                ? t('qe.countsHelp')
+                : t('qe.neutralHelp')}
             </p>
             {transferCountsAsExpense && (
               <div className="mt-2 min-w-0">
-                <label className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">Categoria</label>
+                <label className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">{t('common.category')}</label>
                 <select
                   value={effectiveCategoryId}
                   onChange={(e) => {
@@ -586,7 +587,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
       ) : (
         <div className="grid grid-cols-2 gap-3">
           <div className="min-w-0">
-            <label className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">Categoria</label>
+            <label className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">{t('common.category')}</label>
             <select
               value={effectiveCategoryId}
               onChange={(e) => {
@@ -603,12 +604,12 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
               ))}
             </select>
             {suggested && (
-              <p className="mt-0.5 text-[0.8125rem] leading-snug text-label-3">sugerido a partir do histórico</p>
+              <p className="mt-0.5 text-[0.8125rem] leading-snug text-label-3">{t('qe.suggested')}</p>
             )}
           </div>
 
           <div className="min-w-0">
-            <label className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">Conta</label>
+            <label className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">{t('common.account')}</label>
             <select
               value={accountId}
               onChange={(e) => setAccountId(e.target.value)}
@@ -626,7 +627,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
 
       <div className="grid grid-cols-2 gap-3">
         <div className="min-w-0">
-          <label className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">Data</label>
+          <label className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">{t('common.date')}</label>
           <input
             type="date"
             value={occurredOn}
@@ -635,10 +636,10 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
           />
         </div>
         <div className="min-w-0">
-          <label className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">Nota</label>
+          <label className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">{t('common.note')}</label>
           <input
             type="text"
-            placeholder="Ex: supermercado"
+            placeholder={t('qe.notePlaceholder')}
             required
             value={note}
             onChange={(e) => setNote(e.target.value)}
@@ -654,9 +655,9 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
           onClick={() => setShowFriend((v) => !v)}
           className="flex min-h-11 items-center gap-1 text-[0.9375rem] font-medium text-accent"
         >
-          {showFriend ? 'Fechar' : (
+          {showFriend ? t('qe.close') : (
             <>
-              <Plus size={16} strokeWidth={2.4} aria-hidden="true" /> {type === 'expense' ? 'Dividir com amigos?' : 'Foi um amigo que te devolveu?'}
+              <Plus size={16} strokeWidth={2.4} aria-hidden="true" /> {type === 'expense' ? t('qe.split') : t('qe.repaid')}
             </>
           )}
         </button>
@@ -664,7 +665,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
         {showFriend && type === 'income' && (
           <div className="mt-1 grid grid-cols-1 gap-2 rounded-control border-[0.5px] border-separator p-3">
             <label htmlFor="quick-entry-friend" className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">
-              Quem devolveu
+              {t('qe.whoRepaid')}
             </label>
             <FriendPicker
               id="quick-entry-friend"
@@ -675,14 +676,14 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
             />
             {friendsFailed && <p className="mt-1 text-[0.8125rem] leading-snug text-negative">Não foi possível carregar os amigos.</p>}
             {repaymentFriend?.status === 'connected' && (
-              <p className="mt-1 text-[0.8125rem] leading-snug text-label-2">Ligado: só entra na conta depois da confirmação.</p>
+              <p className="mt-1 text-[0.8125rem] leading-snug text-label-2">{t('qe.linkedHelp')}</p>
             )}
             {repaymentFriend &&
               numericAmount > 0 &&
               (() => {
                 const note = overshootNote('repaid_to_me', repaymentFriend.balance, numericAmount)
                 if (!note) return null
-                const prefix = repaymentFriend.balance <= 0 ? `${repaymentFriend.name} não tem dívidas pendentes. ` : ''
+                const prefix = repaymentFriend.balance <= 0 ? t('qe.noDebts', { name: repaymentFriend.name }) : ''
                 return (
                   <p className="mt-1 text-[0.8125rem] leading-snug text-warning">
                     {prefix}
@@ -711,7 +712,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
                   step="0.01"
                   min="0"
                   placeholder={currencySymbol()}
-                  aria-label="Quanto deve"
+                  aria-label={t('qe.owes')}
                   value={share.amount}
                   onChange={(e) => updateShare(index, { amount: e.target.value })}
                   className="w-24 min-w-0 shrink-0 rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
@@ -719,7 +720,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
                 <button
                   type="button"
                   onClick={() => removeShareRow(index)}
-                  aria-label="Remover pessoa"
+                  aria-label={t('qe.removePerson')}
                   className="flex size-11 shrink-0 items-center justify-center rounded-full text-label-2"
                 >
                   <Trash2 size={18} aria-hidden="true" />
@@ -735,7 +736,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
                 onClick={addShareRow}
                 className="flex min-h-11 items-center gap-1 rounded-control bg-fill px-3 text-[0.8125rem] font-semibold text-label"
               >
-                <Plus size={16} strokeWidth={2.4} aria-hidden="true" /> Adicionar pessoa
+                <Plus size={16} strokeWidth={2.4} aria-hidden="true" /> {t('qe.addPerson')}
               </button>
               <button
                 type="button"
@@ -743,15 +744,15 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
                 disabled={!friendShares.some((s) => s.friendId) || !numericAmount}
                 className="min-h-11 rounded-control bg-fill px-3 text-[0.8125rem] font-semibold text-label disabled:opacity-40"
               >
-                Dividir por igual
+                {t('qe.splitEqually')}
               </button>
             </div>
 
             {numericAmount > 0 && (
               <p className={`text-[0.8125rem] leading-snug ${sharesExceed ? 'text-negative' : 'text-label-2'}`}>
                 {sharesExceed
-                  ? 'A soma das partes excede o valor total.'
-                  : `Sobra para ti: ${eur(Math.max(0, numericAmount - sharesTotal))}`}
+                  ? t('qe.sharesExceed')
+                  : t('qe.leftForYou', { value: eur(Math.max(0, numericAmount - sharesTotal)) })}
               </p>
             )}
             {splitNotice && <p className="text-[0.8125rem] leading-snug text-warning">{splitNotice}</p>}
@@ -767,7 +768,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
         disabled={submitting}
         className="min-h-12 w-full rounded-control bg-accent-fill py-3 text-[1.0625rem] font-semibold text-white transition-opacity duration-150 active:opacity-70 disabled:opacity-50"
       >
-        {submitting ? 'A guardar...' : type === 'transfer' && !transferCountsAsExpense ? 'Transferir' : 'Registar'}
+        {submitting ? t('common.saving') : type === 'transfer' && !transferCountsAsExpense ? t('qe.transfer') : t('qe.register')}
       </button>
     </form>
   )
