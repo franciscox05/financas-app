@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { ArrowLeft, CheckCircle2, Mail, MailCheck } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -39,7 +40,7 @@ export default function ForgotPassword() {
     // A mensagem não diz se a conta existe (senão o ecrã servia para descobrir quem usa a app);
     // só o limite de envios é mostrado, porque aí a pessoa precisa de saber que tem de esperar.
     if (sendError?.status === 429) {
-      setError('Já pediste um código há pouco. Espera um minuto e tenta outra vez.')
+      setError(t('auth.forgot.wait'))
       return false
     }
     setCooldown(RESEND_COOLDOWN_S)
@@ -49,7 +50,7 @@ export default function ForgotPassword() {
   async function handleEmailSubmit(e) {
     e.preventDefault()
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
-      setError('Escreve um email válido, por exemplo nome@gmail.com.')
+      setError(t('auth.forgot.invalidEmail'))
       return
     }
     if (await sendCode()) {
@@ -68,8 +69,8 @@ export default function ForgotPassword() {
       setCode('')
       setError(
         verifyError.code === 'otp_expired'
-          ? 'Esse código está errado ou já expirou. Confirma no email ou pede um novo.'
-          : 'Não foi possível confirmar o código. Tenta outra vez.',
+          ? t('auth.code.wrong')
+          : t('auth.code.failed'),
       )
       return
     }
@@ -83,14 +84,14 @@ export default function ForgotPassword() {
       <AuthScreen
         stepKey="done"
         icon={<CheckCircle2 size={28} />}
-        title="Password alterada"
-        subtitle="Já tens sessão iniciada. Da próxima vez, entra com a nova password."
+        title={t('auth.changed.title')}
+        subtitle={t('auth.changed.bodySession')}
         onSubmit={(e) => {
           e.preventDefault()
           navigate('/', { replace: true })
         }}
       >
-        <PrimaryButton>Continuar para a app</PrimaryButton>
+        <PrimaryButton>{t('auth.changed.continueApp')}</PrimaryButton>
       </AuthScreen>
     )
   }
@@ -100,10 +101,10 @@ export default function ForgotPassword() {
       <AuthScreen
         stepKey="code"
         icon={<MailCheck size={26} />}
-        title="Vê o teu email"
+        title={t('auth.code.title')}
         subtitle={
           <>
-            Enviámos um código de {OTP_LENGTH} dígitos para <strong className="font-medium text-label">{email.trim()}</strong>. Pode demorar um minuto; vê também o spam.
+            {t('auth.code.sentPre', { n: OTP_LENGTH })} <strong className="font-medium text-label">{email.trim()}</strong>. {t('auth.code.sentPost')}
           </>
         }
         onSubmit={(e) => {
@@ -115,8 +116,8 @@ export default function ForgotPassword() {
 
         <AuthAlert key={error}>{error}</AuthAlert>
 
-        <PrimaryButton loading={loading} loadingText="A confirmar..." disabled={code.length !== OTP_LENGTH}>
-          Confirmar código
+        <PrimaryButton loading={loading} loadingText={t('auth.code.confirming')} disabled={code.length !== OTP_LENGTH}>
+          {t('auth.code.confirm')}
         </PrimaryButton>
 
         <div className="flex items-center justify-between text-sm">
@@ -128,7 +129,7 @@ export default function ForgotPassword() {
             }}
             className="rounded-md px-1 py-1 font-medium text-label-2 transition-colors hover:text-label focus-visible:outline-2 focus-visible:outline-accent"
           >
-            Usar outro email
+            {t('auth.code.otherEmail')}
           </button>
           <button
             type="button"
@@ -136,7 +137,7 @@ export default function ForgotPassword() {
             onClick={sendCode}
             className="rounded-md px-1 py-1 font-medium text-accent transition-colors focus-visible:outline-2 focus-visible:outline-accent disabled:text-label-3"
           >
-            {cooldown > 0 ? `Reenviar código (${cooldown}s)` : 'Reenviar código'}
+            {cooldown > 0 ? t('auth.code.resendIn', { s: cooldown }) : t('auth.code.resend')}
           </button>
         </div>
       </AuthScreen>
@@ -147,16 +148,16 @@ export default function ForgotPassword() {
     <AuthScreen
       stepKey="email"
       icon={<Mail size={26} />}
-      title="Esqueceste-te da password?"
-      subtitle="Sem problema. Diz-nos o email da tua conta e enviamos-te um código para criares uma nova."
+      title={t('auth.forgot.title')}
+      subtitle={t('auth.forgot.body')}
       onSubmit={handleEmailSubmit}
     >
       <TextField
-        label="Email"
+        label={t('auth.email')}
         type="email"
         autoComplete="email"
         inputMode="email"
-        placeholder="nome@gmail.com"
+        placeholder={t('auth.emailPlaceholder')}
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         autoFocus
@@ -165,12 +166,12 @@ export default function ForgotPassword() {
       <AuthAlert key={error}>{error}</AuthAlert>
 
       <div className="space-y-3">
-        <PrimaryButton loading={loading} loadingText="A enviar...">
-          Enviar código
+        <PrimaryButton loading={loading} loadingText={t('auth.forgot.sending')}>
+          {t('auth.forgot.send')}
         </PrimaryButton>
         <SecondaryButton to="/login">
           <ArrowLeft size={16} aria-hidden="true" />
-          Voltar ao início de sessão
+          {t('auth.forgot.back')}
         </SecondaryButton>
       </div>
     </AuthScreen>
