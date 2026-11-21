@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { ArrowRightLeft, Link2, Receipt, X } from 'lucide-react'
 import { useEffect, useId, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -29,7 +30,7 @@ function ModalHeader({ titleId, icon: Icon, children, onClose }) {
       <button
         type="button"
         onClick={onClose}
-        aria-label="Fechar"
+        aria-label={t('common.close')}
         className={`pressable -mt-1.5 -mr-2 flex size-11 shrink-0 items-center justify-center rounded-full bg-fill text-label-2 ${focusRing}`}
       >
         <X size={20} strokeWidth={2.4} aria-hidden="true" />
@@ -96,11 +97,11 @@ function TransactionBody({ tx, categories, accounts, linkedEntry, titleId, onClo
     e.preventDefault()
     const numericAmount = Number(amount)
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-      setError('Indica um valor superior a 0.')
+      setError(t('tx.err.amount'))
       return
     }
     if (!categoryId || !accountId) {
-      setError('Escolhe conta e categoria.')
+      setError(t('tx.err.accountCategory'))
       return
     }
     setBusy(true)
@@ -118,10 +119,10 @@ function TransactionBody({ tx, categories, accounts, linkedEntry, titleId, onClo
         category_name: categories.find((c) => c.id === updated.category_id)?.name,
         account_name: accounts.find((a) => a.id === updated.account_id)?.name,
       })
-      toast.success('Transação atualizada.')
+      toast.success(t('tx.updated'))
       onClose()
     } catch (err) {
-      toast.error(`Não foi possível guardar: ${err.message}`)
+      toast.error(t('common.saveFailed', { msg: err.message }))
     } finally {
       setBusy(false)
     }
@@ -135,9 +136,9 @@ function TransactionBody({ tx, categories, accounts, linkedEntry, titleId, onClo
       await deleteTransaction(tx.id)
       onDeleted(tx.id)
       onClose()
-      toast.success('Transação apagada.', {
+      toast.success(t('tx.deleted'), {
         action: {
-          label: 'Desfazer',
+          label: t('common.undo'),
           onClick: async () => {
             try {
               await createTransaction({
@@ -149,15 +150,15 @@ function TransactionBody({ tx, categories, accounts, linkedEntry, titleId, onClo
                 note: tx.note,
               })
               onRestored()
-              toast.success('Transação restaurada.')
+              toast.success(t('tx.restored'))
             } catch (err) {
-              toast.error(`Não foi possível desfazer: ${err.message}`)
+              toast.error(t('common.undoFailed', { msg: err.message }))
             }
           },
         },
       })
     } catch (err) {
-      toast.error(`Não foi possível apagar: ${err.message}`)
+      toast.error(t('common.deleteFailed', { msg: err.message }))
     } finally {
       setBusy(false)
     }
@@ -166,16 +167,16 @@ function TransactionBody({ tx, categories, accounts, linkedEntry, titleId, onClo
   return (
     <form onSubmit={handleSave} className="space-y-3">
       <ModalHeader titleId={titleId} icon={TYPE_ICON.transaction} onClose={onClose}>
-        Editar transação
+        {t('tx.edit')}
       </ModalHeader>
 
       {linkedEntry && (
         <p className="rounded-control bg-warning/10 p-2 text-xs text-warning">
-          Ligado a um movimento com{' '}
+          {t('tx.linkedPre')}{' '}
           <Link to={`/dividas/${linkedEntry.friend_id}`} className="underline underline-offset-2" onClick={onClose}>
             {linkedEntry.friendName}
           </Link>
-          . Mudar o valor aqui não atualiza esse movimento.
+          {t('tx.linkedPost')}
         </p>
       )}
 
@@ -197,7 +198,7 @@ function TransactionBody({ tx, categories, accounts, linkedEntry, titleId, onClo
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label htmlFor="modal-category" className="mb-1 block text-xs font-medium text-label-2">
-            Categoria
+            {t('common.category')}
           </label>
           <select id="modal-category" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={inputClass}>
             {categoriesForType.map((c) => (
@@ -209,7 +210,7 @@ function TransactionBody({ tx, categories, accounts, linkedEntry, titleId, onClo
         </div>
         <div>
           <label htmlFor="modal-account" className="mb-1 block text-xs font-medium text-label-2">
-            Conta
+            {t('common.account')}
           </label>
           <select id="modal-account" value={accountId} onChange={(e) => setAccountId(e.target.value)} className={inputClass}>
             {accounts.map((a) => (
@@ -223,7 +224,7 @@ function TransactionBody({ tx, categories, accounts, linkedEntry, titleId, onClo
 
       <div>
         <label htmlFor="modal-note" className="mb-1 block text-xs font-medium text-label-2">
-          Nota
+          {t('common.note')}
         </label>
         <input id="modal-note" type="text" value={note} onChange={(e) => setNote(e.target.value)} className={inputClass} />
       </div>
@@ -236,10 +237,10 @@ function TransactionBody({ tx, categories, accounts, linkedEntry, titleId, onClo
 
       <div className="flex gap-2">
         <button type="submit" disabled={busy} className={primaryButton}>
-          {busy ? 'A guardar...' : 'Guardar'}
+          {busy ? t('common.saving') : t('common.save')}
         </button>
         <button type="button" onClick={onClose} disabled={busy} className={secondaryButton}>
-          Fechar
+          {t('common.close')}
         </button>
       </div>
       <button
@@ -254,14 +255,14 @@ function TransactionBody({ tx, categories, accounts, linkedEntry, titleId, onClo
         disabled={busy}
         className={`${dangerButton} w-full`}
       >
-        Apagar transação
+        {t('tx.delete')}
       </button>
 
       <ConfirmDialog
         open={confirmingDelete}
-        title="Apagar transação?"
-        message={`${tx.note || tx.category_name || 'Esta transação'} · ${eur(tx.amount)}. Podes desfazer logo a seguir, enquanto o aviso estiver visível.`}
-        confirmLabel="Apagar"
+        title={t('tx.deleteQ')}
+        message={t('tx.deleteMsg', { what: tx.note || tx.category_name || t('tx.thisOne'), value: eur(tx.amount) })}
+        confirmLabel={t('common.delete')}
         onCancel={() => setConfirmingDelete(false)}
         onConfirm={handleDelete}
       />
@@ -281,9 +282,9 @@ function TransferBody({ tx, titleId, onClose, onDeleted, onRestored }) {
       await deleteTransfer(tx.id)
       onDeleted(tx.id)
       onClose()
-      toast.success('Transferência apagada.', {
+      toast.success(t('tr.deleted'), {
         action: {
-          label: 'Desfazer',
+          label: t('common.undo'),
           onClick: async () => {
             try {
               await createTransfer({
@@ -296,15 +297,15 @@ function TransferBody({ tx, titleId, onClose, onDeleted, onRestored }) {
                 countsAsExpense: tx.counts_as_expense,
               })
               onRestored()
-              toast.success('Transferência restaurada.')
+              toast.success(t('tr.restored'))
             } catch (err) {
-              toast.error(`Não foi possível desfazer: ${err.message}`)
+              toast.error(t('common.undoFailed', { msg: err.message }))
             }
           },
         },
       })
     } catch (err) {
-      toast.error(`Não foi possível apagar: ${err.message}`)
+      toast.error(t('common.deleteFailed', { msg: err.message }))
     } finally {
       setBusy(false)
     }
@@ -313,36 +314,36 @@ function TransferBody({ tx, titleId, onClose, onDeleted, onRestored }) {
   return (
     <div className="space-y-3">
       <ModalHeader titleId={titleId} icon={TYPE_ICON.transfer} onClose={onClose}>
-        {tx.note || tx.category_name || 'Transferência'}
+        {tx.note || tx.category_name || t('kind.transfer')}
       </ModalHeader>
       <div className="rounded-control bg-fill p-3">
         <p className="text-sm text-label-2">
-          {tx.account_name ?? 'Conta'} → {tx.counter_account_name ?? 'Conta'}
+          {tx.account_name ?? t('common.account')} → {tx.counter_account_name ?? t('common.account')}
         </p>
         <p className={`mt-1 text-xl font-semibold ${tx.counts_as_expense ? 'text-negative' : 'text-accent'}`}>
           {eur(tx.amount)}
         </p>
         {tx.counts_as_expense && (
           <p className="mt-1 text-xs text-label-2">
-            {tx.category_name ?? 'Sem categoria'} · conta como gasto do mês
+            {tx.category_name ?? t('common.noCategory')} · {t('tr.countsAsExpense')}
           </p>
         )}
       </div>
 
       <div className="flex gap-2">
         <button type="button" onClick={() => setConfirmingDelete(true)} disabled={busy} className={dangerButton}>
-          Apagar
+          {t('common.delete')}
         </button>
         <button type="button" onClick={onClose} disabled={busy} className={secondaryButton}>
-          Fechar
+          {t('common.close')}
         </button>
       </div>
 
       <ConfirmDialog
         open={confirmingDelete}
-        title="Apagar transferência?"
-        message="Podes desfazer logo a seguir, enquanto o aviso estiver visível."
-        confirmLabel="Apagar"
+        title={t('tr.deleteQ')}
+        message={t('tr.undoHint')}
+        confirmLabel={t('common.delete')}
         onCancel={() => setConfirmingDelete(false)}
         onConfirm={handleDelete}
       />
@@ -367,7 +368,7 @@ function LedgerBody({ tx, titleId, onClose, onRowChanged }) {
       setData(fresh)
       setViewerId(me)
     } catch (err) {
-      setError(err.message || 'Não foi possível carregar este movimento.')
+      setError(err.message || t('mv.loadFailed'))
     } finally {
       setLoading(false)
     }
@@ -383,21 +384,21 @@ function LedgerBody({ tx, titleId, onClose, onRowChanged }) {
     setDeleteTarget(null)
     try {
       await deleteEntry(entry)
-      toast.success('Movimento apagado.')
+      toast.success(t('mv.deleted'))
       onRowChanged?.()
       onClose()
     } catch (err) {
-      toast.error(err.message || 'Não foi possível apagar. Tenta outra vez.')
+      toast.error(err.message || t('common.deleteRetry'))
     }
   }
 
   return (
     <div className="space-y-3">
       <ModalHeader titleId={titleId} icon={TYPE_ICON.ledger} onClose={onClose}>
-        Movimento com {tx.friend_name}
+        {t('mv.with', { name: tx.friend_name })}
       </ModalHeader>
 
-      {loading && <p className="text-sm text-label-2">A carregar...</p>}
+      {loading && <p className="text-sm text-label-2">{t('common.loadingDots')}</p>}
       {error && (
         <p role="alert" className="text-sm text-negative">
           {error}
@@ -420,18 +421,18 @@ function LedgerBody({ tx, titleId, onClose, onRowChanged }) {
 
       <div className="flex gap-2">
         <Link to={`/dividas/${tx.friend_id}`} onClick={onClose} className={secondaryButton}>
-          <span className="flex items-center justify-center">Ver amigo</span>
+          <span className="flex items-center justify-center">{t('mv.seeFriend')}</span>
         </Link>
         <button type="button" onClick={onClose} className={secondaryButton}>
-          Fechar
+          {t('common.close')}
         </button>
       </div>
 
       <ConfirmDialog
         open={deleteTarget !== null}
-        title="Apagar movimento?"
-        message="Este movimento deixa de contar no saldo."
-        confirmLabel="Apagar movimento"
+        title={t('mv.deleteQ')}
+        message={t('mv.deleteMsg')}
+        confirmLabel={t('mv.delete')}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
       />
