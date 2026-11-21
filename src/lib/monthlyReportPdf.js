@@ -4,7 +4,7 @@
 // (ver monthlyReport.js), para nunca discordar do que o utilizador vê.
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { languageInfo } from '../i18n/index.js'
+import { languageInfo, t } from '../i18n/index.js'
 import { eur } from './format.js'
 import {
   averageDailyExpense,
@@ -73,7 +73,7 @@ function drawHeader(doc, monthLabel) {
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
   doc.setTextColor('#d4d4d4')
-  doc.text('Relatório Mensal', MARGIN, 20.5)
+  doc.text(t('pdf.monthly'), MARGIN, 20.5)
 
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(13)
@@ -83,7 +83,7 @@ function drawHeader(doc, monthLabel) {
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8.5)
   doc.setTextColor('#d4d4d4')
-  doc.text(`Emitido em ${formatIssueDate()}`, PAGE_WIDTH - MARGIN, 20.5, { align: 'right' })
+  doc.text(t('pdf.issued', { date: formatIssueDate() }), PAGE_WIDTH - MARGIN, 20.5, { align: 'right' })
 
   return 30 + SECTION_GAP // próximo y livre
 }
@@ -100,7 +100,7 @@ function drawContinuationHeader(doc, monthLabel) {
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
   doc.setTextColor(MUTED)
-  doc.text(`Relatório Mensal · ${monthLabel}`, PAGE_WIDTH - MARGIN, 15, { align: 'right' })
+  doc.text(`${t('pdf.monthly')} · ${monthLabel}`, PAGE_WIDTH - MARGIN, 15, { align: 'right' })
 
   doc.setDrawColor(LINE)
   doc.setLineWidth(0.3)
@@ -194,7 +194,7 @@ function tableDefaults(doc, monthLabel) {
 // natureza (poucas categorias/contas): `pageBreak: 'avoid'` tenta pô-la
 // inteira na página onde começa, ou passá-la toda para a seguinte, em vez de
 // deixar uma ou duas linhas perdidas no fim de uma página.
-function breakdownTable(doc, startY, monthLabel, title, breakdown, total, accentColor, { nameHeader = 'Categoria' } = {}) {
+function breakdownTable(doc, startY, monthLabel, title, breakdown, total, accentColor, { nameHeader = t('r.category') } = {}) {
   if (breakdown.length === 0) return startY
   let y = ensureSpace(doc, startY, 28, monthLabel)
   y = drawSectionTitle(doc, y, title)
@@ -202,7 +202,7 @@ function breakdownTable(doc, startY, monthLabel, title, breakdown, total, accent
     ...tableDefaults(doc, monthLabel),
     startY: y,
     pageBreak: 'avoid',
-    head: [[nameHeader, 'Valor', '% do total']],
+    head: [[nameHeader, t('r.value'), t('r.pctTotal')]],
     body: breakdown.map((c) => [
       c.name,
       eur(c.amount),
@@ -221,16 +221,16 @@ function topExpensesTable(doc, startY, monthLabel, transactions) {
   const rows = topExpenses(transactions)
   if (rows.length === 0) return startY
   let y = ensureSpace(doc, startY, 28, monthLabel)
-  y = drawSectionTitle(doc, y, 'Maiores Despesas do Mês')
+  y = drawSectionTitle(doc, y, t('pdf.topExpenses'))
   autoTable(doc, {
     ...tableDefaults(doc, monthLabel),
     startY: y,
     pageBreak: 'avoid',
-    head: [['Data', 'Descrição', 'Categoria', 'Valor']],
+    head: [[t('r.date'), t('r.description'), t('r.category'), t('r.value')]],
     body: rows.map((r) => [
       formatShortDate(r.occurred_on),
-      r.note || '(sem nota)',
-      r.categories?.name ?? 'Sem categoria',
+      r.note || t('rc.noNote'),
+      r.categories?.name ?? t('common.noCategory'),
       eur(Number(r.amount)),
     ]),
     columnStyles: {
@@ -255,20 +255,20 @@ function allMovementsTable(doc, startY, monthLabel, transactions) {
   const sorted = [...transactions].sort((a, b) => (a.occurred_on < b.occurred_on ? -1 : a.occurred_on > b.occurred_on ? 1 : 0))
 
   let y = ensureSpace(doc, startY, 28, monthLabel)
-  y = drawSectionTitle(doc, y, 'Extrato Integral do Mês')
+  y = drawSectionTitle(doc, y, t('pdf.fullStatement'))
   autoTable(doc, {
     ...tableDefaults(doc, monthLabel),
     startY: y,
     showHead: 'everyPage',
     styles: { ...TABLE_BASE.styles, fontSize: 8.5 },
-    head: [['Data', 'Tipo', 'Descrição', 'Categoria', 'Conta', 'Valor']],
+    head: [[t('r.date'), t('pdf.type'), t('r.description'), t('r.category'), t('r.account'), t('r.value')]],
     body: sorted.map((tx) => {
       const isIncome = tx.type === 'income'
       return [
         formatShortDate(tx.occurred_on),
-        isIncome ? 'Receita' : 'Despesa',
+        isIncome ? t('pdf.incomeOne') : t('pdf.expenseOne'),
         tx.note || '(sem nota)',
-        tx.categories?.name ?? 'Sem categoria',
+        tx.categories?.name ?? t('common.noCategory'),
         tx.accounts?.name ?? '—',
         `${isIncome ? '+' : '-'} ${eur(Number(tx.amount))}`,
       ]
@@ -314,8 +314,8 @@ function drawFooters(doc, pageCount) {
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(7.5)
     doc.setTextColor(MUTED)
-    doc.text('Documento confidencial — gerado pela Stingy, para uso pessoal.', MARGIN, y)
-    doc.text(`Página ${i} de ${pageCount}`, PAGE_WIDTH - MARGIN, y, { align: 'right' })
+    doc.text(t('pdf.confidential'), MARGIN, y)
+    doc.text(t('pdf.page', { i, n: pageCount }), PAGE_WIDTH - MARGIN, y, { align: 'right' })
   }
 }
 
@@ -338,13 +338,13 @@ export function buildMonthlyReportPdf(data) {
     doc,
     y,
     [
-      { label: 'Rendimento Total', value: eur(data.income), color: INCOME },
-      { label: 'Despesas Totais', value: eur(data.expense), color: EXPENSE },
+      { label: t('pdf.totalIncome'), value: eur(data.income), color: INCOME },
+      { label: t('pdf.totalExpenses'), value: eur(data.expense), color: EXPENSE },
       {
-        label: 'Poupança Líquida',
+        label: t('pdf.netSavings'),
         value: eur(saldo),
         color: saldo >= 0 ? INCOME : EXPENSE,
-        caption: rate === null ? 'sem receitas no mês' : `${rate}% do rendimento`,
+        caption: rate === null ? t('pdf.noIncome') : t('pdf.ofIncome', { rate }),
       },
     ],
     { cardHeight: kpiCardHeight },
@@ -354,28 +354,28 @@ export function buildMonthlyReportPdf(data) {
   // se gasta "a um ritmo normal" por dia, e o dia que destoou mais desse ritmo.
   const paceCardHeight = peakDay ? 26 : 20
   y = ensureSpace(doc, y, 7 + paceCardHeight, monthLabel)
-  y = drawSectionTitle(doc, y, 'Ritmo de Gasto')
+  y = drawSectionTitle(doc, y, t('pdf.pace'))
   y = drawStatCards(
     doc,
     y,
     [
-      { label: 'Gasto médio por dia', value: eur(avgPerDay), color: ACCENT },
+      { label: t('pdf.avgDay'), value: eur(avgPerDay), color: ACCENT },
       {
-        label: 'Pico de despesa',
+        label: t('pdf.peak'),
         value: peakDay ? eur(peakDay.amount) : '—',
         color: peakDay ? EXPENSE : MUTED,
-        caption: peakDay ? `dia ${formatShortDate(peakDay.date)}` : 'sem despesas no mês',
+        caption: peakDay ? t('pdf.onDay', { date: formatShortDate(peakDay.date) }) : t('pdf.noExpenses'),
       },
     ],
     { cardHeight: paceCardHeight },
   )
 
-  y = breakdownTable(doc, y, monthLabel, 'Despesas por Categoria', data.expenseByCategory, data.expense, EXPENSE)
+  y = breakdownTable(doc, y, monthLabel, t('pdf.expenseByCat'), data.expenseByCategory, data.expense, EXPENSE)
   if (data.incomeByCategory.length > 0) {
-    y = breakdownTable(doc, y, monthLabel, 'Receitas por Categoria', data.incomeByCategory, data.income, INCOME)
+    y = breakdownTable(doc, y, monthLabel, t('pdf.incomeByCat'), data.incomeByCategory, data.income, INCOME)
   }
-  y = breakdownTable(doc, y, monthLabel, 'Origem por Conta', accountBreakdown, data.expense, ACCENT, {
-    nameHeader: 'Conta',
+  y = breakdownTable(doc, y, monthLabel, t('pdf.byAccount'), accountBreakdown, data.expense, ACCENT, {
+    nameHeader: t('r.account'),
   })
   y = topExpensesTable(doc, y, monthLabel, data.transactions)
   allMovementsTable(doc, y, monthLabel, data.transactions)
