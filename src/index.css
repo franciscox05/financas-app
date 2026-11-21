@@ -413,7 +413,21 @@ button {
   animation: otp-caret 1s step-end infinite;
 }
 
+/* O ícone da marca dá um salto quando algo corre bem. */
+@keyframes brand-pop {
+  0% { transform: scale(1) rotate(0); }
+  30% { transform: scale(1.28) rotate(-8deg); }
+  55% { transform: scale(0.94) rotate(5deg); }
+  80% { transform: scale(1.06) rotate(-2deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+.brand-pop {
+  animation: brand-pop 620ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .brand-pop,
   .toast-in,
   .toast-out,
   .modal-overlay,
