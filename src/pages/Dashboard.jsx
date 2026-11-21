@@ -70,20 +70,20 @@ export default function Dashboard() {
     setExporting(true)
     try {
       const all = await listAllTransactionsForExport()
-      const tipoLabel = { income: 'Ganho', expense: 'Gasto', transfer: 'Transferência' }
+      const tipoLabel = { income: t('kind.income'), expense: t('kind.expense'), transfer: t('kind.transfer') }
       const csv = toCsv(all, [
-        { label: 'Data', value: (t) => t.occurred_on },
-        { label: 'Tipo', value: (t) => tipoLabel[t.type] ?? t.type },
-        { label: 'Valor', value: (t) => Number(t.amount).toFixed(2) },
-        { label: 'Categoria', value: (t) => t.category_name ?? '' },
-        { label: 'Conta', value: (t) => t.account_name ?? '' },
-        { label: 'Conta destino', value: (t) => t.counter_account_name ?? '' },
-        { label: 'Nota', value: (t) => t.note ?? '' },
+        { label: t('csv.date'), value: (tx) => tx.occurred_on },
+        { label: t('csv.type'), value: (tx) => tipoLabel[tx.type] ?? tx.type },
+        { label: t('csv.amount'), value: (tx) => Number(tx.amount).toFixed(2) },
+        { label: t('csv.category'), value: (tx) => tx.category_name ?? '' },
+        { label: t('csv.account'), value: (tx) => tx.account_name ?? '' },
+        { label: t('csv.toAccount'), value: (tx) => tx.counter_account_name ?? '' },
+        { label: t('csv.note'), value: (tx) => tx.note ?? '' },
       ])
       downloadCsv(`stingy-transacoes-${today()}.csv`, csv)
-      toast.success(`CSV exportado (${all.length} transações).`)
+      toast.success(t('dash.exported', { n: all.length }))
     } catch (err) {
-      toast.error(`Não foi possível exportar: ${err.message}`)
+      toast.error(t('dash.exportFailed', { msg: err.message }))
     } finally {
       setExporting(false)
     }
@@ -121,8 +121,8 @@ export default function Dashboard() {
       <>
         <PageHeader title={t('nav.register')} />
         <EmptyState
-          title="A tua conta ainda não tem contas ou categorias por defeito."
-          description="Sai e volta a entrar para as criarmos. Se continuar, contacta o suporte."
+          title={t('dash.noDefaults.title')}
+          description={t('dash.noDefaults.body')}
         />
       </>
     )
@@ -148,7 +148,7 @@ export default function Dashboard() {
           className="pressable flex min-h-16 w-full items-center justify-between gap-3 rounded-group bg-surface px-4 py-3 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
         >
           <div className="min-w-0">
-            <p className="text-[0.8125rem] text-label-2">Saldo este mês</p>
+            <p className="text-[0.8125rem] text-label-2">{t('dash.monthBalance')}</p>
             <p className={`amount display truncate text-[1.625rem] leading-tight font-bold tracking-tight ${saldoTone}`}>
               <Money>{eurSigned(saldo)}</Money>
             </p>
@@ -181,7 +181,7 @@ export default function Dashboard() {
 
       <Card as="section" className="space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-[1.25rem] font-bold tracking-tight text-label">Transações recentes</h2>
+          <h2 className="text-[1.25rem] font-bold tracking-tight text-label">{t('dash.recent')}</h2>
           <button
             type="button"
             onClick={handleExport}
@@ -189,7 +189,7 @@ export default function Dashboard() {
             className="pressable -mr-2 flex min-h-11 items-center gap-1.5 rounded-control px-2 text-[0.9375rem] font-medium text-accent disabled:opacity-50"
           >
             <Download size={17} aria-hidden="true" />
-            {exporting ? 'A exportar...' : 'Exportar CSV'}
+            {exporting ? t('dash.exporting') : t('dash.exportCsv')}
           </button>
         </div>
         <TransactionList

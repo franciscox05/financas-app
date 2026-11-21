@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { ChevronLeft, Pencil, Plus } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -89,7 +90,7 @@ export default function FriendLedger() {
         setViewerId(me)
       } catch (err) {
         if (seq === loadSeq.current && mounted.current) {
-          setError(err.message || 'Não foi possível carregar este amigo. Tenta outra vez.')
+          setError(err.message || t('fl.loadFailed'))
         }
       } finally {
         if (seq === loadSeq.current && mounted.current) setLoading(false)
@@ -140,9 +141,9 @@ export default function FriendLedger() {
       const updated = await updateFriend({ id: friend.id, name: nameDraft, phone: phoneDraft })
       setFriend((f) => ({ ...f, name: updated.name, phone: updated.phone }))
       setEditing(false)
-      toast.success('Dados atualizados.')
+      toast.success(t('fl.updated'))
     } catch (err) {
-      setNameError(err.message || 'Não foi possível guardar os dados. Tenta outra vez.')
+      setNameError(err.message || t('fl.saveFailed'))
     } finally {
       setSavingName(false)
     }
@@ -154,9 +155,9 @@ export default function FriendLedger() {
     try {
       await deleteEntry(entry)
       await load()
-      toast.success('Movimento apagado.')
+      toast.success(t('fl.entryDeleted'))
     } catch (err) {
-      toast.error(err.message || 'Não foi possível apagar o movimento. Tenta outra vez.')
+      toast.error(err.message || t('fl.entryDeleteFailed'))
     }
   }
 
@@ -164,10 +165,10 @@ export default function FriendLedger() {
     setConfirmFriendDelete(false)
     try {
       await deleteFriend(friend.id)
-      toast.success('Amigo apagado.')
+      toast.success(t('fl.friendDeleted'))
       navigate('/dividas')
     } catch (err) {
-      toast.error(err.message || 'Não foi possível apagar o amigo. Tenta outra vez.')
+      toast.error(err.message || t('fl.friendDeleteFailed'))
     }
   }
 
@@ -177,9 +178,9 @@ export default function FriendLedger() {
   if (!friend) {
     return (
       <div className="space-y-3">
-        <p className="text-label">Amigo não encontrado.</p>
+        <p className="text-label">{t('fl.notFound')}</p>
         <Link to="/dividas" className={`inline-flex min-h-11 items-center text-sm underline ${focusRing}`}>
-          Voltar aos amigos
+          {t('fl.backToFriends')}
         </Link>
       </div>
     )
@@ -224,11 +225,11 @@ export default function FriendLedger() {
           }}
           className="pressable -ml-2 inline-flex min-h-11 items-center gap-0.5 rounded-control pr-3 pl-1 text-[1.0625rem] text-accent"
         >
-          <ChevronLeft size={24} strokeWidth={2.1} aria-hidden="true" /> Voltar
+          <ChevronLeft size={24} strokeWidth={2.1} aria-hidden="true" /> {t('fl.back')}
         </button>
         {!editing && (
           <IconButton
-            label="Editar nome e telemóvel"
+            label={t('fl.editDetails')}
             tone="accent"
             className="-mr-2"
             onClick={() => startEditing(friend.phone ?? '')}
@@ -242,7 +243,7 @@ export default function FriendLedger() {
         <form onSubmit={handleSaveName} className="space-y-3 rounded-group bg-surface p-4">
           <div>
             <label htmlFor="friend-edit-name" className={labelClass}>
-              Nome
+              {t('fr.name')}
             </label>
             <input
               id="friend-edit-name"
@@ -256,14 +257,14 @@ export default function FriendLedger() {
           </div>
           <div>
             <label htmlFor="friend-edit-phone" className={labelClass}>
-              Telemóvel (opcional)
+              {t('fr.phone')}
             </label>
             <input
               id="friend-edit-phone"
               type="tel"
               inputMode="tel"
               autoComplete="off"
-              placeholder="Ex: 912 345 678"
+              placeholder={t('fr.phonePlaceholder')}
               value={phoneDraft}
               onChange={(e) => setPhoneDraft(e.target.value)}
               className={inputClass}
@@ -276,10 +277,10 @@ export default function FriendLedger() {
           )}
           <div className="flex gap-2">
             <button type="button" onClick={() => setEditing(false)} className={`${secondaryButton} flex-1`}>
-              Cancelar
+              {t('common.cancel')}
             </button>
             <button type="submit" disabled={savingName} className={`${primaryButton} flex-[2]`}>
-              {savingName ? 'A guardar...' : 'Guardar'}
+              {savingName ? t('common.saving') : t('common.save')}
             </button>
           </div>
         </form>
@@ -295,7 +296,7 @@ export default function FriendLedger() {
             <p className="mt-0.5 text-[0.9375rem] text-label-2">{formatPhoneDisplay(friend.phone)}</p>
           ) : (
             <button type="button" onClick={() => startEditing('')} className={textButton}>
-              Adicionar telefone
+              {t('fl.addPhone')}
             </button>
           )}
         </header>
@@ -310,14 +311,14 @@ export default function FriendLedger() {
       {/* O número principal do ecrã. O sentido ("Deve-te" / "Deves-lhe") fica
           numa linha própria por cima do valor, para valores grandes não
           partirem a linha. */}
-      <section aria-label="Saldo" className="rounded-group bg-surface p-5 text-center">
-        <p className="text-[0.8125rem] font-medium text-label-2">Neste momento</p>
+      <section aria-label={t('fl.balanceAria')} className="rounded-group bg-surface p-5 text-center">
+        <p className="text-[0.8125rem] font-medium text-label-2">{t('fl.rightNow')}</p>
         {state === 'even' ? (
-          <p className="mt-1 text-[1.75rem] leading-tight font-bold tracking-tight text-label-2">Estão quites</p>
+          <p className="mt-1 text-[1.75rem] leading-tight font-bold tracking-tight text-label-2">{t('fl.even')}</p>
         ) : (
           <>
             <p className={`mt-1 text-[1.0625rem] font-semibold ${STATE_TEXT[state]}`}>
-              {state === 'owes_me' ? 'Deve-te' : 'Deves-lhe'}
+              {state === 'owes_me' ? t('fr.owesYou') : t('fr.youOwe')}
             </p>
             <p className={`amount display truncate text-[2.5rem] leading-tight font-bold tracking-tight ${STATE_TEXT[state]}`}>
               <Money value={amount} />
@@ -331,11 +332,11 @@ export default function FriendLedger() {
             onClick={() => togglePanel('expense')}
             className={`${primaryButton} flex flex-1 items-center justify-center gap-1`}
           >
-            <Plus size={17} strokeWidth={2.4} aria-hidden="true" /> Novo gasto
+            <Plus size={17} strokeWidth={2.4} aria-hidden="true" /> {t('fl.newExpense')}
           </button>
           {repayment && (
             <button type="button" onClick={() => togglePanel('repayment')} className={`${secondaryButton} min-w-0 flex-1`}>
-              {repayment.kind === 'repaid_to_me' ? 'Devolveu-me ' : 'Devolvi-lhe '}
+              {repayment.kind === 'repaid_to_me' ? t('fl.repaidMe') : t('fl.repaidThem')}
               <Money value={repayment.amount} />
             </button>
           )}
@@ -346,7 +347,7 @@ export default function FriendLedger() {
 
       {(lifetime.lent > 0 || lifetime.borrowed > 0) && (
         <CollapsibleSection
-          title="Totais desde sempre"
+          title={t('fl.lifetime')}
           open={showLifetime}
           onToggle={() => setShowLifetime((v) => !v)}
         >
@@ -354,16 +355,16 @@ export default function FriendLedger() {
             {lifetime.lent > 0 && (
               <dl className="space-y-2">
                 <dt className="text-[0.8125rem] font-semibold tracking-wide text-label-2 uppercase">
-                  O que lhe emprestaste
+                  {t('fl.youLent')}
                 </dt>
                 <div className="flex items-baseline justify-between gap-3">
-                  <dd className="text-label-2">Emprestaste no total</dd>
+                  <dd className="text-label-2">{t('fl.lentTotal')}</dd>
                   <dd className="amount font-medium text-label">
                     <Money value={lifetime.lent} />
                   </dd>
                 </div>
                 <div className="flex items-baseline justify-between gap-3">
-                  <dd className="text-label-2">Já te devolveu</dd>
+                  <dd className="text-label-2">{t('fl.repaidYou')}</dd>
                   <dd className="amount font-medium text-label">
                     <Money value={lifetime.repaidToMe} />
                   </dd>
@@ -373,16 +374,16 @@ export default function FriendLedger() {
             {lifetime.borrowed > 0 && (
               <dl className="space-y-2">
                 <dt className="text-[0.8125rem] font-semibold tracking-wide text-label-2 uppercase">
-                  O que ele te emprestou
+                  {t('fl.theyLent')}
                 </dt>
                 <div className="flex items-baseline justify-between gap-3">
-                  <dd className="text-label-2">Emprestou-te no total</dd>
+                  <dd className="text-label-2">{t('fl.borrowedTotal')}</dd>
                   <dd className="amount font-medium text-label">
                     <Money value={lifetime.borrowed} />
                   </dd>
                 </div>
                 <div className="flex items-baseline justify-between gap-3">
-                  <dd className="text-label-2">Já lhe devolveste</dd>
+                  <dd className="text-label-2">{t('fl.youRepaid')}</dd>
                   <dd className="amount font-medium text-label">
                     <Money value={lifetime.repaidToThem} />
                   </dd>
@@ -420,12 +421,12 @@ export default function FriendLedger() {
       </Modal>
 
       <section className="space-y-3">
-        <h2 className="px-4 text-[0.8125rem] font-semibold tracking-wide text-label-2 uppercase">Movimentos</h2>
+        <h2 className="px-4 text-[0.8125rem] font-semibold tracking-wide text-label-2 uppercase">{t('fl.entries')}</h2>
         {entries.length > 0 && <ShareSummaryButtons friend={friend} balance={balance} entries={entries} />}
         {entries.length === 0 ? (
           <EmptyState
-            title="Ainda sem movimentos"
-            description="Regista o primeiro gasto para começares o conta-corrente."
+            title={t('fl.noEntries')}
+            description={t('fl.noEntriesBody')}
           />
         ) : (
           <ul className="grouped overflow-hidden rounded-group bg-surface">
@@ -447,36 +448,36 @@ export default function FriendLedger() {
       <section>
         {canDeleteFriend ? (
           <button type="button" onClick={() => setConfirmFriendDelete(true)} className={`${dangerButton} w-full`}>
-            Apagar amigo
+            {t('fl.deleteFriend')}
           </button>
         ) : (
           <p className="px-4 text-center text-[0.8125rem] leading-snug text-label-2">
             {friend.status === 'invited'
-              ? 'Cancela o pedido de amizade antes de apagar este amigo.'
+              ? t('fl.cancelInviteFirst')
               : friend.status === 'connected'
-                ? 'Amigos ligados não se apagam nesta versão.'
-                : 'Só podes apagar quando estiverem quites.'}
+                ? t('fl.linkedNoDelete')
+                : t('fl.onlyWhenEven')}
           </p>
         )}
       </section>
 
       <ConfirmDialog
         open={deleteTarget !== null}
-        title="Apagar movimento?"
+        title={t('mv.deleteQ')}
         message={
           deleteHasBank
-            ? 'Este movimento deixa de contar no saldo. Também apaga a transação criada na conta.'
-            : 'Este movimento deixa de contar no saldo.'
+            ? t('fl.deleteEntryWithTx')
+            : t('mv.deleteMsg')
         }
-        confirmLabel="Apagar movimento"
+        confirmLabel={t('mv.delete')}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDeleteEntry}
       />
       <ConfirmDialog
         open={confirmFriendDelete}
-        title={`Apagar ${friend.name}?`}
-        message="Também apaga o histórico de movimentos com esta pessoa. As transações já criadas nas tuas contas ficam como estão."
-        confirmLabel="Apagar amigo"
+        title={t('fl.deleteFriendQ', { name: friend.name })}
+        message={t('fl.deleteFriendMsg')}
+        confirmLabel={t('fl.deleteFriend')}
         onCancel={() => setConfirmFriendDelete(false)}
         onConfirm={handleDeleteFriend}
       />

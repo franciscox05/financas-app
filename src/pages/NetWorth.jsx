@@ -29,8 +29,8 @@ const GRID_COLOR = 'var(--separator)'
 // Divisão visual pedida pelo Francisco: liquidez e investimento são dinheiros
 // com naturezas diferentes e deixam de aparecer numa lista corrida só.
 const ACCOUNT_SEGMENTS = [
-  { type: 'cash', label: 'Liquidez', hint: 'Contas à ordem, poupança e dinheiro físico' },
-  { type: 'investment', label: 'Investimento', hint: 'Valor atualizado pelos saldos que registas' },
+  { type: 'cash', labelKey: 'nw.cash', hintKey: 'nw.cashHint' },
+  { type: 'investment', labelKey: 'nw.investment', hintKey: 'nw.investmentHint' },
 ]
 
 // Soma o saldo (snapshot mais recente + transações desde esse snapshot) de
@@ -151,10 +151,10 @@ export default function NetWorth() {
     const allAccountIds = accounts.map((a) => a.id)
     return monthPoints.map(({ label, asOfDate }) => {
       if (!groupHasReliableBaseline(accounts, snapshots, asOfDate)) {
-        return { month: label, Património: null }
+        return { month: label, value: null }
       }
       const total = groupBalanceAt(transactions, snapshots, allAccountIds, asOfDate, transfers)
-      return { month: label, Património: Number(total.toFixed(2)) }
+      return { month: label, value: Number(total.toFixed(2)) }
     })
   }, [monthPoints, transactions, snapshots, accounts, transfers])
 
@@ -192,8 +192,8 @@ export default function NetWorth() {
 
       {/* O número que interessa neste ecrã, sozinho e grande — sem caixa à
           volta, para ser a primeira coisa que se lê. */}
-      <section aria-label="Património total" className="px-1">
-        <p className="text-[0.9375rem] text-label-2">Património total</p>
+      <section aria-label={t('nw.total')} className="px-1">
+        <p className="text-[0.9375rem] text-label-2">{t('nw.total')}</p>
         <p className="amount display mt-1 text-[2.75rem] leading-none font-bold tracking-tight text-label">
           <Money value={totalNetWorth} />
         </p>
@@ -208,9 +208,9 @@ export default function NetWorth() {
         <Group
           key={segment.type}
           list
-          header={segment.label}
+          header={t(segment.labelKey)}
           aside={<Money value={segment.subtotal} />}
-          footer={segment.hint}
+          footer={t(segment.hintKey)}
         >
           {segment.accounts.map((acc) => {
             const latest = latestByAccount.get(acc.id)
@@ -220,7 +220,7 @@ export default function NetWorth() {
                 as="button"
                 onClick={() => setSelectedAccount(acc)}
                 title={acc.name}
-                subtitle={latest ? `atualizado ${ptDate(latest.snapshot_date)}` : undefined}
+                subtitle={latest ? t('nw.updated', { date: ptDate(latest.snapshot_date) }) : undefined}
                 value={<Money value={balanceByAccountId.get(acc.id) ?? 0} />}
                 chevron
               />
@@ -235,7 +235,7 @@ export default function NetWorth() {
         onClose={() => setSelectedAccount(null)}
       />
 
-      <Group header="Evolução" footer="Últimos 6 meses. Os meses sem saldo registado não aparecem.">
+      <Group header={t('bal.evolution')} footer={t('nw.evolutionFooter')}>
         <div className="h-56 w-full">
           {hidden ? (
             <HiddenChartNotice />
@@ -275,7 +275,8 @@ export default function NetWorth() {
                 />
                 <Area
                   type="monotone"
-                  dataKey="Património"
+                  dataKey="value"
+                  name={t('nw.series')}
                   stroke={LINE_COLOR}
                   strokeWidth={2.5}
                   fill="url(#networthFill)"

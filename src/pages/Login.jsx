@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { KeyRound } from 'lucide-react'
 import { useState } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
@@ -5,10 +6,10 @@ import { AuthAlert, AuthScreen, PasswordField, PrimaryButton, SecondaryButton, T
 import { useAuth } from '../context/AuthContext'
 
 function signInErrorMessage(error) {
-  if (error.code === 'invalid_credentials') return 'Email ou password errados. Confirma e tenta outra vez.'
-  if (error.code === 'email_not_confirmed') return 'Ainda não confirmaste o email. Vê a tua caixa de entrada.'
-  if (error.status === 429) return 'Demasiadas tentativas seguidas. Espera um minuto e tenta outra vez.'
-  return 'Não foi possível entrar. Verifica a ligação à internet e tenta outra vez.'
+  if (error.code === 'invalid_credentials') return t('auth.err.invalid')
+  if (error.code === 'email_not_confirmed') return t('auth.err.notConfirmed')
+  if (error.status === 429) return t('auth.err.tooMany')
+  return t('auth.err.loginFailed')
 }
 
 export default function Login() {
@@ -24,7 +25,7 @@ export default function Login() {
   async function handleSubmit(e) {
     e.preventDefault()
     if (!email.trim() || !password) {
-      setError('Preenche o email e a password.')
+      setError(t('auth.login.fill'))
       return
     }
     setLoading(true)
@@ -35,19 +36,19 @@ export default function Login() {
   }
 
   return (
-    <AuthScreen stepKey="login" title="Entrar" onSubmit={handleSubmit}>
+    <AuthScreen stepKey="login" title={t('auth.login.title')} onSubmit={handleSubmit}>
       <div className="space-y-3">
         <TextField
-          label="Email"
+          label={t('auth.email')}
           type="email"
           autoComplete="email"
           inputMode="email"
-          placeholder="nome@gmail.com"
+          placeholder={t('auth.emailPlaceholder')}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
         <PasswordField
-          label="Password"
+          label={t('auth.password')}
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -57,19 +58,19 @@ export default function Login() {
       <AuthAlert key={error}>{error}</AuthAlert>
 
       <div className="space-y-3">
-        <PrimaryButton loading={loading} loadingText="A entrar...">
-          Entrar
+        <PrimaryButton loading={loading} loadingText={t('auth.login.busy')}>
+          {t('auth.login.button')}
         </PrimaryButton>
         <SecondaryButton to="/recuperar-password">
           <KeyRound size={16} aria-hidden="true" />
-          Esqueci-me da password
+          {t('auth.login.forgot')}
         </SecondaryButton>
       </div>
 
       <p className="text-center text-sm text-label-2">
-        Ainda não tens conta?{' '}
+        {t('auth.login.noAccount')}{' '}
         <Link to="/signup" className="font-medium text-accent">
-          Criar conta
+          {t('auth.signup.button')}
         </Link>
       </p>
     </AuthScreen>

@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { ArrowRightLeft, Link2, Search, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { listMovementsPage } from '../lib/db'
@@ -22,9 +23,9 @@ function formatAmount(amount, type) {
 // Texto extra junto ao nome do amigo na ligação — só para estados que valem a pena
 // destacar; confirmado/cancelado não precisam de aviso (fica só o nome).
 const LINKED_BADGE_TEXT = {
-  pending: 'pendente',
-  declined: 'contestado',
-  cancel_requested: 'anulação pedida',
+  pending: 'linked.pending',
+  declined: 'linked.declined',
+  cancel_requested: 'linked.cancelRequested',
 }
 
 const rowButtonClass =
@@ -41,13 +42,13 @@ function TransferRow({ tx, onOpen }) {
         <button type="button" onClick={() => onOpen(tx)} className={rowButtonClass}>
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-label">
-              {tx.note || tx.category_name || 'Investimento'}
+              {tx.note || tx.category_name || t('common.investment')}
             </p>
             <p className="flex items-center gap-1 truncate text-xs text-label-2">
               {ptDate(tx.occurred_on)}
-              {tx.note && ` · ${tx.category_name ?? 'Sem categoria'}`} · {tx.account_name ?? 'Conta'}
+              {tx.note && ` · ${tx.category_name ?? t('common.noCategory')}`} · {tx.account_name ?? t('common.account')}
               <ArrowRightLeft size={11} aria-hidden="true" className="shrink-0" />
-              {tx.counter_account_name ?? 'Conta'}
+              {tx.counter_account_name ?? t('common.account')}
             </p>
           </div>
           <span className="shrink-0 text-sm font-semibold text-negative">
@@ -64,10 +65,10 @@ function TransferRow({ tx, onOpen }) {
         <div className="min-w-0">
           <p className="flex items-center gap-1.5 truncate text-sm font-medium text-label">
             <ArrowRightLeft size={13} className="shrink-0 text-accent" />
-            {tx.note || 'Transferência'}
+            {tx.note || t('kind.transfer')}
           </p>
           <p className="truncate text-xs text-label-2">
-            {ptDate(tx.occurred_on)} · {tx.account_name ?? 'Conta'} → {tx.counter_account_name ?? 'Conta'}
+            {ptDate(tx.occurred_on)} · {tx.account_name ?? t('common.account')} → {tx.counter_account_name ?? t('common.account')}
           </p>
         </div>
         <span className="shrink-0 text-sm font-semibold text-accent">
@@ -90,7 +91,7 @@ function LedgerMovementRow({ tx, onOpen }) {
             {ptDate(tx.occurred_on)}
             <Link2 size={11} aria-hidden="true" className="shrink-0" />
             {tx.friend_name}
-            {LINKED_BADGE_TEXT[tx.ledger_status] ? ` · ${LINKED_BADGE_TEXT[tx.ledger_status]}` : ''}
+            {LINKED_BADGE_TEXT[tx.ledger_status] ? ` · ${t(LINKED_BADGE_TEXT[tx.ledger_status])}` : ''}
           </p>
         </div>
         <span className={`shrink-0 text-sm font-semibold ${tx.type === 'income' ? 'text-positive' : 'text-negative'}`}>
@@ -107,17 +108,17 @@ function TransactionRow({ tx, linkedEntry, onOpen }) {
       <button type="button" onClick={() => onOpen(tx)} className={rowButtonClass}>
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-label">
-            {tx.note || tx.category_name || 'Sem nota'}
+            {tx.note || tx.category_name || t('common.noNote')}
           </p>
           <p className="truncate text-xs text-label-2">
             {ptDate(tx.occurred_on)}
-            {tx.note && ` · ${tx.category_name ?? 'Sem categoria'}`} · {tx.account_name ?? 'Sem conta'}
+            {tx.note && ` · ${tx.category_name ?? t('common.noCategory')}`} · {tx.account_name ?? t('common.noAccount')}
           </p>
           {linkedEntry && (
             <p className="mt-0.5 flex items-center gap-1 text-xs text-label-2">
               <Link2 size={11} aria-hidden="true" />
               {linkedEntry.friendName}
-              {LINKED_BADGE_TEXT[linkedEntry.status] ? ` · ${LINKED_BADGE_TEXT[linkedEntry.status]}` : ''}
+              {LINKED_BADGE_TEXT[linkedEntry.status] ? ` · ${t(LINKED_BADGE_TEXT[linkedEntry.status])}` : ''}
             </p>
           )}
         </div>
@@ -130,9 +131,9 @@ function TransactionRow({ tx, linkedEntry, onOpen }) {
 }
 
 const TYPE_OPTIONS = [
-  { value: 'all', label: 'Todas' },
-  { value: 'expense', label: 'Gastos' },
-  { value: 'income', label: 'Ganhos' },
+  { value: 'all', labelKey: 'list.all' },
+  { value: 'expense', labelKey: 'list.expenses' },
+  { value: 'income', labelKey: 'list.incomes' },
 ]
 
 const fieldClass =
@@ -179,8 +180,8 @@ function TransactionFilters({ filters, onChange, categories, accounts }) {
             if (e.target.value === '' && filters.query !== '') onChange({ ...filters, query: '' })
           }}
           enterKeyHint="search"
-          placeholder="Pesquisar transações..."
-          aria-label="Pesquisar transações"
+          placeholder={t('list.search')}
+          aria-label={t('list.searchAria')}
           className={`w-full rounded-control border-0 bg-fill py-2 pl-9 text-label placeholder:text-label-2 focus:ring-2 focus:ring-accent ${draft ? 'pr-11' : 'pr-3'}`}
         />
         {draft && (
@@ -190,7 +191,7 @@ function TransactionFilters({ filters, onChange, categories, accounts }) {
               setDraft('')
               onChange({ ...filters, query: '' })
             }}
-            aria-label="Limpar pesquisa"
+            aria-label={t('list.clearSearch')}
             className="absolute right-0 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full text-label-2"
           >
             <X size={15} aria-hidden="true" />
@@ -198,16 +199,16 @@ function TransactionFilters({ filters, onChange, categories, accounts }) {
         )}
       </form>
 
-      <Segmented label="Filtrar por tipo" options={TYPE_OPTIONS} value={filters.type} onChange={setType} />
+      <Segmented label={t('list.filterType')} options={TYPE_OPTIONS.map((o) => ({ value: o.value, label: t(o.labelKey) }))} value={filters.type} onChange={setType} />
 
       <div className="grid grid-cols-2 gap-2.5">
         <select
           value={filters.accountId}
           onChange={(e) => onChange({ ...filters, accountId: e.target.value })}
-          aria-label="Filtrar por conta"
+          aria-label={t('list.filterAccount')}
           className={fieldClass}
         >
-          <option value="">Todas as contas</option>
+          <option value="">{t('list.allAccounts')}</option>
           {accounts.map((a) => (
             <option key={a.id} value={a.id}>
               {a.name}
@@ -217,10 +218,10 @@ function TransactionFilters({ filters, onChange, categories, accounts }) {
         <select
           value={filters.categoryId}
           onChange={(e) => onChange({ ...filters, categoryId: e.target.value })}
-          aria-label="Filtrar por categoria"
+          aria-label={t('list.filterCategory')}
           className={fieldClass}
         >
-          <option value="">Todas as categorias</option>
+          <option value="">{t('list.allCategories')}</option>
           {categoryOptions.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -365,14 +366,14 @@ export default function TransactionList({ categories, accounts, refreshToken, on
       />
 
       <div className="flex min-h-6 items-center justify-between text-[0.8125rem] text-label-2" aria-live="polite">
-        <span className="amount">{totalCount} {totalCount === 1 ? 'transação' : 'transações'}</span>
+        <span className="amount">{t(totalCount === 1 ? 'list.count1' : 'list.countN', { n: totalCount })}</span>
         {hasActiveFilters && (
           <button
             type="button"
             onClick={() => setFilters(EMPTY_FILTERS)}
             className="-my-2 min-h-11 px-1 font-medium text-accent"
           >
-            Limpar filtros
+            {t('list.clearFilters')}
           </button>
         )}
       </div>
@@ -385,13 +386,13 @@ export default function TransactionList({ categories, accounts, refreshToken, on
         <ErrorNotice message={error} />
       ) : rows.length === 0 ? (
         <EmptyState
-          title={hasActiveFilters ? 'Nenhuma transação corresponde à pesquisa' : `Sem transações em ${monthLabel(selectedMonth)}`}
+          title={hasActiveFilters ? t('list.noMatch') : t('list.emptyMonth', { month: monthLabel(selectedMonth) })}
           description={
             hasActiveFilters
-              ? 'Pesquisa por texto, valor (">20") ou mês ("maio 2025").'
-              : 'Regista um gasto ou ganho, ou navega para outro mês acima.'
+              ? t('list.searchHelp')
+              : t('list.emptyHelp')
           }
-          actionLabel={hasActiveFilters ? 'Limpar filtros' : 'Registar primeira transação'}
+          actionLabel={hasActiveFilters ? t('list.clearFilters') : t('list.addFirst')}
           onAction={hasActiveFilters ? () => setFilters(EMPTY_FILTERS) : onAddFirst}
         />
       ) : (

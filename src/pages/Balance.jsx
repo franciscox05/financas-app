@@ -40,8 +40,8 @@ const AXIS_COLOR = 'var(--label-2)'
 const GRID_COLOR = 'var(--separator)'
 
 const BREAKDOWN_TABS = [
-  { value: 'expense', label: 'Gastos' },
-  { value: 'income', label: 'Ganhos' },
+  { value: 'expense', labelKey: 'list.expenses' },
+  { value: 'income', labelKey: 'list.incomes' },
 ]
 
 // Total por categoria dos movimentos de um tipo, do maior para o menor — cada
@@ -52,7 +52,7 @@ function breakdownByCategory(bucket, type, excludeCategoryIds = new Set()) {
   for (const tx of bucket.txs) {
     if (tx.type !== type) continue
     if (excludeCategoryIds.has(tx.category_id)) continue
-    const name = tx.categories?.name ?? 'Sem categoria'
+    const name = tx.categories?.name ?? t('common.noCategory')
     if (!groups.has(name)) groups.set(name, { name, amount: 0, txs: [] })
     const g = groups.get(name)
     g.amount += Number(tx.amount)
@@ -90,7 +90,7 @@ function CategoryBars({ items, color, onSelectCategory }) {
         </li>
       ))}
       <li className="flex min-h-11 items-center justify-between gap-3 px-4 py-2.5 text-[1.0625rem] font-semibold text-label">
-        <span>Total</span>
+        <span>{t('bal.total')}</span>
         <span className="amount">
           <Money value={items.reduce((sum, c) => sum + c.amount, 0)} />
         </span>
@@ -208,15 +208,14 @@ export default function Balance() {
     if (!prev || prev.expense < 1) return null
     const current = sixMonthData[idx]
     const diffPct = Math.round(((current.expense - prev.expense) / prev.expense) * 100)
-    if (diffPct === 0) return 'Gastaste o mesmo que no mês anterior.'
-    const direction = diffPct > 0 ? 'mais' : 'menos'
-    return `Gastaste ${Math.abs(diffPct)}% ${direction} que no mês anterior.`
+    if (diffPct === 0) return t('bal.sameAsLast')
+    return t(diffPct > 0 ? 'bal.moreThanLast' : 'bal.lessThanLast', { pct: Math.abs(diffPct) })
   }, [sixMonthData, selectedMonth])
 
   const chartData = sixMonthData.map((b) => ({
     month: shortMonthLabel(b.date),
-    Ganhos: Number(b.income.toFixed(2)),
-    Gastos: Number(b.expense.toFixed(2)),
+    income: Number(b.income.toFixed(2)),
+    expense: Number(b.expense.toFixed(2)),
   }))
 
   // Tudo o que o relatório precisa já está calculado para o ecrã — exportar não
@@ -279,8 +278,8 @@ export default function Balance() {
           vêm por baixo como apoio, e as duas frases de contexto ficam dentro do
           mesmo bloco — antes eram três mini-cartões com valores a 14 px e
           frases soltas por cima, sem ligação visível aos números. */}
-      <section aria-label="Resumo do mês" className="rounded-group bg-surface p-5">
-        <p className="text-[0.8125rem] font-medium text-label-2">Saldo do mês</p>
+      <section aria-label={t('bal.summaryAria')} className="rounded-group bg-surface p-5">
+        <p className="text-[0.8125rem] font-medium text-label-2">{t('bal.monthBalance')}</p>
         <p className={`amount display mt-1 truncate text-[2.5rem] leading-none font-bold tracking-tight ${saldoTone}`}>
           <Money>{eurSigned(saldo)}</Money>
         </p>
@@ -289,7 +288,7 @@ export default function Balance() {
           <div className="min-w-0">
             <p className="flex items-center gap-1 text-[0.8125rem] text-label-2">
               <ArrowDownLeft size={15} strokeWidth={2.4} aria-hidden="true" className="text-positive" />
-              Ganhos
+              {t('list.incomes')}
             </p>
             <p className="amount mt-0.5 truncate text-[1.25rem] font-semibold tracking-tight text-label">
               <Money value={income} />
@@ -298,7 +297,7 @@ export default function Balance() {
           <div className="min-w-0">
             <p className="flex items-center gap-1 text-[0.8125rem] text-label-2">
               <ArrowUpRight size={15} strokeWidth={2.4} aria-hidden="true" className="text-negative" />
-              Gastos
+              {t('list.expenses')}
             </p>
             <p className="amount mt-0.5 truncate text-[1.25rem] font-semibold tracking-tight text-label">
               <Money value={expense} />
@@ -311,8 +310,7 @@ export default function Balance() {
             {monthSummary && <p>{monthSummary}</p>}
             {savingsAmount > 0 && (
               <p>
-                Dessas, <Money value={savingsAmount} /> foram para poupança/investimento — não contam como
-                gasto do dia a dia.
+                {t('bal.savingsPre')} <Money value={savingsAmount} /> {t('bal.savingsPost')}
               </p>
             )}
           </div>
@@ -324,38 +322,37 @@ export default function Balance() {
       <MonthCalendar monthDate={selectedMonth} transactions={selectedBucket?.txs ?? []} />
 
       {insights.length > 0 && (
-        <Group header="Insights" list inset="3rem">
+        <Group header={t('bal.insights')} list inset="3rem">
           {insights.map((i) => (
             <li key={i.name} className="flex items-start gap-3 px-4 py-3">
               <TrendingUp size={20} strokeWidth={2.1} aria-hidden="true" className="mt-0.5 shrink-0 text-warning" />
               <p className="text-[0.9375rem] leading-snug text-label">
-                Gastaste {i.diffPct}% mais em <strong className="font-semibold">{i.name}</strong> este mês do que a
-                média dos 3 meses anteriores.
+                {t('bal.insightPre', { pct: i.diffPct })} <strong className="font-semibold">{i.name}</strong> {t('bal.insightPost')}
               </p>
             </li>
           ))}
         </Group>
       )}
 
-      <section aria-label="Por categoria" className="space-y-3">
+      <section aria-label={t('bal.byCategory')} className="space-y-3">
         <div className="px-4">
-          <h2 className="text-[0.8125rem] font-semibold tracking-wide text-label-2 uppercase">Por categoria</h2>
+          <h2 className="text-[0.8125rem] font-semibold tracking-wide text-label-2 uppercase">{t('bal.byCategory')}</h2>
         </div>
-        <Segmented label="Tipo de movimento" options={BREAKDOWN_TABS} value={breakdownTab} onChange={setBreakdownTab} />
+        <Segmented label={t('bal.movementType')} options={BREAKDOWN_TABS.map((o) => ({ value: o.value, label: t(o.labelKey) }))} value={breakdownTab} onChange={setBreakdownTab} />
 
         {breakdownTab === 'expense' ? (
           categoryBreakdown.length === 0 ? (
             <EmptyState
-              title="Sem gastos neste mês"
-              description="Quando registares gastos, vês aqui para onde vai o dinheiro."
-              actionLabel="Registar um gasto"
+              title={t('bal.noExpenses')}
+              description={t('bal.noExpensesBody')}
+              actionLabel={t('bal.logExpense')}
               onAction={() => navigate('/')}
             />
           ) : (
             <CategoryBars items={categoryBreakdown} color={BAR_COLOR} onSelectCategory={setDrilldownCategory} />
           )
         ) : incomeBreakdown.length === 0 ? (
-          <EmptyState title="Sem ganhos neste mês" />
+          <EmptyState title={t('bal.noIncome')} />
         ) : (
           <CategoryBars items={incomeBreakdown} color={INCOME_COLOR} onSelectCategory={setDrilldownCategory} />
         )}
@@ -363,24 +360,24 @@ export default function Balance() {
 
       {(lentOut > 0 || lentBack > 0) && (
         <Group
-          header="Empréstimos e devoluções"
+          header={t('bal.loans')}
           list
-          footer="Ficam fora dos ganhos e gastos. Numa divisão com amigos, só a tua parte conta como gasto; a parte deles entra aqui como emprestada."
+          footer={t('bal.loansFooter')}
         >
           <li className="flex items-baseline justify-between gap-3 px-4 py-3 text-[0.9375rem]">
-            <span className="text-label-2">Emprestado</span>
+            <span className="text-label-2">{t('bal.lent')}</span>
             <span className="amount font-medium text-label">
               <Money value={lentOut} />
             </span>
           </li>
           <li className="flex items-baseline justify-between gap-3 px-4 py-3 text-[0.9375rem]">
-            <span className="text-label-2">Recebido de volta</span>
+            <span className="text-label-2">{t('bal.paidBack')}</span>
             <span className="amount font-medium text-label">
               <Money value={lentBack} />
             </span>
           </li>
           <li className="flex items-baseline justify-between gap-3 px-4 py-3 text-[0.9375rem]">
-            <span className="text-label-2">{lentOut >= lentBack ? 'Por receber este mês' : 'Recebido a mais este mês'}</span>
+            <span className="text-label-2">{lentOut >= lentBack ? t('bal.toReceive') : t('bal.overReceived')}</span>
             <span className="amount font-semibold text-label">
               <Money value={Math.abs(lentOut - lentBack)} />
             </span>
@@ -394,7 +391,7 @@ export default function Balance() {
         onClose={() => setDrilldownCategory(null)}
       />
 
-      <Group header="Evolução" footer="Seis meses, a terminar no mês selecionado.">
+      <Group header={t('bal.evolution')} footer={t('bal.evolutionFooter')}>
         <div className="h-56 w-full">
           {hidden ? (
             <HiddenChartNotice />
@@ -427,8 +424,8 @@ export default function Balance() {
                   labelStyle={{ color: 'var(--label-2)', fontWeight: 600, marginBottom: 2 }}
                 />
                 <Legend wrapperStyle={{ fontSize: 12, color: 'var(--label-2)' }} />
-                <Bar dataKey="Ganhos" fill={INCOME_COLOR} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Gastos" fill={EXPENSE_COLOR} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="income" name={t('list.incomes')} fill={INCOME_COLOR} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="expense" name={t('list.expenses')} fill={EXPENSE_COLOR} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}

@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useEffect, useRef, useState } from 'react'
 import { useToast } from '../context/toastContext'
 import {
@@ -73,7 +74,7 @@ export default function PendingEntryActions({ entry, friend, viewerId, onChanged
           className="space-y-2"
           onSubmit={(e) => {
             e.preventDefault()
-            run(() => respondEntry({ id: entry.id, accept: false, note: note.trim() }), 'Movimento contestado.')
+            run(() => respondEntry({ id: entry.id, accept: false, note: note.trim() }), t('pend.contested'))
           }}
         >
           <label htmlFor={`contest-${entry.id}`} className="block text-xs font-medium text-label-2">
@@ -92,10 +93,10 @@ export default function PendingEntryActions({ entry, friend, viewerId, onChanged
           {errorLine}
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className={primaryButton}>
-              {busy ? 'A enviar...' : 'Contestar'}
+              {busy ? t('pend.sending') : t('pend.contest')}
             </button>
             <button type="button" disabled={busy} onClick={() => setMode(null)} className={secondaryButton}>
-              Voltar
+              {t('pend.back')}
             </button>
           </div>
         </form>
@@ -118,7 +119,7 @@ export default function PendingEntryActions({ entry, friend, viewerId, onChanged
                   accountId: choice.accountId,
                   categoryId: choice.categoryId,
                 }),
-              'Movimento aceite.',
+              t('pend.accepted'),
             )
           }}
         >
@@ -132,10 +133,10 @@ export default function PendingEntryActions({ entry, friend, viewerId, onChanged
           {errorLine}
           <div className="flex gap-2">
             <button type="submit" disabled={busy || !choice.ready} className={primaryButton}>
-              {busy ? 'A guardar...' : 'Aceitar'}
+              {busy ? t('common.saving') : t('pend.accept')}
             </button>
             <button type="button" disabled={busy} onClick={() => setMode(null)} className={secondaryButton}>
-              Voltar
+              {t('pend.back')}
             </button>
           </div>
         </form>
@@ -144,7 +145,7 @@ export default function PendingEntryActions({ entry, friend, viewerId, onChanged
 
     return (
       <div className="space-y-2">
-        <p className="text-sm text-label">Está certo?</p>
+        <p className="text-sm text-label">{t('pend.isRight')}</p>
         {errorLine}
         <div className="flex gap-2">
           <button
@@ -166,12 +167,12 @@ export default function PendingEntryActions({ entry, friend, viewerId, onChanged
                 }
                 if (mounted.current) setMode('accept')
               } else {
-                run(() => respondEntry({ id: entry.id, accept: true }), 'Movimento aceite.')
+                run(() => respondEntry({ id: entry.id, accept: true }), t('pend.accepted'))
               }
             }}
             className={primaryButton}
           >
-            {loadingSuggestion ? 'A carregar...' : 'Aceitar'}
+            {loadingSuggestion ? t('common.loadingDots') : t('pend.accept')}
           </button>
           <button
             type="button"
@@ -183,7 +184,7 @@ export default function PendingEntryActions({ entry, friend, viewerId, onChanged
             }}
             className={secondaryButton}
           >
-            Contestar
+            {t('pend.contest')}
           </button>
         </div>
       </div>
@@ -197,10 +198,10 @@ export default function PendingEntryActions({ entry, friend, viewerId, onChanged
         <button
           type="button"
           disabled={busy}
-          onClick={() => run(() => cancelPendingEntry(entry.id), 'Pedido cancelado.')}
+          onClick={() => run(() => cancelPendingEntry(entry.id), t('pend.requestCancelled'))}
           className={secondaryButton}
         >
-          {busy ? 'A cancelar...' : 'Cancelar'}
+          {busy ? t('pend.cancelling') : t('pend.cancel')}
         </button>
       </div>
     )
@@ -214,18 +215,18 @@ export default function PendingEntryActions({ entry, friend, viewerId, onChanged
           <button
             type="button"
             disabled={busy}
-            onClick={() => run(() => respondCancel(entry.id, true), 'Movimento anulado.')}
+            onClick={() => run(() => respondCancel(entry.id, true), t('pend.annulled'))}
             className={primaryButton}
           >
-            Aceitar
+            {t('pend.accept')}
           </button>
           <button
             type="button"
             disabled={busy}
-            onClick={() => run(() => respondCancel(entry.id, false), 'Anulação recusada.')}
+            onClick={() => run(() => respondCancel(entry.id, false), t('pend.annulRefused'))}
             className={secondaryButton}
           >
-            Recusar
+            {t('pend.refuse')}
           </button>
         </div>
       </div>
@@ -239,16 +240,16 @@ export default function PendingEntryActions({ entry, friend, viewerId, onChanged
         <div className="flex gap-2">
           {onResend && (
             <button type="button" disabled={busy} onClick={() => onResend(entry)} className={secondaryButton}>
-              Corrigir e reenviar
+              {t('pend.fixResend')}
             </button>
           )}
           <button
             type="button"
             disabled={busy}
-            onClick={() => run(() => retireDeclinedEntry(entry.id), 'Movimento cancelado.')}
+            onClick={() => run(() => retireDeclinedEntry(entry.id), t('pend.entryCancelled'))}
             className={secondaryButton}
           >
-            {busy ? 'A cancelar...' : 'Cancelar movimento'}
+            {busy ? t('pend.cancelling') : t('pend.cancelEntry')}
           </button>
         </div>
       </div>
@@ -267,17 +268,17 @@ export default function PendingEntryActions({ entry, friend, viewerId, onChanged
           onClick={() => setConfirmCancel(true)}
           className="-ml-1 min-h-11 px-1 text-[0.8125rem] font-medium text-label-3 underline-offset-2 hover:text-label-2 hover:underline disabled:opacity-50"
         >
-          Pedir anulação
+          {t('pend.requestAnnul')}
         </button>
         <ConfirmDialog
           open={confirmCancel}
-          title="Pedir anulação?"
-          message={`${friend.name} vai ter de aceitar. Até lá, o movimento continua a contar.`}
-          confirmLabel="Pedir anulação"
+          title={t('pend.requestAnnulQ')}
+          message={t('pend.requestAnnulMsg', { name: friend.name })}
+          confirmLabel={t('pend.requestAnnul')}
           onCancel={() => setConfirmCancel(false)}
           onConfirm={() => {
             setConfirmCancel(false)
-            run(() => requestCancel(entry.id), 'Anulação pedida.')
+            run(() => requestCancel(entry.id), t('pend.annulRequested'))
           }}
         />
       </div>

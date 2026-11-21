@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { AlertCircle, Check, CheckCircle2, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useId, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -115,7 +116,7 @@ export function PasswordField({ label, ...props }) {
         <button
           type="button"
           onClick={() => setVisible((v) => !v)}
-          aria-label={visible ? 'Esconder password' : 'Mostrar password'}
+          aria-label={visible ? t('auth.pw.hide') : t('auth.pw.show')}
           className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-xl text-label-3 transition-colors hover:text-label focus-visible:outline-2 focus-visible:outline-accent"
         >
           {visible ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -129,9 +130,9 @@ export function PasswordField({ label, ...props }) {
 // carregar no botão, em vez de levar com um erro depois.
 export function PasswordChecklist({ password, confirm }) {
   const { rules } = checkPassword(password)
-  const items = confirm === undefined ? rules : [...rules, { id: 'match', label: 'As duas passwords coincidem', ok: password.length > 0 && password === confirm }]
+  const items = confirm === undefined ? rules : [...rules, { id: 'match', label: t('auth.pw.match'), ok: password.length > 0 && password === confirm }]
   return (
-    <ul className="grid grid-cols-1 gap-1.5 text-sm sm:grid-cols-2" aria-label="Regras da password">
+    <ul className="grid grid-cols-1 gap-1.5 text-sm sm:grid-cols-2" aria-label={t('auth.pw.rules')}>
       {items.map((r) => (
         <li
           key={r.id}
@@ -179,7 +180,7 @@ export function OtpInput({ length, value, onChange, onComplete, disabled }) {
         maxLength={length}
         disabled={disabled}
         autoFocus
-        aria-label={`Código de ${length} dígitos`}
+        aria-label={t('auth.code.aria', { n: length })}
         className="absolute inset-0 h-full w-full cursor-text opacity-0"
       />
       <div className="flex justify-between gap-2" aria-hidden="true">

@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useEffect, useRef, useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { eur } from '../lib/format'
@@ -26,7 +27,7 @@ export default function OpeningBalanceOffer({ friend, balance, onShared }) {
 
   const { state, amount } = describeBalance(balance)
   const summary =
-    state === 'owes_me' ? `${friend.name} deve-te ${eur(amount)}` : `Deves ${eur(amount)} a ${friend.name}`
+    state === 'owes_me' ? t('ob.owesYou', { name: friend.name, value: eur(amount) }) : t('ob.youOwe', { name: friend.name, value: eur(amount) })
 
   async function handleShare() {
     setConfirming(false)
@@ -38,7 +39,7 @@ export default function OpeningBalanceOffer({ friend, balance, onShared }) {
       await shareOpeningBalance(friend.id)
       notifyPendingChanged()
       if (!mounted.current) return
-      toast.success('Pedido enviado.')
+      toast.success(t('ob.sent'))
       await onShared()
     } catch (err) {
       if (mounted.current) setError(err.message)
@@ -51,9 +52,9 @@ export default function OpeningBalanceOffer({ friend, balance, onShared }) {
   return (
     <div className="space-y-3 rounded-control border border-separator p-4">
       <div className="space-y-1">
-        <p className="text-sm font-medium text-label">Partilhar a conta que já tinham?</p>
+        <p className="text-sm font-medium text-label">{t('ob.title')}</p>
         <p className="text-sm text-label-2">
-          {friend.name} vai ter de aceitar. Os movimentos anteriores ficam arquivados e a conta passa para um só valor, "Saldo anterior". Se {friend.name} recusar, voltam a contar.
+          {t('ob.body', { name: friend.name })}
         </p>
       </div>
       {error && (
@@ -62,13 +63,13 @@ export default function OpeningBalanceOffer({ friend, balance, onShared }) {
         </p>
       )}
       <button type="button" disabled={busy} onClick={() => setConfirming(true)} className={primaryButton}>
-        {busy ? 'A enviar...' : 'Partilhar saldo anterior'}
+        {busy ? t('ob.sending') : t('ob.share')}
       </button>
       <ConfirmDialog
         open={confirming}
-        title="Partilhar saldo anterior?"
-        message={`${summary}. ${friend.name} vai ter de confirmar este valor. Os movimentos anteriores ficam arquivados e a conta passa para um só valor, "Saldo anterior". Se ${friend.name} recusar, voltam a contar.`}
-        confirmLabel="Partilhar"
+        title={t('ob.shareQ')}
+        message={t('ob.confirmMsg', { summary, name: friend.name })}
+        confirmLabel={t('ob.confirm')}
         onCancel={() => setConfirming(false)}
         onConfirm={handleShare}
       />

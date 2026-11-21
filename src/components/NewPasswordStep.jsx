@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { KeyRound } from 'lucide-react'
 import { useState } from 'react'
 import { checkPassword, passwordErrorMessage } from '../lib/passwordRules'
@@ -32,20 +33,20 @@ export default function NewPasswordStep({ onDone }) {
     <AuthScreen
       stepKey="password"
       icon={<KeyRound size={26} />}
-      title="Escolhe uma nova password"
-      subtitle="Vais usá-la para entrar na Stingy a partir de agora."
+      title={t('auth.new.title')}
+      subtitle={t('auth.new.body')}
       onSubmit={handleSubmit}
     >
       <div className="space-y-3">
         <PasswordField
-          label="Nova password"
+          label={t('auth.new.password')}
           autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoFocus
         />
         <PasswordField
-          label="Repetir a nova password"
+          label={t('auth.new.repeat')}
           autoComplete="new-password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
@@ -57,8 +58,8 @@ export default function NewPasswordStep({ onDone }) {
       {/* `key` com a mensagem: o mesmo erro repetido volta a animar (abanão), em vez de ficar parado. */}
       <AuthAlert key={error}>{error}</AuthAlert>
 
-      <PrimaryButton loading={loading} loadingText="A guardar..." disabled={!ready}>
-        Guardar nova password
+      <PrimaryButton loading={loading} loadingText={t('auth.new.saving')} disabled={!ready}>
+        {t('auth.new.save')}
       </PrimaryButton>
     </AuthScreen>
   )

@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { Trash2 } from 'lucide-react'
 import Money from './Money'
 import PendingEntryActions from './PendingEntryActions'
@@ -7,8 +8,8 @@ import { eur, shortDate } from '../lib/format'
 import { focusRing } from './ui/styles'
 
 const KIND_TITLES = {
-  repaid_to_me: 'Devolução recebida',
-  repaid_to_them: 'Devolução feita',
+  repaid_to_me: 'ledger.repaidToMe',
+  repaid_to_them: 'ledger.repaidToThem',
 }
 
 const TONE_CLASS = {
@@ -25,7 +26,7 @@ const TONE_CLASS = {
 export default function LedgerEntryRow({ entry, friend, viewerId, onDelete, onChanged, onResend }) {
   const cents = signedCents(entry.kind, entry.amount)
   const positive = cents > 0
-  const title = entry.note || KIND_TITLES[entry.kind] || 'Gasto'
+  const title = entry.note || (KIND_TITLES[entry.kind] ? t(KIND_TITLES[entry.kind]) : t('kind.expense'))
   const formatted = `${positive ? '+' : '−'}${eur(Math.abs(cents) / 100)}`
   const status = friend && viewerId ? entryStatusText(entry, viewerId, friend.name) : { text: '', tone: 'none' }
   const dimmed = !entryCounts(entry)
@@ -61,7 +62,7 @@ export default function LedgerEntryRow({ entry, friend, viewerId, onDelete, onCh
             <button
               type="button"
               onClick={() => onDelete(entry)}
-              aria-label={`Apagar movimento: ${title}`}
+              aria-label={t('ledger.deleteEntry', { title })}
               className={`flex size-11 items-center justify-center rounded-control text-label-3 transition-colors duration-150 ease-out hover:text-negative active:scale-[0.95] motion-reduce:transition-none motion-reduce:active:scale-100 ${focusRing}`}
             >
               <Trash2 size={16} aria-hidden="true" />

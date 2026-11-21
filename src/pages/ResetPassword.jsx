@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { CheckCircle2, Link2Off, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -14,7 +15,7 @@ export default function ResetPassword() {
 
   if (loading) {
     return (
-      <AuthScreen stepKey="loading" icon={<Loader2 size={26} className="motion-safe:animate-spin" />} title="A validar o link..." />
+      <AuthScreen stepKey="loading" icon={<Loader2 size={26} className="motion-safe:animate-spin" />} title={t('auth.reset.validating')} />
     )
   }
 
@@ -23,14 +24,14 @@ export default function ResetPassword() {
       <AuthScreen
         stepKey="done"
         icon={<CheckCircle2 size={28} />}
-        title="Password alterada"
-        subtitle="Se tens a Stingy instalada no ecrã principal, podes fechar este separador e entrar lá com a nova password."
+        title={t('auth.changed.title')}
+        subtitle={t('auth.changed.bodyInstalled')}
         onSubmit={(e) => {
           e.preventDefault()
           navigate('/', { replace: true })
         }}
       >
-        <PrimaryButton>Continuar aqui</PrimaryButton>
+        <PrimaryButton>{t('auth.changed.continueHere')}</PrimaryButton>
       </AuthScreen>
     )
   }
@@ -40,10 +41,10 @@ export default function ResetPassword() {
       <AuthScreen
         stepKey="expired"
         icon={<Link2Off size={26} />}
-        title="Este link já não é válido"
-        subtitle="Os links de recuperação só funcionam uma vez e expiram passado algum tempo. Pede um código novo."
+        title={t('auth.reset.invalidTitle')}
+        subtitle={t('auth.reset.invalidBody')}
       >
-        <SecondaryButton to="/recuperar-password">Pedir um código novo</SecondaryButton>
+        <SecondaryButton to="/recuperar-password">{t('auth.reset.newCode')}</SecondaryButton>
       </AuthScreen>
     )
   }
