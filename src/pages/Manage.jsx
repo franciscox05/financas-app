@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import BankStatementImportSection from '../components/BankStatementImportSection'
 import BudgetsSection from '../components/BudgetsSection'
+import RecurringSection from '../components/RecurringSection'
 import CategoryRulesSection from '../components/CategoryRulesSection'
 import { CARD_CLASS } from '../components/Card'
 import EntityManager from '../components/EntityManager'
@@ -188,6 +189,8 @@ export default function Manage() {
       </div>
 
       <BudgetsSection categories={categories} cardClass={cardClass} />
+
+      <RecurringSection accounts={accounts} categories={categories} cardClass={cardClass} />
 
       {/* As ferramentas deixam de estar dentro de um cartão: cada uma é uma
           linha própria sobre o fundo da página, que abre no sítio. */}
