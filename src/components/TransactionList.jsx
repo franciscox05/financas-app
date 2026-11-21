@@ -1,20 +1,16 @@
 import { ArrowRightLeft, Link2, Search, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { statementKey } from '../lib/accountBalance'
 import { listMovementsPage } from '../lib/db'
 import { getLedgerEntriesForTransactions } from '../lib/friendsDb'
-import { addMonths, monthLabel, monthStart, toIsoDate, today } from '../lib/dates'
+import { addMonths, monthLabel, monthStart, toIsoDate } from '../lib/dates'
 import { entryLabel } from '../lib/ledgerMath'
 import { parseSmartQuery } from '../lib/smartSearch'
-import { dayHeading, groupByDay } from '../lib/dayGroups'
-import { useAccountStatement } from '../lib/useAccountStatement'
-import { t } from '../i18n'
 import { EmptyState, ErrorNotice, ListSkeleton, Pager } from './Feedback'
 import Money from './Money'
 import MonthPicker from './MonthPicker'
 import TransactionDetailModal from './TransactionDetailModal'
 import Segmented from './ui/Segmented'
-import { eur, getFormat } from '../lib/format'
+import { eur, ptDate } from '../lib/format'
 
 const PAGE_SIZE = 25
 
@@ -31,23 +27,12 @@ const LINKED_BADGE_TEXT = {
   cancel_requested: 'anulação pedida',
 }
 
-// "saldo antes X" por baixo do valor, só quando a lista está filtrada por uma conta
-// (aí o saldo de cada linha é o dessa conta, como num extrato do banco).
-function BalanceBefore({ value }) {
-  if (value === undefined) return null
-  return (
-    <span className="amount block text-right text-xs font-normal text-label-3">
-      <Money>{t('stmt.before', { value: eur(value) })}</Money>
-    </span>
-  )
-}
-
 const rowButtonClass =
   'flex w-full min-h-14 items-center justify-between gap-3 rounded-control py-2 text-left transition-colors duration-150 ease-out hover:bg-fill active:bg-fill'
 
 // Todas as linhas são só de leitura e clicáveis: abrem o modal de detalhe, que
 // trata de edição/apagar com as regras certas para cada tipo de movimento.
-function TransferRow({ tx, onOpen, balanceBefore }) {
+function TransferRow({ tx, onOpen }) {
   // "Conta como gasto" (ex. investimentos): mesma transferência, mas lê-se como
   // um gasto normal — vermelho, categoria em vez da seta de conta a conta.
   if (tx.counts_as_expense) {
@@ -59,14 +44,14 @@ function TransferRow({ tx, onOpen, balanceBefore }) {
               {tx.note || tx.category_name || 'Investimento'}
             </p>
             <p className="flex items-center gap-1 truncate text-xs text-label-2">
-              {tx.note ? `${tx.category_name ?? 'Sem categoria'} · ` : ''}{tx.account_name ?? 'Conta'}
+              {ptDate(tx.occurred_on)}
+              {tx.note && ` · ${tx.category_name ?? 'Sem categoria'}`} · {tx.account_name ?? 'Conta'}
               <ArrowRightLeft size={11} aria-hidden="true" className="shrink-0" />
               {tx.counter_account_name ?? 'Conta'}
             </p>
           </div>
-          <span className="shrink-0 text-right text-sm font-semibold text-negative">
+          <span className="shrink-0 text-sm font-semibold text-negative">
             <Money>{formatAmount(tx.amount, 'expense')}</Money>
-            <BalanceBefore value={balanceBefore} />
           </span>
         </button>
       </li>
@@ -82,12 +67,11 @@ function TransferRow({ tx, onOpen, balanceBefore }) {
             {tx.note || 'Transferência'}
           </p>
           <p className="truncate text-xs text-label-2">
-            {tx.account_name ?? 'Conta'} → {tx.counter_account_name ?? 'Conta'}
+            {ptDate(tx.occurred_on)} · {tx.account_name ?? 'Conta'} → {tx.counter_account_name ?? 'Conta'}
           </p>
         </div>
-        <span className="shrink-0 text-right text-sm font-semibold text-accent">
+        <span className="shrink-0 text-sm font-semibold text-accent">
           <Money>{eur(tx.amount)}</Money>
-          <BalanceBefore value={balanceBefore} />
         </span>
       </button>
     </li>
@@ -103,12 +87,13 @@ function LedgerMovementRow({ tx, onOpen }) {
             {tx.note || entryLabel(tx.ledger_kind)}
           </p>
           <p className="flex items-center gap-1 text-xs text-label-2">
+            {ptDate(tx.occurred_on)}
             <Link2 size={11} aria-hidden="true" className="shrink-0" />
             {tx.friend_name}
             {LINKED_BADGE_TEXT[tx.ledger_status] ? ` · ${LINKED_BADGE_TEXT[tx.ledger_status]}` : ''}
           </p>
         </div>
-        <span className={`shrink-0 text-right text-sm font-semibold ${tx.type === 'income' ? 'text-positive' : 'text-negative'}`}>
+        <span className={`shrink-0 text-sm font-semibold ${tx.type === 'income' ? 'text-positive' : 'text-negative'}`}>
           <Money>{formatAmount(tx.amount, tx.type)}</Money>
         </span>
       </button>
@@ -116,7 +101,7 @@ function LedgerMovementRow({ tx, onOpen }) {
   )
 }
 
-function TransactionRow({ tx, linkedEntry, onOpen, balanceBefore }) {
+function TransactionRow({ tx, linkedEntry, onOpen }) {
   return (
     <li>
       <button type="button" onClick={() => onOpen(tx)} className={rowButtonClass}>
@@ -125,7 +110,8 @@ function TransactionRow({ tx, linkedEntry, onOpen, balanceBefore }) {
             {tx.note || tx.category_name || 'Sem nota'}
           </p>
           <p className="truncate text-xs text-label-2">
-            {tx.note ? `${tx.category_name ?? 'Sem categoria'} · ` : ''}{tx.account_name ?? 'Sem conta'}
+            {ptDate(tx.occurred_on)}
+            {tx.note && ` · ${tx.category_name ?? 'Sem categoria'}`} · {tx.account_name ?? 'Sem conta'}
           </p>
           {linkedEntry && (
             <p className="mt-0.5 flex items-center gap-1 text-xs text-label-2">
@@ -135,9 +121,8 @@ function TransactionRow({ tx, linkedEntry, onOpen, balanceBefore }) {
             </p>
           )}
         </div>
-        <span className={`shrink-0 text-right text-sm font-semibold ${tx.type === 'income' ? 'text-positive' : 'text-negative'}`}>
+        <span className={`shrink-0 text-sm font-semibold ${tx.type === 'income' ? 'text-positive' : 'text-negative'}`}>
           <Money>{formatAmount(tx.amount, tx.type)}</Money>
-          <BalanceBefore value={balanceBefore} />
         </span>
       </button>
     </li>
@@ -261,19 +246,8 @@ export default function TransactionList({ categories, accounts, refreshToken, on
   const [modalTx, setModalTx] = useState(null)
   // {transactionId: entry} para a página atual — um só pedido por página, não um por linha.
   const [linkedEntries, setLinkedEntries] = useState(new Map())
-  // Filtrada por uma conta: extrato dessa conta para mostrar o saldo antes de cada
-  // linha. `statementReload` volta a calculá-lo depois de editar/apagar/desfazer.
-  const [statementReload, setStatementReload] = useState(0)
-  const { lines: statementLines } = useAccountStatement(filters.accountId || null, `${refreshToken}:${statementReload}`)
-  const balanceBeforeByKey = useMemo(() => {
-    const map = new Map()
-    for (const line of statementLines ?? []) map.set(statementKey(line.kind, line.item.id), line.balanceBefore)
-    return map
-  }, [statementLines])
 
   const parsedSmart = useMemo(() => parseSmartQuery(filters.query), [filters.query])
-  const todayIso = today()
-  const dayLabels = { today: t('day.today'), yesterday: t('day.yesterday') }
 
   // Por omissão a lista fica presa ao mês selecionado (como o resto da app),
   // em vez de mostrar tudo desde sempre. Uma pesquisa com data explícita (ex.
@@ -352,14 +326,12 @@ export default function TransactionList({ categories, accounts, refreshToken, on
 
   function handleUpdated(updatedTx) {
     setRows((prev) => prev.map((r) => (r.id === updatedTx.id ? updatedTx : r)))
-    setStatementReload((n) => n + 1)
     onRowChanged?.()
   }
 
   function handleDeleted(id) {
     setRows((prev) => prev.filter((r) => r.id !== id))
     setTotalCount((prev) => Math.max(0, prev - 1))
-    setStatementReload((n) => n + 1)
     onRowChanged?.()
   }
 
@@ -375,7 +347,6 @@ export default function TransactionList({ categories, accounts, refreshToken, on
     } catch (err) {
       setError(err.message)
     }
-    setStatementReload((n) => n + 1)
     onRowChanged?.()
   }
 
@@ -425,39 +396,21 @@ export default function TransactionList({ categories, accounts, refreshToken, on
         />
       ) : (
         <>
-          {/* Agrupado por dia, como nas apps dos bancos: o dia vai no título do grupo e
-              sai do subtítulo de cada linha. */}
-          <div className={`space-y-3 transition-opacity duration-150 ${loading ? 'opacity-60' : ''}`}>
-            {groupByDay(rows).map((group) => (
-              <section key={group.date} aria-label={dayHeading(group.date, todayIso, dayLabels, getFormat().locale)}>
-                <h3 className="sticky top-[calc(max(1rem,env(safe-area-inset-top))+3.85rem)] z-[1] -mx-1 bg-surface px-1 py-1 text-[0.8125rem] font-semibold text-label-2">
-                  {dayHeading(group.date, todayIso, dayLabels, getFormat().locale)}
-                </h3>
-                <ul className="divide-y divide-separator">
-            {group.rows.map((tx) =>
+          <ul
+            className={`divide-y divide-separator transition-opacity duration-150 ${
+              loading ? 'opacity-60' : ''
+            }`}
+          >
+            {rows.map((tx) =>
               tx.source === 'transfer' ? (
-                <TransferRow
-                  key={tx.id}
-                  tx={tx}
-                  onOpen={setModalTx}
-                  balanceBefore={balanceBeforeByKey.get(statementKey('transfer', tx.id))}
-                />
+                <TransferRow key={tx.id} tx={tx} onOpen={setModalTx} />
               ) : tx.source === 'ledger' ? (
                 <LedgerMovementRow key={tx.id} tx={tx} onOpen={setModalTx} />
               ) : (
-                <TransactionRow
-                  key={tx.id}
-                  tx={tx}
-                  linkedEntry={linkedEntries.get(tx.id)}
-                  onOpen={setModalTx}
-                  balanceBefore={balanceBeforeByKey.get(statementKey('transaction', tx.id))}
-                />
+                <TransactionRow key={tx.id} tx={tx} linkedEntry={linkedEntries.get(tx.id)} onOpen={setModalTx} />
               ),
             )}
-                </ul>
-              </section>
-            ))}
-          </div>
+          </ul>
           <Pager page={page} totalPages={Math.ceil(totalCount / PAGE_SIZE)} onChange={setPage} />
         </>
       )}
