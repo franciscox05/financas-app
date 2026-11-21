@@ -1,6 +1,8 @@
 import { SlidersHorizontal, Tags, Wallet } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import BankStatementImportSection from '../components/BankStatementImportSection'
+import BudgetsSection from '../components/BudgetsSection'
 import CategoryRulesSection from '../components/CategoryRulesSection'
 import { CARD_CLASS } from '../components/Card'
 import EntityManager from '../components/EntityManager'
@@ -79,6 +81,14 @@ export default function Manage() {
   useEffect(() => {
     load()
   }, [load])
+
+  // Vindo do Balanço ("Definir orçamentos" / "Editar"): /gestao#orcamentos desce até à secção
+  // depois de a página ter carregado (o React Router não trata âncoras sozinho).
+  const { hash } = useLocation()
+  useEffect(() => {
+    if (loading || !hash) return
+    document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start' })
+  }, [loading, hash])
 
   const accountBalances = useMemo(() => {
     const now = today()
@@ -176,6 +186,8 @@ export default function Manage() {
           }}
         />
       </div>
+
+      <BudgetsSection categories={categories} cardClass={cardClass} />
 
       {/* As ferramentas deixam de estar dentro de um cartão: cada uma é uma
           linha própria sobre o fundo da página, que abre no sítio. */}

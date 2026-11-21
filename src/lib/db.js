@@ -547,3 +547,28 @@ export async function deleteTransfer(id) {
   const { error } = await supabase.from('transfers').delete().eq('id', id)
   if (error) throw error
 }
+
+// --- Orçamentos ---------------------------------------------------------------
+// Um limite mensal por categoria de despesa (único por utilizador e categoria,
+// ver migração 20261120000000). Cálculo do progresso em lib/budgets.js.
+export async function listBudgets() {
+  const { data, error } = await supabase.from('budgets').select('id, category_id, amount').order('created_at')
+  if (error) throw error
+  return data
+}
+
+export async function setBudget(categoryId, amount) {
+  const userId = await getCurrentUserId()
+  const { data, error } = await supabase
+    .from('budgets')
+    .upsert({ user_id: userId, category_id: categoryId, amount }, { onConflict: 'user_id,category_id' })
+    .select('id, category_id, amount')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteBudget(categoryId) {
+  const { error } = await supabase.from('budgets').delete().eq('category_id', categoryId)
+  if (error) throw error
+}
