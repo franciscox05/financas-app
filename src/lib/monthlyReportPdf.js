@@ -4,6 +4,7 @@
 // (ver monthlyReport.js), para nunca discordar do que o utilizador vê.
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { languageInfo } from '../i18n/index.js'
 import { eur } from './format.js'
 import {
   averageDailyExpense,
@@ -49,12 +50,12 @@ const TABLE_BASE = {
 }
 
 function formatIssueDate() {
-  return new Date().toLocaleDateString('pt-PT', { day: '2-digit', month: 'long', year: 'numeric' })
+  return new Date().toLocaleDateString(languageInfo().locale, { day: '2-digit', month: 'long', year: 'numeric' })
 }
 
 // "16 out" — usado no dia de pico de despesa, maiores despesas e extrato.
 function formatShortDate(iso) {
-  return new Date(`${iso}T00:00:00`).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })
+  return new Date(`${iso}T00:00:00`).toLocaleDateString(languageInfo().locale, { day: '2-digit', month: 'short' })
 }
 
 // Cabeçalho da 1.ª página: barra escura com a marca e o mês. Páginas
