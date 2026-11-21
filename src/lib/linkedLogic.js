@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js'
 // Lógica pura dos amigos ligados (pedidos, movimentos partilhados), separada
 // da camada de dados para se poder testar sem Supabase.
 
@@ -17,18 +18,18 @@ export function entryStatusLabel(entry, viewerId) {
   switch (entry.status) {
     case 'pending':
       return entry.created_by === viewerId
-        ? { text: 'À espera de confirmação', tone: 'waiting' }
-        : { text: 'Pendente de confirmação', tone: 'action' }
+        ? { text: t('lk.waitingConfirm'), tone: 'waiting' }
+        : { text: t('lk.pendingConfirm'), tone: 'action' }
     case 'declined': {
       const note = String(entry.decline_note ?? '').trim()
       return { text: note ? `Contestado: ${note}` : 'Contestado', tone: 'danger' }
     }
     case 'cancel_requested':
-      return { text: 'Anulação pedida', tone: 'waiting' }
+      return { text: t('lk.cancelRequested'), tone: 'waiting' }
     case 'cancelled':
       // Anulação mútua de um movimento confirmado: cancel_requested_by fica preenchido.
       if (entry.cancel_requested_by) return { text: 'Anulado', tone: 'muted' }
-      return { text: entry.created_by === viewerId ? 'Cancelado por ti' : 'Cancelado', tone: 'muted' }
+      return { text: entry.created_by === viewerId ? t('lk.cancelledByYou') : t('lk.cancelled'), tone: 'muted' }
     case 'archived':
       return { text: 'Arquivado', tone: 'muted' }
     default:
@@ -47,11 +48,11 @@ export function canRequestCancel(entry) {
 
 // `request` é o último pedido que enviei a este amigo (ou null).
 export function friendStateLabel(friend, request) {
-  if (friend.status === 'connected') return 'Ligado'
-  if (request?.status === 'pending') return 'Pedido enviado'
-  if (request?.status === 'awaiting_confirmation') return 'À espera de confirmação'
-  if (request?.status === 'declined') return 'Recusado'
-  if (friend.status === 'invited') return 'Pedido enviado'
+  if (friend.status === 'connected') return t('lk.linked')
+  if (request?.status === 'pending') return t('lk.requestSent')
+  if (request?.status === 'awaiting_confirmation') return t('lk.waitingConfirm')
+  if (request?.status === 'declined') return t('lk.declined')
+  if (friend.status === 'invited') return t('lk.requestSent')
   return 'Local'
 }
 
@@ -66,12 +67,12 @@ export function entryStatusText(entry, viewerId, friendName) {
   const label = entryStatusLabel(entry, viewerId)
   const name = friendName || 'o amigo'
   if (entry.status === 'pending' && entry.created_by === viewerId && friendName) {
-    return { ...label, text: `À espera que ${name} confirme` }
+    return { ...label, text: t('lk.waitingFor', { name }) }
   }
   if (entry.status === 'cancel_requested') {
     return entry.cancel_requested_by === viewerId
-      ? { ...label, text: `Anulação pedida. À espera de ${name}.` }
-      : { text: `${name} quer anular este movimento`, tone: 'action' }
+      ? { ...label, text: t('lk.cancelWaiting', { name }) }
+      : { text: t('lk.wantsCancel', { name }), tone: 'action' }
   }
   return label
 }
@@ -108,10 +109,10 @@ export function blocksTransactionEdit(entry) {
 // Mensagem a mostrar quando blocksTransactionEdit(entry) é true.
 export function transactionLinkedMessage(entry) {
   if (entry.status === 'pending') {
-    return `Este gasto tem um pedido pendente com ${entry.friendName}. Cancela o pedido na página dele antes de editar ou apagar esta transação.`
+    return t('lk.txPending', { name: entry.friendName })
   }
   if (entry.status === 'declined') {
-    return `${entry.friendName} contestou este movimento, mas continua a contar do teu lado. Revê e corrige na página dele antes de editar ou apagar esta transação.`
+    return t('lk.txDeclined', { name: entry.friendName })
   }
-  return `Este gasto está ligado a um movimento com ${entry.friendName}. Gere isso na página dele — apagar esse movimento também apaga esta transação.`
+  return t('lk.txLinked', { name: entry.friendName })
 }

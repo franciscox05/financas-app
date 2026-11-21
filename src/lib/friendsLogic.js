@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js'
 // Lógica pura da camada de dados de amigos, separada de friendsDb.js para se
 // poder testar sem Supabase.
 import { normalizePhone } from './contactMessage.js'
@@ -7,7 +8,7 @@ import { normalizePhone } from './contactMessage.js'
 export function phoneForStorage(raw) {
   if (raw == null || String(raw).trim() === '') return null
   const phone = normalizePhone(raw)
-  if (!phone) throw new Error('Número de telefone inválido.')
+  if (!phone) throw new Error(t('fl.badPhone'))
   return phone
 }
 
@@ -17,7 +18,7 @@ export function phoneForStorage(raw) {
 export function mbwayForStorage(raw) {
   if (raw == null || String(raw).trim() === '') return null
   const phone = normalizePhone(raw)
-  if (!phone) throw new Error('Número de telefone inválido.')
+  if (!phone) throw new Error(t('fl.badPhone'))
   if (phone.length === 12 && phone.startsWith('351')) return phone.slice(3)
   return phone
 }
@@ -27,7 +28,7 @@ export function mbwayForStorage(raw) {
 export function phoneForProfile(raw) {
   if (raw == null || String(raw).trim() === '') return null
   const phone = normalizePhone(raw)
-  if (!phone) throw new Error('Número de telefone inválido.')
+  if (!phone) throw new Error(t('fl.badPhone'))
   if (phone.length === 12 && phone.startsWith('351')) return phone.slice(3)
   return phone
 }
@@ -35,8 +36,11 @@ export function phoneForProfile(raw) {
 // O amigo ficou criado mas o pedido de ligação falhou: o erro leva a mensagem
 // do servidor para a UI mostrar tal e qual.
 export function requestLinkFailure(err) {
-  const message = err?.message || 'não foi possível enviar o pedido.'
-  return new Error(`Amigo criado, mas ${message.charAt(0).toLowerCase()}${message.slice(1)}`)
+  const message = err?.message || t('fl.requestFailedDefault')
+  const error = new Error(t('fl.createdBut', { msg: `${message.charAt(0).toLowerCase()}${message.slice(1)}` }))
+  // A UI distingue este caso pela marca, não pelo texto (que muda com o idioma).
+  error.friendCreated = true
+  return error
 }
 
 // Uma devolução em dinheiro que me entra é um ganho; uma que eu faço é um gasto.
@@ -48,7 +52,7 @@ export function repaymentTransactionType(kind) {
 // com dinheiro vivo ou compensação ignoram-se (não há movimento bancário).
 export function checkRepaymentInput({ settlement, accountId, categoryId }) {
   if (settlement === 'bank' && (!accountId || !categoryId)) {
-    throw new Error('Escolhe a conta e a categoria.')
+    throw new Error(t('sheet.pickAccountCategory'))
   }
 }
 
@@ -57,13 +61,13 @@ export function checkRepaymentInput({ settlement, accountId, categoryId }) {
 // lista de Registo, não precisa de se repetir no título da transação.
 export function repaymentNote(note) {
   const written = String(note ?? '').trim()
-  return written || 'Liquidação de dívida'
+  return written || t('fl.settlement')
 }
 
 // names.js é partilhado com contas/categorias e fala em "item"; para amigos
 // a mensagem de nome repetido é mais clara.
 export function friendNameError(message) {
-  return message === 'Já existe um item com este nome.' ? 'Já tens um amigo com este nome.' : message
+  return message === t('names.duplicate') ? t('fl.dupFriend') : message
 }
 
 // Saldo ≠ 0 em cêntimos (evita falsos positivos de vírgula flutuante).

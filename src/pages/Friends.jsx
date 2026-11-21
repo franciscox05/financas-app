@@ -111,7 +111,7 @@ export default function Friends() {
       }
     } catch (err) {
       if (!mounted.current) return
-      if (err instanceof Error && err.message.startsWith('Amigo criado, mas ')) {
+      if (err instanceof Error && err.friendCreated) {
         // O amigo existe; só o pedido falhou. Fecha o formulário e mostra o motivo.
         resetForm()
         await load()

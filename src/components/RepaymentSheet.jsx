@@ -162,7 +162,7 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
       // Os erros do servidor já vêm em português e prontos para mostrar.
       if (isSharedGuardError(err)) onStale?.()
       setError(
-        shared || isSharedGuardError(err) || err.message === 'Escolhe a conta e a categoria.'
+        shared || isSharedGuardError(err) || err.message === t('sheet.pickAccountCategory')
           ? err.message
           : t('sheet.saveRetry'),
       )

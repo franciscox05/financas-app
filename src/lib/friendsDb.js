@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js'
 import { supabase } from './supabase'
 import { createTransaction, getCurrentUserId } from './db'
 import { entryCounts } from './ledgerMath'
@@ -101,7 +102,7 @@ export async function deleteFriend(id) {
     .maybeSingle()
   if (balanceError) throw balanceError
   if (hasOpenBalance(data?.balance)) {
-    throw new Error('Só podes apagar quando estiverem quites.')
+    throw new Error(t('fdb.onlyEven'))
   }
 
   const { error } = await supabase.from('friends').delete().eq('id', id)

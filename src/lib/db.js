@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js'
 import { supabase } from './supabase'
 
 // Id do utilizador autenticado, para as tabelas que guardam user_id/owner_id.
@@ -401,7 +402,7 @@ export async function deleteAccount(id) {
   const { error } = await supabase.from('accounts').delete().eq('id', id)
   if (error?.code === FK_VIOLATION) {
     throw new Error(
-      'Esta conta ainda tem transações, transferências, atualizações de saldo ou dívidas associadas.',
+      t('db.accountInUse'),
     )
   }
   if (error) throw error
@@ -456,7 +457,7 @@ export async function updateCategoryLendingFlag(id, isLending) {
 export async function deleteCategory(id) {
   const { error } = await supabase.from('categories').delete().eq('id', id)
   if (error?.code === FK_VIOLATION) {
-    throw new Error('Esta categoria ainda tem transações associadas.')
+    throw new Error(t('db.categoryInUse'))
   }
   if (error) throw error
   categoriesCache = null

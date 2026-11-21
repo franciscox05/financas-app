@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js'
 import { normalizeText } from './filters'
 
 export const MAX_NAME_LENGTH = 40
@@ -8,14 +9,14 @@ export const MAX_NAME_LENGTH = 40
 export function validateName(rawName, siblings, selfId = null) {
   const name = String(rawName ?? '').trim().replace(/\s+/g, ' ')
 
-  if (!name) return { name, error: 'Indica um nome.' }
+  if (!name) return { name, error: t('names.required') }
   if (name.length > MAX_NAME_LENGTH) {
-    return { name, error: `O nome não pode ter mais de ${MAX_NAME_LENGTH} caracteres.` }
+    return { name, error: t('names.tooLong', { n: MAX_NAME_LENGTH }) }
   }
 
   const key = normalizeText(name)
   if (siblings.some((s) => s.id !== selfId && normalizeText(s.name) === key)) {
-    return { name, error: 'Já existe um item com este nome.' }
+    return { name, error: t('names.duplicate') }
   }
   return { name, error: '' }
 }

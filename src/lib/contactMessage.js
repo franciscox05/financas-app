@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js'
 // Mensagem de lembrete e ligações de contacto (WhatsApp/SMS) para amigos.
 import { eur, shortDate } from './format.js'
 import { entryCounts, entryLabel, signedCents } from './ledgerMath.js'
@@ -36,9 +37,9 @@ export function formatPhoneDisplay(raw) {
 export function reminderText({ friendName, amount, note, mbwayPhone }) {
   const detail = note ? ` (${note})` : ''
   const ask = mbwayPhone
-    ? `Podes enviar por MB Way para ${formatMbway(mbwayPhone)} quando puderes?`
-    : 'Podes enviar quando puderes?'
-  return `Olá ${friendName}! Ficou pendente ${eur(amount)}${detail}. ${ask} Obrigado!`
+    ? t('msg.askMbway', { phone: formatMbway(mbwayPhone) })
+    : t('msg.ask')
+  return t('msg.reminder', { name: friendName, value: eur(amount), detail, ask })
 }
 
 // Sem telefone o link abre na mesma, deixando o utilizador escolher o contacto.
@@ -66,10 +67,10 @@ export function ledgerSummaryText({ friendName, entries, balance }) {
 
   const balanceLine =
     Math.abs(balance) < 0.005
-      ? 'Estão quites.'
+      ? t('msg.even')
       : balance > 0
-        ? `Saldo atual: ${friendName} deve-te ${eur(balance)}.`
-        : `Saldo atual: deves ${eur(Math.abs(balance))} a ${friendName}.`
+        ? t('msg.owesYou', { name: friendName, value: eur(balance) })
+        : t('msg.youOwe', { name: friendName, value: eur(Math.abs(balance)) })
 
-  return [`Conta-corrente com ${friendName} — FinançasApp`, '', ...lines, '', balanceLine].join('\n')
+  return [t('msg.header', { name: friendName }), '', ...lines, '', balanceLine].join('\n')
 }

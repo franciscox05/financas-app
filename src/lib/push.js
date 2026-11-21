@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js'
 import { deletePushSubscription, upsertPushSubscription } from './db'
 
 function urlBase64ToUint8Array(base64String) {
@@ -19,11 +20,11 @@ export async function getExistingSubscription() {
 
 export async function subscribeToPush() {
   const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY
-  if (!vapidKey) throw new Error('VITE_VAPID_PUBLIC_KEY não configurada.')
+  if (!vapidKey) throw new Error(t('push.noKey'))
 
   const permission = await Notification.requestPermission()
   if (permission !== 'granted') {
-    throw new Error('Permissão de notificações não concedida.')
+    throw new Error(t('push.denied'))
   }
 
   const registration = await navigator.serviceWorker.ready

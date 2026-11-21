@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js'
 import { eur } from './format.js'
 
 // Devolução maior que o saldo: o excedente passa a ser dívida do outro lado.
@@ -6,7 +7,7 @@ export function overshootNote(kind, balance, amount) {
   const overshoot = Math.round(Math.abs(Number(amount)) * 100) - Math.round(Math.abs(Number(balance)) * 100)
   if (!(overshoot > 0)) return null
   const x = eur(overshoot / 100)
-  return kind === 'repaid_to_me' ? `Passa a ficar a dever-lhe ${x}` : `Passa a ficar a dever-te ${x}`
+  return kind === 'repaid_to_me' ? t('rep.overOwesThem', { value: x }) : t('rep.overOwesYou', { value: x })
 }
 
 // Categoria por defeito para uma devolução: "Devoluções"/"Empréstimos" (dedicadas); se o
