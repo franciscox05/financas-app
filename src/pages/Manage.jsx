@@ -33,13 +33,13 @@ import {
 } from '../lib/db'
 
 const ACCOUNT_GROUPS = [
-  { type: 'cash', label: 'Contas à ordem' },
-  { type: 'investment', label: 'Investimento' },
+  { type: 'cash', labelKey: 'mg.cash' },
+  { type: 'investment', labelKey: 'mg.investment' },
 ]
 
 const CATEGORY_GROUPS = [
-  { type: 'expense', label: 'Gastos', tone: 'negative' },
-  { type: 'income', label: 'Ganhos', tone: 'positive' },
+  { type: 'expense', labelKey: 'list.expenses', tone: 'negative' },
+  { type: 'income', labelKey: 'list.incomes', tone: 'positive' },
 ]
 
 const byName = (a, b) => a.name.localeCompare(b.name, 'pt')
@@ -119,13 +119,13 @@ export default function Manage() {
 
       <div className={cardClass}>
         <EntityManager
-          title="Contas"
+          title={t('mg.accounts')}
           icon={Wallet}
           noun="conta"
           items={accounts}
           groups={ACCOUNT_GROUPS}
           scope="all"
-          deleteWarning="Só é possível apagar se não tiver transações, transferências, atualizações de saldo ou dívidas associadas."
+          deleteWarning={t('mg.accountsDeleteWarn')}
           onCreate={async (values) => {
             const created = await createAccount(values)
             setAccounts((prev) => [...prev, created].sort(byAccountOrder))
@@ -157,14 +157,14 @@ export default function Manage() {
 
       <div className={cardClass}>
         <EntityManager
-          title="Categorias"
+          title={t('mg.categories')}
           icon={Tags}
           noun="categoria"
           items={categories}
           groups={CATEGORY_GROUPS}
           scope="group"
           tabbed
-          deleteWarning="Só é possível apagar se não tiver transações associadas. Regras de categorização desta categoria são apagadas juntamente."
+          deleteWarning={t('mg.categoriesDeleteWarn')}
           onCreate={async (values) => {
             const created = await createCategory(values)
             setCategories((prev) => [...prev, created].sort(byName))
@@ -197,7 +197,7 @@ export default function Manage() {
           linha própria sobre o fundo da página, que abre no sítio. */}
       <div className="space-y-2">
         <h2 className="flex items-center gap-2 px-1 pb-1 text-[1.25rem] font-bold tracking-tight text-label">
-          <SlidersHorizontal size={20} strokeWidth={2.1} aria-hidden="true" className="text-accent" /> Ferramentas avançadas
+          <SlidersHorizontal size={20} strokeWidth={2.1} aria-hidden="true" className="text-accent" /> {t('mg.advanced')}
         </h2>
         <CategoryRulesSection categories={categories} />
         <BankStatementImportSection accounts={accounts} categories={categories} />

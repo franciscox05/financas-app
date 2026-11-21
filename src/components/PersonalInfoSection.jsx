@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { Camera, Pencil } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
@@ -39,7 +40,7 @@ export default function PersonalInfoSection() {
         }
       })
       .catch((err) => {
-        if (mounted.current) setError(err.message || 'Não foi possível carregar o perfil.')
+        if (mounted.current) setError(err.message || t('pi.loadFailed'))
       })
       .finally(() => {
         if (mounted.current) setLoaded(true)
@@ -59,10 +60,10 @@ export default function PersonalInfoSection() {
       if (mounted.current) {
         setValue(draft)
         setEditing(false)
-        toast.success('Nome guardado.')
+        toast.success(t('pi.nameSaved'))
       }
     } catch (err) {
-      if (mounted.current) setError(err.message || 'Não foi possível guardar. Tenta outra vez.')
+      if (mounted.current) setError(err.message || t('sheet.saveRetry'))
     } finally {
       if (mounted.current) setBusy(false)
     }
@@ -86,10 +87,10 @@ export default function PersonalInfoSection() {
         setAvatarPath(path)
         setAvatarVersion((v) => v + 1)
         notifyAvatarChanged()
-        toast.success('Foto atualizada.')
+        toast.success(t('pi.photoUpdated'))
       }
     } catch (err) {
-      if (mounted.current) setAvatarError(err.message || 'Não foi possível enviar a foto. Tenta outra vez.')
+      if (mounted.current) setAvatarError(err.message || t('pi.photoFailed'))
     } finally {
       if (mounted.current) setUploadingAvatar(false)
     }
@@ -118,7 +119,7 @@ export default function PersonalInfoSection() {
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploadingAvatar}
-          aria-label="Mudar foto de perfil"
+          aria-label={t('pi.changePhoto')}
           className={`absolute -right-3 -bottom-3 flex size-11 items-center justify-center rounded-full transition-opacity disabled:opacity-60 ${focusRing}`}
         >
           <span className="flex size-8 items-center justify-center rounded-full bg-surface-raised text-label shadow-[var(--shadow-raised)]">
@@ -135,7 +136,7 @@ export default function PersonalInfoSection() {
               type="text"
               autoFocus
               autoComplete="name"
-              placeholder="O teu nome"
+              placeholder={t('pi.namePh')}
               value={draft}
               disabled={busy}
               onChange={(e) => setDraft(e.target.value)}
@@ -148,10 +149,10 @@ export default function PersonalInfoSection() {
             )}
             <div className="flex gap-2">
               <button type="button" disabled={busy} onClick={() => setEditing(false)} className={`${secondaryButton} flex-1`}>
-                Cancelar
+                {t('common.cancel')}
               </button>
               <button type="submit" disabled={busy} className={`${primaryButton} flex-[2]`}>
-                {busy ? 'A guardar...' : 'Guardar'}
+                {busy ? t('common.saving') : t('common.save')}
               </button>
             </div>
           </form>
@@ -160,7 +161,7 @@ export default function PersonalInfoSection() {
             {/* espaço igual ao do lápis, para o nome ficar mesmo ao centro */}
             <span aria-hidden="true" className="size-11 shrink-0" />
             <h1 className="min-w-0 truncate text-[1.75rem] leading-tight font-bold tracking-tight text-label">
-              {loaded ? value || 'Sem nome' : '...'}
+              {loaded ? value || t('pi.noName') : '...'}
             </h1>
             <button
               type="button"
@@ -169,7 +170,7 @@ export default function PersonalInfoSection() {
                 setError('')
                 setEditing(true)
               }}
-              aria-label="Editar nome"
+              aria-label={t('pi.editName')}
               disabled={!loaded}
               className={`pressable flex size-11 shrink-0 items-center justify-center rounded-full text-accent disabled:opacity-40 ${focusRing}`}
             >

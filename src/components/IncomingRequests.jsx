@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { listIncomingRequests, respondFriendRequest } from '../lib/linkedDb'
@@ -46,11 +47,11 @@ export default function IncomingRequests({ onChanged }) {
         toast.success(
           accept
             ? request.via === 'phone'
-              ? `Aceitaste o pedido de ${request.from_name}.`
-              : `Ligaste-te a ${request.from_name}.`
+              ? t('inc.acceptedPhone', { name: request.from_name })
+              : t('inc.linked', { name: request.from_name })
             : request.awaiting
-              ? 'Pedido retirado.'
-              : 'Pedido recusado.',
+              ? t('inc.withdrawn')
+              : t('inc.refused'),
         )
       }
       notifyPendingChanged()
@@ -69,10 +70,10 @@ export default function IncomingRequests({ onChanged }) {
 
   return (
     <section
-      aria-label="Pedidos de amizade"
+      aria-label={t('inc.title')}
       className="space-y-3 rounded-control border border-separator bg-surface p-4"
     >
-      <h3 className="text-sm font-semibold text-label-2">Pedidos de amizade ({requests.length})</h3>
+      <h3 className="text-sm font-semibold text-label-2">{t('inc.titleN', { n: requests.length })}</h3>
 
       {error && (
         <p role="alert" className="text-sm text-negative">
@@ -85,17 +86,17 @@ export default function IncomingRequests({ onChanged }) {
           <li key={request.id} className="space-y-2 py-3 first:pt-0 last:pb-0">
             {request.awaiting ? (
               <p className="text-sm text-label">
-                Aceitaste o pedido de <span className="font-medium">{request.from_name}</span>. À espera que
-                confirme.
+                {t('inc.awaitingPre')} <span className="font-medium">{request.from_name}</span>
+                {t('inc.awaitingPost')}
               </p>
             ) : (
               <p className="text-sm text-label">
-                <span className="font-medium">{request.from_name}</span> quer ligar contas
+                <span className="font-medium">{request.from_name}</span> {t('inc.wantsLink')}
               </p>
             )}
             {request.via === 'phone' && !request.awaiting && (
               <p className="text-xs text-label-2">
-                Ao aceitares, {request.from_name} vê o teu nome e o teu email.
+                {t('inc.privacy', { name: request.from_name })}
               </p>
             )}
             <div className="flex gap-2">
@@ -106,7 +107,7 @@ export default function IncomingRequests({ onChanged }) {
                   onClick={() => respond(request, true)}
                   className={primaryButton}
                 >
-                  {busyId === request.id ? 'A responder...' : 'Aceitar'}
+                  {busyId === request.id ? t('freq.responding') : t('pend.accept')}
                 </button>
               )}
               <button
@@ -115,7 +116,7 @@ export default function IncomingRequests({ onChanged }) {
                 onClick={() => respond(request, false)}
                 className={secondaryButton}
               >
-                {request.awaiting ? (busyId === request.id ? 'A retirar...' : 'Retirar') : 'Recusar'}
+                {request.awaiting ? (busyId === request.id ? t('inc.withdrawing') : t('inc.withdraw')) : t('pend.refuse')}
               </button>
             </div>
           </li>

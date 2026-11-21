@@ -111,7 +111,7 @@ export default function Friends() {
       }
     } catch (err) {
       if (!mounted.current) return
-      if (err instanceof Error && err.message.startsWith('Amigo criado, mas ')) {
+      if (err instanceof Error && err.friendCreated) {
         // O amigo existe; só o pedido falhou. Fecha o formulário e mostra o motivo.
         resetForm()
         await load()
@@ -141,7 +141,7 @@ export default function Friends() {
   }
 
   const addButton = (
-    <IconButton label="Adicionar amigo" tone="accent" onClick={() => setShowForm(true)}>
+    <IconButton label={t('fr.add')} tone="accent" onClick={() => setShowForm(true)}>
       <Plus size={26} strokeWidth={2.1} aria-hidden="true" />
     </IconButton>
   )

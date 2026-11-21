@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js'
 // Relatório mensal detalhado, para o mês atual ou qualquer mês do histórico.
 // Só transformação de dados — quem chama (Balance.jsx) já tem tudo calculado
 // para o ecrã e passa-o para cá, sem pedidos novos à base de dados.
@@ -67,7 +68,7 @@ export function expenseByAccount(transactions) {
   const byAccount = new Map()
   for (const tx of transactions) {
     if (tx.type !== 'expense') continue
-    const name = tx.accounts?.name ?? 'Sem conta'
+    const name = tx.accounts?.name ?? t('common.noAccount')
     byAccount.set(name, (byAccount.get(name) ?? 0) + Number(tx.amount))
   }
   return [...byAccount.entries()]
@@ -79,17 +80,17 @@ function summarySection({ monthLabel, income, expense, savingsAmount }) {
   const saldo = netSavings(income, expense)
   const rate = savingsRate(income, expense)
   return {
-    title: `Resumo de ${monthLabel}`,
+    title: t('r.summaryOf', { month: monthLabel }),
     headers: [
-      { label: 'Indicador', value: (r) => r.label },
-      { label: 'Valor', value: (r) => r.value },
+      { label: t('r.indicator'), value: (r) => r.label },
+      { label: t('r.value'), value: (r) => r.value },
     ],
     rows: [
-      { label: 'Receitas', value: eur(income) },
-      { label: 'Despesas', value: eur(expense) },
-      { label: 'Poupança líquida', value: eur(saldo) },
-      { label: 'Taxa de poupança', value: rate === null ? '—' : `${rate}%` },
-      { label: 'Para poupança/investimento', value: eur(savingsAmount) },
+      { label: t('r.income'), value: eur(income) },
+      { label: t('r.expense'), value: eur(expense) },
+      { label: t('r.netSavings'), value: eur(saldo) },
+      { label: t('r.savingsRate'), value: rate === null ? '—' : `${rate}%` },
+      { label: t('r.toSavings'), value: eur(savingsAmount) },
     ],
   }
 }
@@ -98,9 +99,9 @@ function categorySection(title, breakdown, total) {
   return {
     title,
     headers: [
-      { label: 'Categoria', value: (r) => r.name },
-      { label: 'Valor', value: (r) => eur(r.amount) },
-      { label: '% do total', value: (r) => (total > 0 ? `${Math.round((r.amount / total) * 100)}%` : '—') },
+      { label: t('r.category'), value: (r) => r.name },
+      { label: t('r.value'), value: (r) => eur(r.amount) },
+      { label: t('r.pctTotal'), value: (r) => (total > 0 ? `${Math.round((r.amount / total) * 100)}%` : '—') },
     ],
     rows: breakdown.map((c) => ({ name: c.name, amount: c.amount })),
   }
@@ -108,13 +109,13 @@ function categorySection(title, breakdown, total) {
 
 function topExpensesSection(transactions) {
   return {
-    title: 'Maiores despesas do mês',
+    title: t('r.topExpenses'),
     headers: [
-      { label: 'Data', value: (r) => shortDate(r.occurred_on) },
-      { label: 'Descrição', value: (r) => r.note || '(sem nota)' },
-      { label: 'Categoria', value: (r) => r.categories?.name ?? 'Sem categoria' },
-      { label: 'Conta', value: (r) => r.accounts?.name ?? '—' },
-      { label: 'Valor', value: (r) => eur(Number(r.amount)) },
+      { label: t('r.date'), value: (r) => shortDate(r.occurred_on) },
+      { label: t('r.description'), value: (r) => r.note || t('rc.noNote') },
+      { label: t('r.category'), value: (r) => r.categories?.name ?? t('common.noCategory') },
+      { label: t('r.account'), value: (r) => r.accounts?.name ?? '—' },
+      { label: t('r.value'), value: (r) => eur(Number(r.amount)) },
     ],
     rows: topExpenses(transactions),
   }
@@ -122,12 +123,12 @@ function topExpensesSection(transactions) {
 
 function evolutionSection(evolution) {
   return {
-    title: 'Evolução (6 meses até ao mês selecionado)',
+    title: t('r.evolution'),
     headers: [
-      { label: 'Mês', value: (r) => r.label },
-      { label: 'Receitas', value: (r) => eur(r.income) },
-      { label: 'Despesas', value: (r) => eur(r.expense) },
-      { label: 'Saldo', value: (r) => eur(r.income - r.expense) },
+      { label: t('r.month'), value: (r) => r.label },
+      { label: t('r.income'), value: (r) => eur(r.income) },
+      { label: t('r.expense'), value: (r) => eur(r.expense) },
+      { label: t('r.balance'), value: (r) => eur(r.income - r.expense) },
     ],
     rows: evolution,
   }
@@ -136,10 +137,10 @@ function evolutionSection(evolution) {
 export function monthlyReportSections(data) {
   const sections = [
     summarySection(data),
-    categorySection('Despesas por categoria', data.expenseByCategory, data.expense),
+    categorySection(t('r.expenseByCat'), data.expenseByCategory, data.expense),
   ]
   if (data.incomeByCategory.length > 0) {
-    sections.push(categorySection('Receitas por categoria', data.incomeByCategory, data.income))
+    sections.push(categorySection(t('r.incomeByCat'), data.incomeByCategory, data.income))
   }
   if (data.transactions.some((tx) => tx.type === 'expense')) {
     sections.push(topExpensesSection(data.transactions))
@@ -164,25 +165,25 @@ export function monthlyReportFilename(monthKeyValue) {
 export function monthlyReportText(data) {
   const saldo = netSavings(data.income, data.expense)
   const lines = [
-    `Relatório de ${data.monthLabel}`,
+    t('r.reportOf', { month: data.monthLabel }),
     '',
-    `Receitas: ${eur(data.income)}`,
-    `Despesas: ${eur(data.expense)}`,
-    `${saldo >= 0 ? 'Poupei' : 'Fiquei a descoberto'}: ${eur(Math.abs(saldo))}`,
+    `${t('r.income')}: ${eur(data.income)}`,
+    `${t('r.expense')}: ${eur(data.expense)}`,
+    `${saldo >= 0 ? t('r.saved') : t('r.overspent')}: ${eur(Math.abs(saldo))}`,
   ]
   if (data.savingsAmount > 0) {
-    lines.push(`Para poupança/investimento: ${eur(data.savingsAmount)}`)
+    lines.push(`${t('r.toSavings')}: ${eur(data.savingsAmount)}`)
   }
 
   const top = data.expenseByCategory.slice(0, 3)
   if (top.length > 0) {
-    lines.push('', 'Onde foi o dinheiro:')
+    lines.push('', t('r.whereMoney'))
     for (const c of top) lines.push(`- ${c.name}: ${eur(c.amount)}`)
   }
 
   const biggest = topExpenses(data.transactions, 1)[0]
   if (biggest) {
-    lines.push('', `Maior despesa: ${biggest.note || '(sem nota)'} — ${eur(Number(biggest.amount))}`)
+    lines.push('', t('r.biggest', { what: biggest.note || t('rc.noNote'), value: eur(Number(biggest.amount)) }))
   }
   return lines.join('\n')
 }

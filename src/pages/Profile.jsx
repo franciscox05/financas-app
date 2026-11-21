@@ -29,7 +29,7 @@ export default function Profile() {
           to="/"
           className={`pressable -ml-2 inline-flex min-h-11 items-center gap-0.5 rounded-control pr-3 pl-1 text-[1.0625rem] text-accent ${focusRing}`}
         >
-          <ChevronLeft size={24} strokeWidth={2.1} aria-hidden="true" /> Início
+          <ChevronLeft size={24} strokeWidth={2.1} aria-hidden="true" /> {t('prof.home')}
         </Link>
       </header>
 
@@ -37,7 +37,7 @@ export default function Profile() {
 
       <Card as="section" className="space-y-3">
         <h2 className={cardTitleClass}>
-          <Phone size={14} aria-hidden="true" /> Contactos para Amigos
+          <Phone size={14} aria-hidden="true" /> {t('prof.contacts')}
         </h2>
         <MyPhoneSection />
         <MbwayPhoneSection />
@@ -45,14 +45,14 @@ export default function Profile() {
 
       <Card as="section" className="space-y-3">
         <h2 className={cardTitleClass}>
-          <Target size={14} aria-hidden="true" /> Objetivos
+          <Target size={14} aria-hidden="true" /> {t('prof.goals')}
         </h2>
         <GoalsSection />
       </Card>
 
       <Card as="section" className="space-y-3">
         <h2 className={cardTitleClass}>
-          <StickyNote size={14} aria-hidden="true" /> Notas
+          <StickyNote size={14} aria-hidden="true" /> {t('prof.notes')}
         </h2>
         <NotesCalendar />
       </Card>

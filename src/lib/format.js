@@ -1,3 +1,4 @@
+import { getLanguage, languageInfo } from '../i18n/index.js'
 // Formatação de montantes. Único sítio onde se formata dinheiro — evita cada
 // ecrã ter o seu toFixed(2), que dava "483.83 €" (ponto decimal, estilo inglês).
 // O idioma e a moeda vêm do perfil (onboarding); por defeito pt-PT e euro:
@@ -76,5 +77,11 @@ const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', '
 // Date, para não haver desvios de fuso.
 export function shortDate(iso, { withYear = false } = {}) {
   const [year, month, day] = iso.split('-').map(Number)
-  return `${day} ${MONTHS[month - 1]}${withYear ? ` ${year}` : ''}`
+  // Em português mantém-se a forma curta da app ("19 out"); nos outros idiomas
+  // usa-se o nome curto do mês desse idioma ("19 Oct").
+  const monthName =
+    getLanguage() === 'pt'
+      ? MONTHS[month - 1]
+      : new Date(2000, month - 1, 1).toLocaleDateString(languageInfo().locale, { month: 'short' }).replace('.', '')
+  return `${day} ${monthName}${withYear ? ` ${year}` : ''}`
 }

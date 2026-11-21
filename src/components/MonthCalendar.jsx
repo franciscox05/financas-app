@@ -1,9 +1,16 @@
+import { languageInfo, t } from '../i18n'
 import { useMemo, useState } from 'react'
 import { eurCompact, eurSigned } from '../lib/format'
 import Money from './Money'
 import Card from './Card'
 
-const WEEKDAY_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+// Dias da semana (segunda primeiro) no idioma ativo; 1/1/2024 foi uma segunda-feira.
+function weekdayLabels() {
+  return Array.from({ length: 7 }, (_, i) => {
+    const s = new Date(2024, 0, 1 + i).toLocaleDateString(languageInfo().locale, { weekday: 'short' }).replace('.', '')
+    return s.charAt(0).toUpperCase() + s.slice(1, 3)
+  })
+}
 
 // Resumo do dia aberto: num dia só de gastos (ou só de ganhos) basta o total;
 // num dia misto discrimina Ganhos / Gastos / Saldo, porque o número da célula
@@ -15,18 +22,18 @@ function DaySummary({ entry }) {
     <dl className="space-y-0.5 border-t border-separator pt-1.5 text-sm">
       {mixed ? (
         <>
-          <SummaryRow label="Ganhos" tone="text-positive">
+          <SummaryRow label={t('list.incomes')} tone="text-positive">
             {eurSigned(entry.income)}
           </SummaryRow>
-          <SummaryRow label="Gastos" tone="text-negative">
+          <SummaryRow label={t('list.expenses')} tone="text-negative">
             {eurSigned(-entry.expense)}
           </SummaryRow>
-          <SummaryRow label="Saldo do dia" tone={net >= 0 ? 'text-positive' : 'text-negative'} bold>
+          <SummaryRow label={t('cal.dayBalance')} tone={net >= 0 ? 'text-positive' : 'text-negative'} bold>
             {eurSigned(net)}
           </SummaryRow>
         </>
       ) : (
-        <SummaryRow label="Total do dia" tone={net >= 0 ? 'text-positive' : 'text-negative'} bold>
+        <SummaryRow label={t('cal.dayTotal')} tone={net >= 0 ? 'text-positive' : 'text-negative'} bold>
           {eurSigned(net)}
         </SummaryRow>
       )}
@@ -84,11 +91,11 @@ export default function MonthCalendar({ monthDate, transactions }) {
 
   return (
     <Card as="section" className="space-y-3">
-      <h3 className="text-center text-sm font-semibold text-label-2">Calendário do mês</h3>
+      <h3 className="text-center text-sm font-semibold text-label-2">{t('cal.title')}</h3>
 
       <div className="space-y-3">
         <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-label-3">
-          {WEEKDAY_LABELS.map((label) => (
+          {weekdayLabels().map((label) => (
             <div key={label}>{label}</div>
           ))}
         </div>
@@ -136,16 +143,16 @@ export default function MonthCalendar({ monthDate, transactions }) {
 
         {selectedDay && (
           <div className="space-y-1.5 rounded-control border border-separator p-2">
-            <h4 className="text-xs font-semibold text-label-2">Dia {selectedDay}</h4>
+            <h4 className="text-xs font-semibold text-label-2">{t('cal.day', { day: selectedDay })}</h4>
             {!selectedEntry || selectedEntry.txs.length === 0 ? (
-              <p className="py-1 text-center text-xs text-label-3">Sem transações.</p>
+              <p className="py-1 text-center text-xs text-label-3">{t('cal.noTx')}</p>
             ) : (
               <ul className="divide-y divide-separator">
                 {selectedEntry.txs.map((tx) => (
                   <li key={tx.id} className="flex items-center justify-between gap-2 py-1.5 text-sm">
                     <span className="min-w-0 truncate text-label">
-                      {tx.note || tx.categories?.name || 'Sem nota'}
-                      {tx.note && ` · ${tx.categories?.name ?? 'Sem categoria'}`}
+                      {tx.note || tx.categories?.name || t('common.noNote')}
+                      {tx.note && ` · ${tx.categories?.name ?? t('common.noCategory')}`}
                     </span>
                     <span
                       className={`shrink-0 font-medium ${

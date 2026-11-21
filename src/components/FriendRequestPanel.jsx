@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { Link2 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useToast } from '../context/toastContext'
@@ -98,7 +99,7 @@ export default function FriendRequestPanel({ friend, onChanged }) {
     if (busy) return
     const valid = normalizeEmail(email)
     if (!valid) {
-      setError('Escreve um email válido.')
+      setError(t('freq.invalidEmail'))
       return
     }
     setBusy(true)
@@ -107,7 +108,7 @@ export default function FriendRequestPanel({ friend, onChanged }) {
       await sendFriendRequest({ friendId, email: valid })
       notifyPendingChanged()
       if (!mounted.current) return
-      toast.success('Pedido enviado.')
+      toast.success(t('freq.sent'))
       setShowForm(false)
       setEmail('')
       await loadRequest()
@@ -127,7 +128,7 @@ export default function FriendRequestPanel({ friend, onChanged }) {
       await sendFriendRequestByPhone(friendId)
       notifyPendingChanged()
       if (!mounted.current) return
-      toast.success('Pedido enviado.')
+      toast.success(t('freq.sent'))
       await loadRequest()
       onChanged?.()
     } catch (err) {
@@ -145,7 +146,7 @@ export default function FriendRequestPanel({ friend, onChanged }) {
       await confirmFriendRequest(request.id, confirm, accepter.accepterId)
       notifyPendingChanged()
       if (!mounted.current) return
-      toast.success(confirm ? 'Contas ligadas.' : 'Não ligámos. O pedido continua à espera da pessoa certa.')
+      toast.success(confirm ? t('freq.linked') : t('freq.notLinked'))
       await loadRequest()
       onChanged?.()
     } catch (err) {
@@ -164,7 +165,7 @@ export default function FriendRequestPanel({ friend, onChanged }) {
       await cancelFriendRequest(request.id)
       notifyPendingChanged()
       if (!mounted.current) return
-      toast.success('Pedido cancelado.')
+      toast.success(t('freq.cancelled'))
       await loadRequest()
       onChanged?.()
     } catch (err) {
@@ -183,7 +184,7 @@ export default function FriendRequestPanel({ friend, onChanged }) {
   if (connected) {
     return (
       <p className="inline-flex items-center gap-1.5 rounded-full bg-positive/10 px-3 py-1 text-sm font-medium text-positive">
-        <Link2 size={14} aria-hidden="true" /> Ligado
+        <Link2 size={14} aria-hidden="true" /> {t('freq.linkedBadge')}
       </p>
     )
   }
@@ -192,7 +193,7 @@ export default function FriendRequestPanel({ friend, onChanged }) {
     return (
       <div
         role="status"
-        aria-label="A carregar"
+        aria-label={t('common.loading')}
         className="h-11 animate-pulse rounded-control bg-fill-strong motion-reduce:animate-none"
       />
     )
@@ -216,7 +217,7 @@ export default function FriendRequestPanel({ friend, onChanged }) {
         {accepterLoading ? (
           <div
             role="status"
-            aria-label="A carregar"
+            aria-label={t('common.loading')}
             className="h-10 animate-pulse rounded-control bg-fill-strong motion-reduce:animate-none"
           />
         ) : accepter ? (
@@ -224,11 +225,11 @@ export default function FriendRequestPanel({ friend, onChanged }) {
             <span className="font-medium">
               {accepter.name} ({accepter.emailHint})
             </span>{' '}
-            aceitou o teu pedido. É mesmo a pessoa que querias?
+            {t('freq.acceptedBy')}
           </p>
         ) : (
           <p className="text-sm text-label">
-            Alguém aceitou o teu pedido, mas não foi possível ver quem. Podes cancelar e tentar outra vez.
+            {t('freq.unknownAccepter')}
           </p>
         )}
         {errorLine}
@@ -236,15 +237,15 @@ export default function FriendRequestPanel({ friend, onChanged }) {
           {accepter && (
             <>
               <button type="button" onClick={() => handleConfirm(true)} disabled={busy} className={primaryButton}>
-                {busy ? 'A responder...' : 'Sim, ligar'}
+                {busy ? t('freq.responding') : t('freq.yesLink')}
               </button>
               <button type="button" onClick={() => handleConfirm(false)} disabled={busy} className={secondaryButton}>
-                Não é ele/ela
+                {t('freq.notThem')}
               </button>
             </>
           )}
           <button type="button" onClick={handleCancel} disabled={busy} className={secondaryButton}>
-            Cancelar pedido
+            {t('freq.cancelRequest')}
           </button>
         </div>
       </div>
@@ -257,25 +258,25 @@ export default function FriendRequestPanel({ friend, onChanged }) {
         <p className="text-sm text-label">
           {request?.to_phone ? (
             <>
-              Pedido enviado ao número <span className="font-medium">{maskPhone(request.to_phone)}</span>
+              {t('freq.sentToNumber')} <span className="font-medium">{maskPhone(request.to_phone)}</span>
             </>
           ) : request?.to_email ? (
             <>
-              Pedido enviado a <span className="font-medium">{request.to_email}</span>
+              {t('freq.sentTo')} <span className="font-medium">{request.to_email}</span>
             </>
           ) : (
-            'Pedido enviado'
+            t('freq.sentPlain')
           )}
         </p>
-        <p className="text-xs text-label-2">Fica a aguardar que a pessoa aceite.</p>
+        <p className="text-xs text-label-2">{t('freq.waiting')}</p>
         {errorLine}
         {request ? (
           <button type="button" onClick={handleCancel} disabled={busy} className={secondaryButton}>
-            {busy ? 'A cancelar...' : 'Cancelar pedido'}
+            {busy ? t('pend.cancelling') : t('freq.cancelRequest')}
           </button>
         ) : (
           <button type="button" onClick={loadRequest} disabled={busy} className={secondaryButton}>
-            Tentar outra vez
+            {t('freq.tryAgain')}
           </button>
         )}
       </div>
@@ -287,7 +288,7 @@ export default function FriendRequestPanel({ friend, onChanged }) {
       <form onSubmit={handleSend} className={boxClass}>
         <div>
           <label htmlFor="friend-request-email" className="mb-1 block text-xs font-medium text-label-2">
-            Email da pessoa
+            {t('freq.emailLabel')}
           </label>
           <input
             id="friend-request-email"
@@ -295,20 +296,20 @@ export default function FriendRequestPanel({ friend, onChanged }) {
             inputMode="email"
             autoComplete="off"
             autoFocus
-            placeholder="Ex: nome@email.com"
+            placeholder={t('freq.emailPh')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className={inputClass}
           />
-          <p className="mt-1 text-xs text-label-2">Tem de ser o email com que ela criou a conta.</p>
+          <p className="mt-1 text-xs text-label-2">{t('freq.emailHelp')}</p>
         </div>
         {errorLine}
         <div className="flex gap-2">
           <button type="submit" disabled={busy} className={primaryButton}>
-            {busy ? 'A enviar...' : 'Enviar pedido'}
+            {busy ? t('pend.sending') : t('freq.send')}
           </button>
           <button type="button" disabled={busy} onClick={() => setShowForm(false)} className={secondaryButton}>
-            Cancelar
+            {t('common.cancel')}
           </button>
         </div>
       </form>
@@ -321,22 +322,22 @@ export default function FriendRequestPanel({ friend, onChanged }) {
     <div className={boxClass}>
       {declined ? (
         <p className="text-sm text-label">
-          <span className="font-medium">Recusado</span>
-          {request.to_email ? ` por ${request.to_email}` : ''}
+          <span className="font-medium">{t('freq.declined')}</span>
+          {request.to_email ? t('freq.declinedBy', { email: request.to_email }) : ''}
         </p>
       ) : (
         <p className="text-sm text-label-2">
-          Liga-te a {friend.name} para os dois verem os mesmos movimentos.
+          {t('freq.linkPrompt', { name: friend.name })}
         </p>
       )}
       {errorLine}
       {hasPhone ? (
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" onClick={handleSendPhone} disabled={busy} className={primaryButton}>
-            {busy ? 'A enviar...' : declined ? 'Pedir de novo' : 'Pedir amizade'}
+            {busy ? t('pend.sending') : declined ? t('freq.askAgain') : t('freq.ask')}
           </button>
           <button type="button" onClick={() => openForm(emailPrefill)} disabled={busy} className={textButton}>
-            Pedir por email
+            {t('freq.byEmail')}
           </button>
         </div>
       ) : (
@@ -346,10 +347,10 @@ export default function FriendRequestPanel({ friend, onChanged }) {
             onClick={() => openForm(emailPrefill)}
             className={declined ? secondaryButton : primaryButton}
           >
-            {declined ? 'Reenviar' : 'Pedir amizade'}
+            {declined ? t('freq.resend') : t('freq.ask')}
           </button>
           <p className="text-xs text-label-2">
-            Guarda também o número de telemóvel de {friend.name} para o poderes procurar só pelo número.
+            {t('freq.savePhone', { name: friend.name })}
           </p>
         </>
       )}

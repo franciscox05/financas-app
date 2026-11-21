@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import ConfirmDialog from './ConfirmDialog'
@@ -15,13 +16,13 @@ export default function SignOutButton() {
         onClick={() => setConfirming(true)}
         className={`${dangerButton} w-full`}
       >
-        Terminar sessão
+        {t('signout.button')}
       </button>
       <ConfirmDialog
         open={confirming}
-        title="Terminar sessão?"
-        message="Vais ter de entrar novamente para voltar a ver os teus dados."
-        confirmLabel="Terminar sessão"
+        title={t('signout.q')}
+        message={t('signout.msg')}
+        confirmLabel={t('signout.button')}
         onCancel={() => setConfirming(false)}
         onConfirm={() => {
           setConfirming(false)

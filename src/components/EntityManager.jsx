@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { GripVertical, HandCoins, Pencil, PiggyBank, TrendingUp, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useToast } from '../context/toastContext'
@@ -72,7 +73,7 @@ function ManageRow({
     e.preventDefault()
     const value = parseBalanceValue(newBalance)
     if (value === null) {
-      setError(newBalance.trim() === '' ? 'Escreve o saldo atual da conta (ex.: 150,27).' : 'Indica um valor válido (ex.: 150,27).')
+      setError(newBalance.trim() === '' ? t('em.err.balanceEmpty') : t('em.err.balanceInvalid'))
       return
     }
     setError('')
@@ -114,7 +115,7 @@ function ManageRow({
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={MAX_NAME_LENGTH}
-            aria-label={`Novo nome para ${item.name}`}
+            aria-label={t('em.newNameFor', { name: item.name })}
             className={inputClass}
           />
           {error && (
@@ -128,7 +129,7 @@ function ManageRow({
               disabled={busy}
               className={`${primaryButton} flex-1`}
             >
-              {busy ? 'A guardar...' : 'Guardar'}
+              {busy ? t('common.saving') : t('common.save')}
             </button>
             <button
               type="button"
@@ -136,7 +137,7 @@ function ManageRow({
               disabled={busy}
               className={`${secondaryButton} flex-1`}
             >
-              Cancelar
+              {t('common.cancel')}
             </button>
           </div>
         </form>
@@ -151,7 +152,7 @@ function ManageRow({
           {dragHandleProps && (
             <button
               type="button"
-              aria-label={`Arrastar para reordenar ${item.name}`}
+              aria-label={t('em.dragToReorder', { name: item.name })}
               className="-ml-3 flex h-11 w-9 shrink-0 items-center justify-center rounded-control text-label-3"
               {...dragHandleProps}
             >
@@ -174,10 +175,10 @@ function ManageRow({
               onClick={() => onToggleSavings(item, !item.is_savings)}
               title={
                 item.is_savings
-                  ? 'Marcada como poupança/investimento — não conta como gasto do dia a dia no resumo'
-                  : 'Marcar como poupança/investimento'
+                  ? t('em.savingsOn')
+                  : t('em.savingsMark')
               }
-              aria-label={item.is_savings ? 'Poupança/investimento: ativo' : 'Marcar como poupança/investimento'}
+              aria-label={item.is_savings ? t('em.savingsActive') : t('em.savingsMark')}
               aria-pressed={item.is_savings}
               className={`flex size-11 shrink-0 items-center justify-center rounded-full ${
                 item.is_savings
@@ -196,10 +197,10 @@ function ManageRow({
               onClick={() => onToggleLending(item, !item.is_lending)}
               title={
                 item.is_lending
-                  ? 'Marcada como empréstimo/devolução — não conta como gasto nem ganho do mês, aparece à parte'
-                  : 'Marcar como empréstimo/devolução'
+                  ? t('em.lendingOn')
+                  : t('em.lendingMark')
               }
-              aria-label={item.is_lending ? 'Empréstimo/devolução: ativo' : 'Marcar como empréstimo/devolução'}
+              aria-label={item.is_lending ? t('em.lendingActive') : t('em.lendingMark')}
               aria-pressed={Boolean(item.is_lending)}
               className={`flex size-11 shrink-0 items-center justify-center rounded-full ${
                 item.is_lending ? 'text-accent' : 'text-label-3'
@@ -214,8 +215,8 @@ function ManageRow({
             <button
               type="button"
               onClick={() => setUpdatingBalance((v) => !v)}
-              aria-label={`Atualizar saldo de ${item.name}`}
-              title="Atualizar saldo (regista o valor de hoje)"
+              aria-label={t('em.updateBalanceOf', { name: item.name })}
+              title={t('em.updateBalanceTitle')}
               className={`${iconButton} text-accent`}
             >
               <TrendingUp size={19} aria-hidden="true" />
@@ -224,7 +225,7 @@ function ManageRow({
           <button
             type="button"
             onClick={() => setEditing(true)}
-            aria-label={`Renomear ${item.name}`}
+            aria-label={t('em.rename', { name: item.name })}
             className={`${iconButton} text-label-2`}
           >
             <Pencil size={18} aria-hidden="true" />
@@ -234,7 +235,7 @@ function ManageRow({
             onClick={() => setConfirmingDelete(true)}
             disabled={!canDelete || busy}
             title={canDelete ? undefined : deleteHint}
-            aria-label={`Apagar ${item.name}`}
+            aria-label={t('em.delete', { name: item.name })}
             className={`${iconButton} text-label-2 disabled:cursor-not-allowed disabled:opacity-30`}
           >
             <Trash2 size={18} aria-hidden="true" />
@@ -249,13 +250,13 @@ function ManageRow({
             autoFocus
             type="text"
             inputMode="decimal"
-            placeholder={`Valor atual (${currencySymbol()})`}
+            placeholder={t('em.currentValue', { symbol: currencySymbol() })}
             value={newBalance}
             onChange={(e) => {
               setNewBalance(e.target.value)
               if (error) setError('')
             }}
-            aria-label={`Novo saldo de ${item.name}`}
+            aria-label={t('em.newBalanceOf', { name: item.name })}
             aria-invalid={Boolean(error)}
             className={`${inputClass} flex-1`}
           />
@@ -270,21 +271,21 @@ function ManageRow({
       )}
       <ConfirmDialog
         open={pendingBalance !== null}
-        title={`Atualizar o saldo de "${item.name}"?`}
+        title={t('em.updateBalanceQ', { name: item.name })}
         message={
           pendingBalance === null
             ? ''
-            : `${balance !== undefined ? `Passa de ${eur(balance)} para ${eur(pendingBalance)}.` : `Novo saldo: ${eur(pendingBalance)}.`} A partir de hoje a app usa este valor como saldo real da conta.`
+            : `${balance !== undefined ? t('em.balanceFromTo', { from: eur(balance), to: eur(pendingBalance) }) : t('em.balanceNew', { to: eur(pendingBalance) })} ${t('em.balanceFromToday')}`
         }
-        confirmLabel="Atualizar saldo"
+        confirmLabel={t('em.updateBalance')}
         onConfirm={confirmSaveBalance}
         onCancel={() => setPendingBalance(null)}
       />
       <ConfirmDialog
         open={confirmingDelete}
-        title={`Apagar "${item.name}"?`}
+        title={t('em.deleteQ', { name: item.name })}
         message={deleteWarning}
-        confirmLabel="Apagar"
+        confirmLabel={t('common.delete')}
         onConfirm={handleDelete}
         onCancel={() => setConfirmingDelete(false)}
       />
@@ -319,6 +320,8 @@ export default function EntityManager({
   onReorder, // (groupItems, id, 'up'|'down') => Promise; só as contas usam
 }) {
   const toast = useToast()
+  // Textos com género e número próprios por entidade (ver em.account.* / em.category.*).
+  const kindKey = noun === 'conta' ? 'account' : 'category'
   const [newName, setNewName] = useState('')
   const [newType, setNewType] = useState(groups[0].type)
   const [error, setError] = useState('')
@@ -346,9 +349,9 @@ export default function EntityManager({
     try {
       await onCreate({ name: result.name, type: newType })
       setNewName('')
-      toast.success(`${noun[0].toUpperCase()}${noun.slice(1)} "${result.name}" criada.`)
+      toast.success(t(`em.${kindKey}.created`, { name: result.name }))
     } catch (err) {
-      toast.error(`Não foi possível criar: ${err.message}`)
+      toast.error(t('em.createFailed', { msg: err.message }))
     } finally {
       setSubmitting(false)
     }
@@ -357,9 +360,9 @@ export default function EntityManager({
   async function handleRename(item, name) {
     try {
       await onRename(item, name)
-      toast.success(`Renomeada para "${name}".`)
+      toast.success(t('em.renamed', { name }))
     } catch (err) {
-      toast.error(`Não foi possível renomear: ${err.message}`)
+      toast.error(t('em.renameFailed', { msg: err.message }))
       throw err
     }
   }
@@ -370,9 +373,9 @@ export default function EntityManager({
       // Só é possível apagar quando nada referencia o item (apagar bloqueia
       // com transações/categorias associadas), por isso recriar com o mesmo
       // nome e tipo é sempre uma restauração completa e fiel.
-      toast.success(`"${item.name}" apagada.`, {
+      toast.success(t('em.deleted', { name: item.name }), {
         action: {
-          label: 'Desfazer',
+          label: t('common.undo'),
           onClick: async () => {
             try {
               const restored = await onCreate({ name: item.name, type: item.type })
@@ -381,7 +384,7 @@ export default function EntityManager({
               }
               toast.success(`"${item.name}" restaurada.`)
             } catch (err) {
-              toast.error(`Não foi possível desfazer: ${err.message}`)
+              toast.error(t('common.undoFailed', { msg: err.message }))
             }
           },
         },
@@ -394,9 +397,9 @@ export default function EntityManager({
   async function handleQuickSnapshot(item, value) {
     try {
       await onQuickSnapshot(item, value)
-      toast.success(`Saldo de "${item.name}" atualizado.`)
+      toast.success(t('em.balanceUpdated', { name: item.name }))
     } catch (err) {
-      toast.error(`Não foi possível atualizar: ${err.message}`)
+      toast.error(t('em.updateFailed', { msg: err.message }))
       throw err
     }
   }
@@ -407,7 +410,7 @@ export default function EntityManager({
     try {
       await onReorder(newGroupOrder)
     } catch (err) {
-      toast.error(`Não foi possível reordenar: ${err.message}`)
+      toast.error(t('em.reorderFailed', { msg: err.message }))
     }
   }
 
@@ -416,11 +419,11 @@ export default function EntityManager({
       await onToggleLending(item, value)
       toast.success(
         value
-          ? `"${item.name}" marcada como empréstimo/devolução: fica fora dos ganhos e gastos do mês.`
-          : `"${item.name}" volta a contar nos ganhos e gastos do mês.`,
+          ? t('em.lendingSet', { name: item.name })
+          : t('em.lendingUnset', { name: item.name }),
       )
     } catch (err) {
-      toast.error(`Não foi possível atualizar: ${err.message}`)
+      toast.error(t('em.updateFailed', { msg: err.message }))
     }
   }
 
@@ -429,11 +432,11 @@ export default function EntityManager({
       await onToggleSavings(item, value)
       toast.success(
         value
-          ? `"${item.name}" marcada como poupança/investimento.`
-          : `"${item.name}" volta a contar como gasto normal.`,
+          ? t('em.savingsSet', { name: item.name })
+          : t('em.savingsUnset', { name: item.name }),
       )
     } catch (err) {
-      toast.error(`Não foi possível atualizar: ${err.message}`)
+      toast.error(t('em.updateFailed', { msg: err.message }))
     }
   }
 
@@ -445,10 +448,10 @@ export default function EntityManager({
 
       {tabbed && (
         <Segmented
-          label={`Tipo de ${noun}`}
+          label={t(`em.${kindKey}.type`)}
           value={newType}
           onChange={selectType}
-          options={groups.map((group) => ({ value: group.type, label: group.label, tone: group.tone }))}
+          options={groups.map((group) => ({ value: group.type, label: t(group.labelKey), tone: group.tone }))}
         />
       )}
 
@@ -458,10 +461,10 @@ export default function EntityManager({
         return (
           <div key={group.type}>
             {!tabbed && (
-              <h3 className="mt-1 text-[0.8125rem] font-semibold tracking-wide text-label-2 uppercase">{group.label}</h3>
+              <h3 className="mt-1 text-[0.8125rem] font-semibold tracking-wide text-label-2 uppercase">{t(group.labelKey)}</h3>
             )}
             {groupItems.length === 0 ? (
-              <p className="py-3 text-[0.9375rem] text-label-2">Sem {noun}s deste tipo.</p>
+              <p className="py-3 text-[0.9375rem] text-label-2">{t(`em.${kindKey}.none`)}</p>
             ) : onReorder ? (
               <DragReorderList
                 items={groupItems}
@@ -474,7 +477,7 @@ export default function EntityManager({
                     isDragging={isDragging}
                     siblings={siblingsOf(group.type)}
                     canDelete={pool.length > 1}
-                    deleteHint={`Tem de existir pelo menos uma ${noun}${scope === 'group' ? ' deste tipo' : ''}.`}
+                    deleteHint={t(scope === 'group' ? `em.${kindKey}.minOneType` : `em.${kindKey}.minOne`)}
                     deleteWarning={deleteWarning}
                     balance={balances?.get(item.id)}
                     onRename={handleRename}
@@ -493,7 +496,7 @@ export default function EntityManager({
                       item={item}
                       siblings={siblingsOf(group.type)}
                       canDelete={pool.length > 1}
-                      deleteHint={`Tem de existir pelo menos uma ${noun}${scope === 'group' ? ' deste tipo' : ''}.`}
+                      deleteHint={t(scope === 'group' ? `em.${kindKey}.minOneType` : `em.${kindKey}.minOne`)}
                       deleteWarning={deleteWarning}
                       balance={balances?.get(item.id)}
                       onRename={handleRename}
@@ -515,23 +518,23 @@ export default function EntityManager({
         className="space-y-2 border-t-[0.5px] border-separator pt-4"
       >
         <p className="text-[0.8125rem] font-medium text-label-2">
-          Nova {noun}
-          {tabbed && ` · ${activeGroup.label}`}
+          {t(`em.${kindKey}.new`)}
+          {tabbed && ` · ${t(activeGroup.labelKey)}`}
         </p>
         {!tabbed && (
           <Segmented
-            label={`Tipo de ${noun}`}
+            label={t(`em.${kindKey}.type`)}
             value={newType}
             onChange={selectType}
-            options={groups.map((group) => ({ value: group.type, label: group.label }))}
+            options={groups.map((group) => ({ value: group.type, label: t(group.labelKey) }))}
           />
         )}
         <input
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           maxLength={MAX_NAME_LENGTH}
-          placeholder={`Nome da ${noun}`}
-          aria-label={`Nome da nova ${noun}`}
+          placeholder={t(`em.${kindKey}.namePh`)}
+          aria-label={t(`em.${kindKey}.nameAria`)}
           className={inputClass}
         />
         {error && (
@@ -544,7 +547,7 @@ export default function EntityManager({
           disabled={submitting}
           className={`${primaryButton} w-full`}
         >
-          {submitting ? 'A criar...' : `Adicionar ${noun}`}
+          {submitting ? t('em.creating') : t(`em.${kindKey}.add`)}
         </button>
       </form>
     </section>

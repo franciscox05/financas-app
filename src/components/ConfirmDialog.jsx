@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useId } from 'react'
 import Modal from './Modal'
 import { dangerButton, secondaryButton } from './ui/styles'
@@ -8,7 +9,7 @@ export default function ConfirmDialog({
   title,
   message,
   confirmLabel,
-  cancelLabel = 'Cancelar',
+  cancelLabel,
   onConfirm,
   onCancel,
 }) {
@@ -30,7 +31,7 @@ export default function ConfirmDialog({
           onClick={onCancel}
           className={`${secondaryButton} flex-1`}
         >
-          {cancelLabel}
+          {cancelLabel ?? t('common.cancel')}
         </button>
         <button
           type="button"

@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useEffect, useRef, useState } from 'react'
 import Modal from './Modal'
 import { focusRing } from './ui/styles'
@@ -112,7 +113,7 @@ export default function AvatarCropModal({ file, onCropped, onCancel }) {
       {open && (
         <div className="space-y-4">
           <h2 id="avatar-crop-title" className="text-[1.25rem] leading-tight font-bold tracking-tight text-label">
-            Ajustar foto
+            {t('crop.title')}
           </h2>
 
           <div
@@ -140,7 +141,7 @@ export default function AvatarCropModal({ file, onCropped, onCancel }) {
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="text-xs text-label-2">Zoom</span>
+            <span className="text-xs text-label-2">{t('crop.zoom')}</span>
             <input
               type="range"
               min="1"
@@ -159,7 +160,7 @@ export default function AvatarCropModal({ file, onCropped, onCancel }) {
               disabled={saving}
               className={`min-h-11 flex-1 rounded-control border border-separator text-sm font-medium text-label disabled:opacity-50 ${focusRing}`}
             >
-              Cancelar
+              {t('common.cancel')}
             </button>
             <button
               type="button"
@@ -167,7 +168,7 @@ export default function AvatarCropModal({ file, onCropped, onCancel }) {
               disabled={!imgEl || saving}
               className={`min-h-11 flex-1 rounded-control bg-accent-fill text-sm font-medium text-white disabled:opacity-50 ${focusRing}`}
             >
-              {saving ? 'A preparar...' : 'Usar esta foto'}
+              {saving ? t('crop.preparing') : t('crop.use')}
             </button>
           </div>
         </div>

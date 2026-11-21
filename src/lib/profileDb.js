@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js'
 import { supabase } from './supabase'
 import { getCurrentUserId } from './db'
 
@@ -23,8 +24,8 @@ const EXT_BY_TYPE = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'we
 export async function uploadAvatar(file) {
   // Só os tipos que o bucket aceita (ver migração 20261109000000): `image/*` deixava passar SVG.
   const ext = EXT_BY_TYPE[file.type]
-  if (!ext) throw new Error('Escolhe uma imagem JPG, PNG, WebP ou GIF.')
-  if (file.size > MAX_AVATAR_BYTES) throw new Error('A imagem não pode passar de 5 MB.')
+  if (!ext) throw new Error(t('prof.badImage'))
+  if (file.size > MAX_AVATAR_BYTES) throw new Error(t('prof.tooBig'))
   const userId = await getCurrentUserId()
   const path = `${userId}/avatar.${ext}`
 
@@ -65,7 +66,7 @@ export async function listGoals() {
 export async function createGoal({ title, dueOn }) {
   const userId = await getCurrentUserId()
   const trimmed = title.trim()
-  if (!trimmed) throw new Error('Escreve um objetivo.')
+  if (!trimmed) throw new Error(t('prof.goalRequired'))
   const { data, error } = await supabase
     .from('goals')
     .insert({ user_id: userId, title: trimmed, due_on: dueOn || null })
@@ -103,7 +104,7 @@ export async function listNotes() {
 export async function createNote(body, notedOn) {
   const userId = await getCurrentUserId()
   const trimmed = body.trim()
-  if (!trimmed) throw new Error('Escreve algo para guardar.')
+  if (!trimmed) throw new Error(t('prof.textRequired'))
   const { data, error } = await supabase
     .from('notes')
     .insert({ user_id: userId, body: trimmed, ...(notedOn ? { noted_on: notedOn } : {}) })
@@ -120,7 +121,7 @@ export async function deleteNote(id) {
 
 export async function updateNote(id, body) {
   const trimmed = body.trim()
-  if (!trimmed) throw new Error('Escreve algo para guardar.')
+  if (!trimmed) throw new Error(t('prof.textRequired'))
   const { data, error } = await supabase.from('notes').update({ body: trimmed }).eq('id', id).select().single()
   if (error) throw error
   return data

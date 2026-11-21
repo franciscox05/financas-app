@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js'
 // Valores em cêntimos para evitar erros de vírgula flutuante (0.1 + 0.2 = 0.3).
 // Saldo positivo = o amigo deve-me; negativo = eu devo-lhe.
 const cents = (value) => Math.round(Number(value) * 100)
@@ -12,10 +13,10 @@ const SIGNS = {
 
 // Neutros em género: o amigo tanto pode ser "ele" como "ela".
 const LABELS = {
-  paid_for_them: 'paguei eu',
-  paid_for_me: 'pagou por mim',
-  repaid_to_me: 'devolveu-me',
-  repaid_to_them: 'devolvi-lhe',
+  paid_for_them: 'kind.paidForThem',
+  paid_for_me: 'kind.paidForMe',
+  repaid_to_me: 'kind.repaidToMe',
+  repaid_to_them: 'kind.repaidToThem',
 }
 
 export const KINDS = Object.freeze(Object.keys(SIGNS))
@@ -105,7 +106,7 @@ export function forgivenessEntry(kind, balanceBefore, amount) {
 }
 
 export function entryLabel(kind) {
-  return LABELS[kind]
+  return LABELS[kind] ? t(LABELS[kind]) : undefined
 }
 
 // Totais históricos (desde sempre), por direção — ao contrário do saldo, uma devolução
