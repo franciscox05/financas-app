@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useEffect, useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { today } from '../lib/dates'
@@ -12,8 +13,8 @@ import { focusRing, inputClass, labelClass } from './ui/styles'
 import { currencySymbol } from '../lib/format'
 
 const OPTIONS = [
-  { kind: 'paid_for_them', title: 'Paguei eu', hint: 'Fica a dever-me (ex.: bilhete, almoço)' },
-  { kind: 'paid_for_me', title: 'Pagou por mim', hint: 'Fico a dever-lhe (ex.: creatina)' },
+  { kind: 'paid_for_them', titleKey: 'sheet.paidByMe', hintKey: 'sheet.paidByMeHint' },
+  { kind: 'paid_for_me', titleKey: 'sheet.paidForMe', hintKey: 'sheet.paidForMeHint' },
 ]
 
 // `prefill` (opcional) repete os valores de um movimento contestado.
@@ -66,11 +67,11 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
     if (saving) return
     const value = parseExpenseAmount(amount)
     if (value === null) {
-      setError('Indica um valor válido.')
+      setError(t('qe.err.amount'))
       return
     }
     if (wantsAccount && (accountBlocked || !accountId || !categoryId)) {
-      setError(listsFailed ? 'Não foi possível carregar as contas. Tenta outra vez.' : 'Escolhe a conta e a categoria.')
+      setError(listsFailed ? t('sheet.accountsFailed') : t('sheet.pickAccountCategory'))
       return
     }
     setSaving(true)
@@ -106,14 +107,14 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
           // O antigo (contestado) deixa de contar — senão o corrigido contava a dobrar.
           await retireDeclinedEntry(prefill.id).catch((err) => {
             toast.error(
-              `Corrigido e reenviado, mas o movimento antigo continua a contar: ${err.message} — cancela-o à mão na lista.`,
+              t('sheet.resentButOld', { msg: err.message }),
             )
           })
         }
-        toast.success(`Já conta do teu lado. Enviado a ${friend.name} para confirmar também.`)
+        toast.success(t('sheet.sentToConfirm', { name: friend.name }))
       } else {
         await createExpense(fields)
-        toast.success('Gasto guardado.')
+        toast.success(t('sheet.expenseSaved'))
       }
       onDone()
     } catch (err) {
@@ -127,17 +128,17 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
   return (
     <form
       onSubmit={handleSubmit}
-      aria-label={`Novo gasto com ${friend.name}`}
+      aria-label={t('sheet.newExpenseWith', { name: friend.name })}
       // Sem caixa própria: passa a abrir dentro de uma folha (Modal) na página
       // do amigo, que já dá o fundo e o padding.
       className="space-y-4"
     >
       <h3 className="pr-10 text-[1.375rem] leading-tight font-bold tracking-tight text-label">
-        Novo gasto com {friend.name}
+        {t('sheet.newExpenseWith', { name: friend.name })}
       </h3>
 
       <fieldset className="space-y-2">
-        <legend className="sr-only">Quem pagou</legend>
+        <legend className="sr-only">{t('sheet.whoPaid')}</legend>
         {OPTIONS.map((opt) => (
           <label
             key={opt.kind}
@@ -152,8 +153,8 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
               className="mt-1 size-4 accent-accent"
             />
             <span>
-              <span className="block font-medium text-label">{opt.title}</span>
-              <span className="block text-sm text-label-2">{opt.hint}</span>
+              <span className="block font-medium text-label">{t(opt.titleKey)}</span>
+              <span className="block text-sm text-label-2">{t(opt.hintKey)}</span>
             </span>
           </label>
         ))}
@@ -182,7 +183,7 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
         <input
           id="expense-note"
           type="text"
-          placeholder="Ex: Bilhete do cinema"
+          placeholder={t('sheet.expensePlaceholder')}
           autoComplete="off"
           value={note}
           onChange={(e) => setNote(e.target.value)}
@@ -192,12 +193,12 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
 
       {wantsAccount && (
         <div>
-          <p className={labelClass}>Saiu de que conta?</p>
+          <p className={labelClass}>{t('sheet.fromWhichAccount')}</p>
           {listsFailed ? (
-            <p className="text-sm text-negative">Não foi possível carregar as contas. Tenta outra vez.</p>
+            <p className="text-sm text-negative">{t('sheet.accountsFailed')}</p>
           ) : !loadingLists && (accounts.length === 0 || categories.length === 0) ? (
             <p className="text-sm text-negative">
-              Precisas de ter pelo menos uma conta e uma categoria de gastos. Cria-as em Gestão primeiro.
+              {t('sheet.needAccount')}
             </p>
           ) : (
             <div className="grid grid-cols-2 gap-2">
@@ -205,7 +206,7 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
                 value={accountId}
                 disabled={loadingLists}
                 onChange={(e) => setAccountId(e.target.value)}
-                aria-label="Conta"
+                aria-label={t('common.account')}
                 className="w-full min-w-0 rounded-control border border-separator px-3 py-2 text-sm"
               >
                 {accounts.map((a) => (
@@ -218,7 +219,7 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
                 value={categoryId}
                 disabled={loadingLists}
                 onChange={(e) => setCategoryId(e.target.value)}
-                aria-label="Categoria"
+                aria-label={t('common.category')}
                 className="w-full min-w-0 rounded-control border border-separator px-3 py-2 text-sm"
               >
                 {categories.map((c) => (
@@ -235,7 +236,7 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
       <div className="space-y-4">
         <div className="min-w-0">
           <label htmlFor="expense-date" className={labelClass}>
-            Data
+            {t('common.date')}
           </label>
           <input
             id="expense-date"
@@ -247,8 +248,8 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
         </div>
         <OptionalDateField
           id="expense-due"
-          label="Para quando? (opcional)"
-          addLabel="Definir prazo"
+          label={t('sheet.dueDate')}
+          addLabel={t('sheet.setDue')}
           value={dueOn}
           onChange={setDueOn}
           inputClass={inputClass}
@@ -268,14 +269,14 @@ export default function NewExpenseSheet({ friend, prefill, onDone, onCancel, onS
           disabled={saving}
           className={`min-h-11 flex-1 rounded-control border border-separator px-3 font-medium text-label transition duration-150 ease-out hover:bg-fill active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 ${focusRing}`}
         >
-          Cancelar
+          {t('common.cancel')}
         </button>
         <button
           type="submit"
           disabled={saving}
           className={`min-h-11 flex-[2] rounded-control bg-accent-fill px-3 font-medium text-white transition duration-150 ease-out active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 ${focusRing}`}
         >
-          {saving ? 'A guardar...' : friend.status === 'connected' ? 'Enviar para confirmar' : 'Guardar'}
+          {saving ? t('common.saving') : friend.status === 'connected' ? t('sheet.sendToConfirm') : t('common.save')}
         </button>
       </div>
     </form>

@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useEffect, useMemo, useState } from 'react'
 import { listAccounts, listCategories } from '../lib/db'
 import { defaultCategoryId } from '../lib/repaymentInput'
@@ -6,10 +7,10 @@ import { inputClass, labelClass } from './ui/styles'
 const OPTIONS = [
   {
     value: 'bank',
-    title: 'Entrou numa conta tua',
-    hint: 'Banco, MB Way, ou a tua conta de "Dinheiro" — escolhes qual a seguir',
+    titleKey: 'sheet.intoYourAccount',
+    hintKey: 'sheet.intoYourAccountHint',
   },
-  { value: 'offset', title: 'Descontado noutra coisa', hint: 'Abate noutra coisa que pagaste' },
+  { value: 'offset', titleKey: 'sheet.offset', hintKey: 'sheet.offsetHint' },
 ]
 
 // "Como foi pago?" para quem aceita uma devolução: forma + (se banco) conta e
@@ -56,10 +57,10 @@ export default function SettlementFields({ kind, idPrefix, disabled, onChange, i
 
   let problem = ''
   if (wantsBank && !loadingLists) {
-    if (listsFailed) problem = 'Não foi possível carregar as contas. Tenta outra vez.'
-    else if (accounts.length === 0) problem = 'Ainda não tens nenhuma conta. Cria uma primeiro ou escolhe outra forma.'
+    if (listsFailed) problem = t('sheet.accountsFailed')
+    else if (accounts.length === 0) problem = t('sheet.noAccounts')
     else if (categoryOptions.length === 0) {
-      problem = `Não tens nenhuma categoria de ${type === 'income' ? 'ganhos' : 'gastos'}. Cria uma primeiro ou escolhe outra forma.`
+      problem = t(type === 'income' ? 'sheet.noIncomeCategory' : 'sheet.noExpenseCategory')
     }
   }
 
@@ -79,7 +80,7 @@ export default function SettlementFields({ kind, idPrefix, disabled, onChange, i
   return (
     <div className="space-y-3">
       <fieldset className="space-y-2" disabled={disabled}>
-        <legend className={labelClass}>Como foi pago?</legend>
+        <legend className={labelClass}>{t('sheet.howPaid')}</legend>
         {OPTIONS.map((opt) => (
           <label
             key={opt.value}
@@ -94,8 +95,8 @@ export default function SettlementFields({ kind, idPrefix, disabled, onChange, i
               className="mt-1 size-4 accent-accent"
             />
             <span>
-              <span className="block font-medium text-label">{opt.title}</span>
-              <span className="block text-sm text-label-2">{opt.hint}</span>
+              <span className="block font-medium text-label">{t(opt.titleKey)}</span>
+              <span className="block text-sm text-label-2">{t(opt.hintKey)}</span>
             </span>
           </label>
         ))}
@@ -111,7 +112,7 @@ export default function SettlementFields({ kind, idPrefix, disabled, onChange, i
         <div className="grid grid-cols-2 gap-3">
           <div className="min-w-0">
             <label htmlFor={`${idPrefix}-account`} className={labelClass}>
-              Conta
+              {t('common.account')}
             </label>
             <select
               id={`${idPrefix}-account`}
@@ -129,7 +130,7 @@ export default function SettlementFields({ kind, idPrefix, disabled, onChange, i
           </div>
           <div className="min-w-0">
             <label htmlFor={`${idPrefix}-category`} className={labelClass}>
-              Categoria
+              {t('common.category')}
             </label>
             <select
               id={`${idPrefix}-category`}

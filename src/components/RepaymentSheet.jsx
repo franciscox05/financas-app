@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useEffect, useMemo, useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { today } from '../lib/dates'
@@ -15,10 +16,10 @@ import { focusRing, inputClass, labelClass } from './ui/styles'
 const OPTIONS = [
   {
     value: 'bank',
-    title: 'Entrou numa conta tua',
-    hint: 'Banco, MB Way, ou a tua conta de "Dinheiro" — escolhes qual a seguir',
+    titleKey: 'sheet.intoYourAccount',
+    hintKey: 'sheet.intoYourAccountHint',
   },
-  { value: 'offset', title: 'Descontado noutra coisa', hint: 'Abate noutra coisa que pagaste' },
+  { value: 'offset', titleKey: 'sheet.offset', hintKey: 'sheet.offsetHint' },
 ]
 
 // `prefill` (opcional) repete os valores de uma devolução contestada.
@@ -80,10 +81,10 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
 
   let bankProblem = ''
   if (!loadingLists) {
-    if (listsFailed) bankProblem = 'Não foi possível carregar as contas. Tenta outra vez.'
-    else if (accounts.length === 0) bankProblem = 'Ainda não tens nenhuma conta. Cria uma primeiro ou escolhe outra forma.'
+    if (listsFailed) bankProblem = t('sheet.accountsFailed')
+    else if (accounts.length === 0) bankProblem = t('sheet.noAccounts')
     else if (categoryOptions.length === 0) {
-      bankProblem = `Não tens nenhuma categoria de ${type === 'income' ? 'ganhos' : 'gastos'}. Cria uma primeiro ou escolhe outra forma.`
+      bankProblem = t(type === 'income' ? 'sheet.noIncomeCategory' : 'sheet.noExpenseCategory')
     }
   }
   const bankBlocked = settlement === 'bank' && (loadingLists || bankProblem !== '')
@@ -92,15 +93,15 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
     e.preventDefault()
     if (saving) return
     if (parsed === null) {
-      setError('Indica um valor válido.')
+      setError(t('qe.err.amount'))
       return
     }
     if (!note.trim()) {
-      setError('Indica uma nota (ex: a que respeita).')
+      setError(t('sheet.noteRequired'))
       return
     }
     if (bankBlocked) {
-      setError(bankProblem || 'A carregar as contas...')
+      setError(bankProblem || t('sheet.loadingAccounts'))
       return
     }
     setSaving(true)
@@ -123,14 +124,14 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
         if (prefill?.id) {
           await retireDeclinedEntry(prefill.id).catch((err) => {
             toast.error(
-              `Corrigido e reenviado, mas o movimento antigo continua a contar: ${err.message} — cancela-o à mão na lista.`,
+              t('sheet.resentButOld', { msg: err.message }),
             )
           })
         }
-        successMessage = `Já conta do teu lado. Enviado a ${friend.name} para confirmar também.`
+        successMessage = t('sheet.sentToConfirm', { name: friend.name })
       } else {
         await createRepayment(fields)
-        successMessage = 'Devolução guardada.'
+        successMessage = t('sheet.repaymentSaved')
       }
 
       if (forgiveDifference) {
@@ -140,7 +141,7 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
             friendId: friend.id,
             kind: forgive.kind,
             amount: forgive.amount,
-            note: `Perdão da diferença (${note.trim()})`,
+            note: t('sheet.forgiveNote', { note: note.trim() }),
             occurredOn: occurredOn || today(),
             settlement: 'offset',
             accountId: null,
@@ -149,9 +150,9 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
           try {
             if (shared) await createSharedEntry(forgiveFields)
             else await createRepayment(forgiveFields)
-            successMessage += ` Perdoaste ${eur(forgive.amount)} de diferença.`
+            successMessage += t('sheet.forgiven', { value: eur(forgive.amount) })
           } catch {
-            toast.error('Guardado, mas não foi possível perdoar a diferença — regista-a à mão se for preciso.')
+            toast.error(t('sheet.forgiveFailed'))
           }
         }
       }
@@ -163,13 +164,13 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
       setError(
         shared || isSharedGuardError(err) || err.message === 'Escolhe a conta e a categoria.'
           ? err.message
-          : 'Não foi possível guardar. Tenta outra vez.',
+          : t('sheet.saveRetry'),
       )
       setSaving(false)
     }
   }
 
-  const title = kind === 'repaid_to_me' ? `${friend.name} devolveu-me` : `Devolvi a ${friend.name}`
+  const title = kind === 'repaid_to_me' ? t('sheet.theyRepaid', { name: friend.name }) : t('sheet.iRepaid', { name: friend.name })
 
   return (
     <form
@@ -205,14 +206,14 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
                 onChange={(e) => setForgiveDifference(e.target.checked)}
                 className="size-4 accent-accent"
               />
-              Ficamos quites — perdoa esta diferença
+              {t('sheet.forgive')}
             </label>
           </div>
         )}
       </div>
 
       <fieldset className="space-y-2">
-        <legend className={labelClass}>Como foi pago?</legend>
+        <legend className={labelClass}>{t('sheet.howPaid')}</legend>
         {OPTIONS.map((opt) => (
           <label
             key={opt.value}
@@ -227,8 +228,8 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
               className="mt-1 size-4 accent-accent"
             />
             <span>
-              <span className="block font-medium text-label">{opt.title}</span>
-              <span className="block text-sm text-label-2">{opt.hint}</span>
+              <span className="block font-medium text-label">{t(opt.titleKey)}</span>
+              <span className="block text-sm text-label-2">{t(opt.hintKey)}</span>
             </span>
           </label>
         ))}
@@ -244,7 +245,7 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
         <div className="grid grid-cols-2 gap-3">
           <div className="min-w-0">
             <label htmlFor="repayment-account" className={labelClass}>
-              Conta
+              {t('common.account')}
             </label>
             <select
               id="repayment-account"
@@ -261,7 +262,7 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
           </div>
           <div className="min-w-0">
             <label htmlFor="repayment-category" className={labelClass}>
-              Categoria
+              {t('common.category')}
             </label>
             <select
               id="repayment-category"
@@ -281,14 +282,14 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
 
       <div>
         <label htmlFor="repayment-note" className={labelClass}>
-          Nota
+          {t('common.note')}
         </label>
         <input
           id="repayment-note"
           type="text"
           autoComplete="off"
           required
-          placeholder="Ex: Almoço de sexta"
+          placeholder={t('sheet.repaymentPlaceholder')}
           value={note}
           onChange={(e) => setNote(e.target.value)}
           className={inputClass}
@@ -297,7 +298,7 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
 
       <div>
         <label htmlFor="repayment-date" className={labelClass}>
-          Data
+          {t('common.date')}
         </label>
         <input
           id="repayment-date"
@@ -321,14 +322,14 @@ export default function RepaymentSheet({ friend, balance, prefill, onDone, onCan
           disabled={saving}
           className={`min-h-11 flex-1 rounded-control border border-separator font-medium text-label transition duration-150 ease-out hover:bg-fill active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 ${focusRing}`}
         >
-          Cancelar
+          {t('common.cancel')}
         </button>
         <button
           type="submit"
           disabled={saving || bankBlocked || !note.trim()}
           className={`min-h-11 flex-1 rounded-control bg-accent-fill font-medium text-white transition duration-150 ease-out active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 ${focusRing}`}
         >
-          {saving ? 'A guardar...' : shared ? 'Enviar para confirmar' : 'Guardar'}
+          {saving ? t('common.saving') : shared ? t('sheet.sendToConfirm') : t('common.save')}
         </button>
       </div>
     </form>
