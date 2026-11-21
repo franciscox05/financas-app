@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { ArrowLeftRight, FileSpreadsheet, TriangleAlert, Upload } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import CollapsibleSection from './CollapsibleSection'
@@ -14,8 +15,8 @@ const selectClass = sharedInputClass
 const inputClass = selectClass
 
 const ROW_TYPES = [
-  { value: 'expense', label: 'Gasto' },
-  { value: 'income', label: 'Ganho' },
+  { value: 'expense', labelKey: 'kind.expense' },
+  { value: 'income', labelKey: 'kind.income' },
 ]
 
 export default function BankStatementImportSection({ accounts, categories }) {
@@ -163,11 +164,11 @@ export default function BankStatementImportSection({ accounts, categories }) {
   async function handleImport() {
     const included = rows.filter((r) => r.included)
     if (included.length === 0) {
-      setError('Seleciona pelo menos uma transação para importar.')
+      setError(t('bank.pickOne'))
       return
     }
     if (included.some((r) => !r.accountId || !r.categoryId)) {
-      setError('Há linhas selecionadas sem conta ou categoria escolhida.')
+      setError(t('bank.missing'))
       return
     }
     setImporting(true)
@@ -183,10 +184,10 @@ export default function BankStatementImportSection({ accounts, categories }) {
           accountId: r.accountId,
         })),
       )
-      toast.success(`${included.length} transações importadas.`)
+      toast.success(t('imp.imported', { n: included.length }))
       resetAll()
     } catch (err) {
-      toast.error(`Não foi possível importar: ${err.message}`)
+      toast.error(t('imp.failed', { msg: err.message }))
     } finally {
       setImporting(false)
     }
@@ -196,9 +197,9 @@ export default function BankStatementImportSection({ accounts, categories }) {
 
   return (
     <CollapsibleSection
-      title="Importar extrato bancário (CSV)"
+      title={t('bank.title')}
       icon={FileSpreadsheet}
-      description="Carrega o ficheiro CSV exportado do teu banco. A app tenta reconhecer as colunas automaticamente — revê e confirma cada movimento antes de guardar."
+      description={t('bank.desc')}
       open={showSection}
       onToggle={() => setShowSection((v) => !v)}
     >
@@ -208,9 +209,9 @@ export default function BankStatementImportSection({ accounts, categories }) {
         <label className="flex flex-col items-center justify-center gap-2 rounded-control border-2 border-dashed border-separator px-4 py-10 text-center text-sm text-label-2 transition-colors hover:border-separator hover:bg-fill">
           <Upload size={22} className="text-label-3" aria-hidden="true" />
           <span className="font-medium text-label">
-            {parsing ? 'A ler o ficheiro...' : 'Clica para escolher o ficheiro CSV'}
+            {parsing ? t('bank.reading') : t('bank.choose')}
           </span>
-          <span className="text-xs text-label-3">ou arrasta-o para aqui</span>
+          <span className="text-xs text-label-3">{t('bank.drag')}</span>
           <input
             type="file"
             accept=".csv,text/csv"
@@ -229,11 +230,11 @@ export default function BankStatementImportSection({ accounts, categories }) {
         <div className="space-y-3">
           <div className="space-y-2 rounded-control border border-warning/30 bg-warning/10 p-3">
             <p className="text-xs font-medium text-warning">
-              Ações em bloco — aplicam-se a todas as linhas marcadas abaixo
+              {t('bank.bulk')}
             </p>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="mb-1 block text-xs text-warning">Conta destino (todas)</label>
+                <label className="mb-1 block text-xs text-warning">{t('bank.allAccount')}</label>
                 <select
                   value={defaultAccountId}
                   onChange={(e) => applyDefaultAccountToAll(e.target.value)}
@@ -247,14 +248,14 @@ export default function BankStatementImportSection({ accounts, categories }) {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs text-warning">Categoria (selecionadas)</label>
+                <label className="mb-1 block text-xs text-warning">{t('bank.selCategory')}</label>
                 <div className="flex gap-1">
                   <select
                     value={bulkCategoryId}
                     onChange={(e) => setBulkCategoryId(e.target.value)}
                     className={selectClass}
                   >
-                    <option value="">Escolher...</option>
+                    <option value="">{t('bank.choosePh')}</option>
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -267,7 +268,7 @@ export default function BankStatementImportSection({ accounts, categories }) {
                     disabled={!bulkCategoryId}
                     className="shrink-0 rounded-control bg-warning px-3 text-xs font-medium text-white disabled:opacity-40"
                   >
-                    Aplicar
+                    {t('bank.apply')}
                   </button>
                 </div>
               </div>
@@ -278,16 +279,15 @@ export default function BankStatementImportSection({ accounts, categories }) {
               className="flex min-h-9 w-full items-center justify-center gap-1.5 rounded-control border border-warning/30 px-3 text-xs font-medium text-warning"
             >
               <ArrowLeftRight size={12} aria-hidden="true" />
-              Trocar Gasto ↔ Ganho em todas
+              {t('bank.swap')}
             </button>
             <p className="text-xs leading-relaxed text-warning">
-              Usa isto se o teu banco exportar os gastos como valores positivos e o extrato tiver
-              entrado todo ao contrário.
+              {t('bank.swapHelp')}
             </p>
           </div>
 
           <p className="text-xs text-label-2">
-            {rows.length} linhas lidas · {includedCount} selecionadas para importar.
+            {t('bank.readCount', { rows: rows.length, sel: includedCount })}
           </p>
 
           <ul className="space-y-2">
@@ -310,14 +310,14 @@ export default function BankStatementImportSection({ accounts, categories }) {
               className="flex flex-1 items-center justify-center gap-1.5 min-h-11 rounded-control bg-accent-fill px-4 text-[0.9375rem] font-semibold text-white disabled:opacity-50"
             >
               <Upload size={15} />
-              {importing ? 'A importar...' : `Importar ${includedCount} transações`}
+              {importing ? t('imp.importing') : t('imp.importN', { n: includedCount })}
             </button>
             <button
               onClick={resetAll}
               disabled={importing}
               className="min-h-11 rounded-control bg-fill px-4 text-[0.9375rem] font-semibold text-label"
             >
-              Cancelar
+              {t('common.cancel')}
             </button>
           </div>
         </div>
@@ -345,19 +345,19 @@ function RowCard({ row, accounts, categories, onChange, onTypeChange }) {
         />
         <span className="min-w-0 flex-1 text-sm">
           <span className="flex items-center justify-between gap-2">
-            <span className="text-label-2">{row.originalDate || '(sem data)'}</span>
+            <span className="text-label-2">{row.originalDate || t('bank.noDate')}</span>
             <span className={row.type === 'income' ? 'font-semibold text-positive' : 'font-semibold text-negative'}>
               {row.invalid ? row.originalAmount || '—' : eur(row.amount)}
             </span>
           </span>
           {row.invalid && (
             <span className="mt-0.5 flex items-center gap-1 text-xs text-negative">
-              <TriangleAlert size={12} /> Não consegui ler esta linha (data ou valor inválido) — ignorada.
+              <TriangleAlert size={12} /> {t('bank.unreadable')}
             </span>
           )}
           {row.likelyDuplicate && (
             <span className="mt-0.5 flex items-center gap-1 text-xs text-warning">
-              <TriangleAlert size={12} /> Já existe uma transação igual — por defeito não vai ser importada.
+              <TriangleAlert size={12} /> {t('bank.duplicate')}
             </span>
           )}
         </span>
@@ -365,7 +365,7 @@ function RowCard({ row, accounts, categories, onChange, onTypeChange }) {
 
       {!row.invalid && (
         <div className="space-y-2 pl-6">
-          <div role="group" aria-label="Gasto ou ganho" className="flex rounded-control bg-fill p-0.5">
+          <div role="group" aria-label={t('bank.typeAria')} className="flex rounded-control bg-fill p-0.5">
             {ROW_TYPES.map((opt) => (
               <button
                 key={opt.value}
@@ -379,7 +379,7 @@ function RowCard({ row, accounts, categories, onChange, onTypeChange }) {
                     : 'text-label-2'
                 }`}
               >
-                {opt.label}
+                {t(opt.labelKey)}
               </button>
             ))}
           </div>
@@ -387,7 +387,7 @@ function RowCard({ row, accounts, categories, onChange, onTypeChange }) {
             type="text"
             value={row.note}
             onChange={(e) => onChange({ note: e.target.value })}
-            placeholder="Título / nota"
+            placeholder={t('bank.titleNote')}
             disabled={!row.included}
             className={inputClass}
           />
@@ -424,11 +424,11 @@ function RowCard({ row, accounts, categories, onChange, onTypeChange }) {
 }
 
 const ROLE_LABELS = {
-  date: 'Data',
-  amount: 'Valor (com sinal, ex. débitos negativos)',
-  debit: 'Débito (opcional, se não houver coluna de Valor única)',
-  credit: 'Crédito (opcional, se não houver coluna de Valor única)',
-  description: 'Descrição',
+  date: 'bank.col.date',
+  amount: 'bank.col.amount',
+  debit: 'bank.col.debit',
+  credit: 'bank.col.credit',
+  description: 'bank.col.description',
 }
 
 function ManualColumnMapping({ headers, onConfirm, disabled }) {
@@ -439,18 +439,17 @@ function ManualColumnMapping({ headers, onConfirm, disabled }) {
   return (
     <div className="space-y-3 rounded-control border border-separator p-3">
       <p className="text-xs text-label-2">
-        Não consegui reconhecer automaticamente as colunas deste ficheiro. Escolhe o que corresponde a cada campo
-        (data e valor são obrigatórios; ou indica débito + crédito em vez de um valor único).
+        {t('bank.manualHelp')}
       </p>
       {Object.entries(ROLE_LABELS).map(([role, label]) => (
         <div key={role}>
-          <label className="mb-1 block text-xs font-medium text-label-2">{label}</label>
+          <label className="mb-1 block text-xs font-medium text-label-2">{t(label)}</label>
           <select
             value={cols[role]}
             onChange={(e) => setCols((prev) => ({ ...prev, [role]: e.target.value }))}
             className={selectClass}
           >
-            <option value="">— nenhuma —</option>
+            <option value="">{t('bank.none')}</option>
             {headers.map((h) => (
               <option key={h} value={h}>
                 {h}
@@ -465,7 +464,7 @@ function ManualColumnMapping({ headers, onConfirm, disabled }) {
         disabled={!canConfirm || disabled}
         className="w-full min-h-11 rounded-control bg-accent-fill px-4 text-[0.9375rem] font-semibold text-white disabled:opacity-50"
       >
-        Confirmar colunas e continuar
+        {t('bank.confirmCols')}
       </button>
     </div>
   )

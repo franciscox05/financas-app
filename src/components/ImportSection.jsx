@@ -1,3 +1,4 @@
+import { languageInfo, t } from '../i18n'
 import { TriangleAlert, Upload } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import CollapsibleSection from './CollapsibleSection'
@@ -9,10 +10,13 @@ import { endOfMonth, toIsoDate } from '../lib/dates'
 import { buildImportRows, detectMonthHeader, parseMonthText } from '../lib/importParser'
 import { eur } from '../lib/format'
 
-const MONTH_NAMES = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-]
+// Nomes dos meses no idioma ativo (ex.: "Janeiro" / "January").
+function monthNames() {
+  return Array.from({ length: 12 }, (_, i) => {
+    const s = new Date(2000, i, 1).toLocaleDateString(languageInfo().locale, { month: 'long' })
+    return s.charAt(0).toUpperCase() + s.slice(1)
+  })
+}
 
 export default function ImportSection({ accounts, categories }) {
   const toast = useToast()
@@ -48,7 +52,7 @@ export default function ImportSection({ accounts, categories }) {
     setMonthNotice('')
     const parsed = parseMonthText(text)
     if (parsed.length === 0) {
-      setError('Não encontrei nenhuma linha no formato "Dia N -valor€ descrição". Confirma que colaste o texto certo.')
+      setError(t('imp.noLines'))
       return
     }
 
@@ -65,13 +69,13 @@ export default function ImportSection({ accounts, categories }) {
       setYear(detected.year)
       setMonth(detected.month)
       setMonthNotice(
-        `Detetei "${MONTH_NAMES[detected.month - 1]} ${detected.year}" no texto — corrigi automaticamente o mês/ano selecionado (estava ${MONTH_NAMES[month - 1]} ${year}).`,
+        t('imp.detected', { found: `${monthNames()[detected.month - 1]} ${detected.year}`, was: `${monthNames()[month - 1]} ${year}` }),
       )
     } else if (detected) {
-      setMonthNotice(`Confirmado: o texto é de ${MONTH_NAMES[detected.month - 1]} ${detected.year}.`)
+      setMonthNotice(t('imp.confirmed', { found: `${monthNames()[detected.month - 1]} ${detected.year}` }))
     } else {
       setMonthNotice(
-        `Não encontrei o cabeçalho do mês no texto — a importar para ${MONTH_NAMES[month - 1]} ${year} (o que está selecionado). Confirma que é o mês certo antes de importar.`,
+        t('imp.noHeader', { month: `${monthNames()[month - 1]} ${year}` }),
       )
     }
 
@@ -138,7 +142,7 @@ export default function ImportSection({ accounts, categories }) {
   async function handleImport() {
     const included = groups.filter((g) => g.included)
     if (included.length === 0) {
-      setError('Seleciona pelo menos uma nota para importar.')
+      setError(t('imp.pickOne'))
       return
     }
     setImporting(true)
@@ -155,11 +159,11 @@ export default function ImportSection({ accounts, categories }) {
         })),
       )
       await createTransactionsBulk(rows)
-      toast.success(`${rows.length} transações importadas.`)
+      toast.success(t('imp.imported', { n: rows.length }))
       setGroups(null)
       setText('')
     } catch (err) {
-      toast.error(`Não foi possível importar: ${err.message}`)
+      toast.error(t('imp.failed', { msg: err.message }))
     } finally {
       setImporting(false)
     }
@@ -167,22 +171,22 @@ export default function ImportSection({ accounts, categories }) {
 
   return (
     <CollapsibleSection
-      title="Importar histórico"
+      title={t('imp.title')}
       icon={Upload}
-      description='Cola o texto de um mês (linhas no formato "Dia N -valor€ descrição"). O resto do texto (resumos, totais) é ignorado automaticamente.'
+      description={t('imp.desc')}
       open={showSection}
       onToggle={() => setShowSection((v) => !v)}
     >
       <div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="mb-1 block text-xs font-medium text-label-2">Mês</label>
+            <label className="mb-1 block text-xs font-medium text-label-2">{t('rc.month')}</label>
             <select
               value={month}
               onChange={(e) => setMonth(Number(e.target.value))}
               className="w-full rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
             >
-              {MONTH_NAMES.map((name, idx) => (
+              {monthNames().map((name, idx) => (
                 <option key={name} value={idx + 1}>
                   {name}
                 </option>
@@ -190,7 +194,7 @@ export default function ImportSection({ accounts, categories }) {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-label-2">Ano</label>
+            <label className="mb-1 block text-xs font-medium text-label-2">{t('rc.year')}</label>
             <select
               value={year}
               onChange={(e) => setYear(Number(e.target.value))}
@@ -207,7 +211,7 @@ export default function ImportSection({ accounts, categories }) {
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-label-2">Texto a importar</label>
+        <label className="mb-1 block text-xs font-medium text-label-2">{t('imp.text')}</label>
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -225,7 +229,7 @@ export default function ImportSection({ accounts, categories }) {
               disabled={analyzing || !text.trim()}
               className="w-full min-h-11 rounded-control bg-accent-fill px-4 text-[0.9375rem] font-semibold text-white disabled:opacity-50"
             >
-              {analyzing ? 'A analisar...' : 'Analisar texto'}
+              {analyzing ? t('imp.analyzing') : t('imp.analyze')}
             </button>
           )}
 
@@ -237,10 +241,8 @@ export default function ImportSection({ accounts, categories }) {
                 </p>
               )}
               <p className="text-xs text-label-2">
-                A importar para <strong>{MONTH_NAMES[month - 1]} {year}</strong> ·{' '}
-                {groups.reduce((s, g) => s + g.occurrences.length, 0)} transações encontradas, em{' '}
-                {groups.length} notas distintas. Escolhe a categoria/conta de cada nota (aplica-se a
-                todas as ocorrências dessa nota).
+                {t('imp.importingInto')} <strong>{monthNames()[month - 1]} {year}</strong> ·{' '}
+                {t('imp.found', { n: groups.reduce((s, g) => s + g.occurrences.length, 0), groups: groups.length })}
               </p>
 
               <ul className="space-y-2">
@@ -260,7 +262,7 @@ export default function ImportSection({ accounts, categories }) {
                         />
                         <span className="min-w-0 flex-1">
                           <span className="font-medium text-label">
-                            {g.note || '(sem nota)'}
+                            {g.note || t('rc.noNote')}
                           </span>
                           <span className="text-label-3">
                             {' '}
@@ -272,7 +274,7 @@ export default function ImportSection({ accounts, categories }) {
                           {g.duplicateCount > 0 && (
                             <span className="ml-1.5 inline-flex items-center gap-0.5 text-xs text-warning">
                               <TriangleAlert size={12} />
-                              {g.duplicateCount} já parece{g.duplicateCount === 1 ? '' : 'm'} existir
+                              {t(g.duplicateCount === 1 ? 'imp.dup1' : 'imp.dupN', { n: g.duplicateCount })}
                             </span>
                           )}
                         </span>
@@ -316,15 +318,15 @@ export default function ImportSection({ accounts, categories }) {
                 >
                   <Upload size={15} />
                   {importing
-                    ? 'A importar...'
-                    : `Importar ${groups.filter((g) => g.included).reduce((s, g) => s + g.occurrences.length, 0)} transações`}
+                    ? t('imp.importing')
+                    : t('imp.importN', { n: groups.filter((g) => g.included).reduce((s, g) => s + g.occurrences.length, 0) })}
                 </button>
                 <button
                   onClick={() => setGroups(null)}
                   disabled={importing}
                   className="min-h-11 rounded-control bg-fill px-4 text-[0.9375rem] font-semibold text-label"
                 >
-                  Cancelar
+                  {t('common.cancel')}
                 </button>
               </div>
             </div>
