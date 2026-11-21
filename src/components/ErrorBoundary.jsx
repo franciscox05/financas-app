@@ -1,5 +1,6 @@
 import { AlertTriangle, RotateCw } from 'lucide-react'
 import { Component } from 'react'
+import MascotTile from './MascotTile'
 
 // Sem isto, um erro ao desenhar qualquer componente deixava o ecrã todo em branco (o React
 // desmonta a árvore inteira). Aqui só cai a parte envolvida e mostra-se como recuperar.
@@ -23,6 +24,7 @@ export default class ErrorBoundary extends Component {
         role="alert"
         className="space-y-3 rounded-control border border-negative/30 bg-negative/10 p-4 text-sm text-negative"
       >
+        <MascotTile size={72} motion="oops" className="mx-auto" />
         <p className="flex items-center gap-2 font-semibold">
           <AlertTriangle size={16} aria-hidden="true" />
           Algo correu mal nesta página.
