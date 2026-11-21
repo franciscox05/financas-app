@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { Copy, FileDown } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useToast } from '../context/toastContext'
@@ -30,9 +31,9 @@ export default function MonthlyReportButtons({ report, monthKey }) {
       // centenas de KB que antes iam no arranque da app para quase nunca serem usados.
       const { downloadMonthlyReportPdf } = await import('../lib/monthlyReportPdf')
       downloadMonthlyReportPdf(report, monthKey)
-      toast.success('Relatório PDF descarregado.')
+      toast.success(t('rep.pdfDone'))
     } catch (err) {
-      toast.error(`Não foi possível gerar o PDF: ${err.message}`)
+      toast.error(t('rep.pdfFailed', { msg: err.message }))
     } finally {
       setGenerating(false)
     }
@@ -41,9 +42,9 @@ export default function MonthlyReportButtons({ report, monthKey }) {
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(text)
-      toast.success('Resumo copiado.')
+      toast.success(t('rep.copied'))
     } catch {
-      toast.error('Não foi possível copiar. Tenta outra vez.')
+      toast.error(t('rep.copyFailed'))
     }
   }
 
@@ -54,19 +55,18 @@ export default function MonthlyReportButtons({ report, monthKey }) {
           gerar o relatório a pensar que é de um mês e descarregar de outro;
           trocar de mês é mexer no MonthPicker já visível em cima, não precisa
           de um segundo seletor duplicado aqui. */}
-      <h3 className="text-sm font-semibold text-label-2">Relatório de {report.monthLabel}</h3>
+      <h3 className="text-sm font-semibold text-label-2">{t('rep.title', { month: report.monthLabel })}</h3>
       <p className="text-xs leading-relaxed text-label-3">
-        Extrato em PDF com os KPIs do mês, despesas e receitas por categoria e as maiores despesas —
-        pronto a guardar ou partilhar. Para exportar outro mês, muda-o no seletor no topo do ecrã.
+        {t('rep.desc')}
       </p>
       <div className="flex gap-2 pt-1">
         <button type="button" onClick={handleDownloadPdf} disabled={generating} className={primaryClass}>
           <FileDown size={16} aria-hidden="true" />
-          {generating ? 'A gerar...' : 'Descarregar PDF'}
+          {generating ? t('rep.generating') : t('rep.download')}
         </button>
         <button type="button" onClick={handleCopy} className={secondaryClass}>
           <Copy size={16} aria-hidden="true" />
-          Copiar resumo
+          {t('rep.copy')}
         </button>
       </div>
     </div>

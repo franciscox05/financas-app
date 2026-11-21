@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { usePrivacy } from '../context/privacyContext'
 import { currencySymbol, eur } from '../lib/format'
 
@@ -8,7 +9,7 @@ export default function Money({ value, children, mask = `•••• ${currency
   const { hidden } = usePrivacy()
   if (hidden) {
     return (
-      <span className="select-none tracking-wider" role="img" aria-label="Valor escondido">
+      <span className="select-none tracking-wider" role="img" aria-label={t('hidden.value')}>
         {mask}
       </span>
     )

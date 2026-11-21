@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { Tag, X } from 'lucide-react'
 import { useId } from 'react'
 import Modal from './Modal'
@@ -31,7 +32,7 @@ export default function CategoryDrilldownModal({ category, color, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              aria-label="Fechar"
+              aria-label={t('common.close')}
               className={`pressable -mt-1.5 -mr-2 flex size-11 shrink-0 items-center justify-center rounded-full bg-fill text-label-2 ${focusRing}`}
             >
               <X size={20} strokeWidth={2.4} aria-hidden="true" />
@@ -42,9 +43,9 @@ export default function CategoryDrilldownModal({ category, color, onClose }) {
             {txs.map((tx) => (
               <li key={tx.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
                 <div className="min-w-0">
-                  <p className="truncate text-label">{tx.note || 'Sem nota'}</p>
+                  <p className="truncate text-label">{tx.note || t('common.noNote')}</p>
                   <p className="text-xs text-label-2">
-                    {ptDate(tx.occurred_on)} · {tx.account_name ?? tx.accounts?.name ?? 'Conta'}
+                    {ptDate(tx.occurred_on)} · {tx.account_name ?? tx.accounts?.name ?? t('common.account')}
                   </p>
                 </div>
                 <span className="shrink-0 font-medium text-label">
@@ -55,7 +56,7 @@ export default function CategoryDrilldownModal({ category, color, onClose }) {
           </ul>
 
           <div className="mt-2 flex items-center justify-between border-t border-separator pt-3 text-sm font-semibold">
-            <span className="text-label">Total</span>
+            <span className="text-label">{t('bal.total')}</span>
             <span className="text-label">
               <Money value={total} />
             </span>

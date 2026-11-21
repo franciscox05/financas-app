@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { MessageCircle } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { normalizePhone, reminderText, smsUrl, whatsappUrl } from '../lib/contactMessage'
@@ -38,7 +39,7 @@ export default function ReminderButtons({ friend, balance, entries }) {
   return (
     <div className="flex gap-2">
       <a href={whatsapp} target="_blank" rel="noopener" className={whatsappClass}>
-        <MessageCircle size={16} aria-hidden="true" /> Lembrar por WhatsApp
+        <MessageCircle size={16} aria-hidden="true" /> {t('remind.whatsapp')}
       </a>
       <a href={sms} className={smsClass}>
         SMS

@@ -1,11 +1,15 @@
+import { languageInfo, t } from '../i18n'
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { addMonths, monthKey, monthLabel, monthStart } from '../lib/dates'
 
-const MONTH_NAMES = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-]
+// Nomes dos meses no idioma ativo (ex.: "Janeiro" / "January").
+function monthNames() {
+  return Array.from({ length: 12 }, (_, i) => {
+    const s = new Date(2000, i, 1).toLocaleDateString(languageInfo().locale, { month: 'long' })
+    return s.charAt(0).toUpperCase() + s.slice(1)
+  })
+}
 
 // Navegação por mês (< Mês Ano >) com um "ir para" de mês+ano, partilhada
 // entre o Balanço e a lista de Transações recentes do Registo.
@@ -37,7 +41,7 @@ export default function MonthPicker({ value, onChange, disableFuture = false }) 
         <button
           type="button"
           onClick={() => onChange(addMonths(value, -1))}
-          aria-label="Mês anterior"
+          aria-label={t('mp.prev')}
           className="pressable flex size-11 items-center justify-center rounded-full text-accent"
         >
           <ChevronLeft size={24} strokeWidth={2.1} aria-hidden="true" />
@@ -60,7 +64,7 @@ export default function MonthPicker({ value, onChange, disableFuture = false }) 
           type="button"
           onClick={() => onChange(addMonths(value, 1))}
           disabled={disableFuture && monthKey(value) === monthKey(monthStart(new Date()))}
-          aria-label="Mês seguinte"
+          aria-label={t('mp.next')}
           className="pressable flex size-11 items-center justify-center rounded-full text-accent disabled:text-label-3 disabled:opacity-50"
         >
           <ChevronRight size={24} strokeWidth={2.1} aria-hidden="true" />
@@ -75,10 +79,10 @@ export default function MonthPicker({ value, onChange, disableFuture = false }) 
           <select
             value={jumpMonth}
             onChange={(e) => setJumpMonth(Number(e.target.value))}
-            aria-label="Mês"
+            aria-label={t('rc.month')}
             className="min-w-0 flex-1 rounded-[0.5625rem] border-0 bg-surface-raised px-3 text-label"
           >
-            {MONTH_NAMES.map((name, idx) => (
+            {monthNames().map((name, idx) => (
               <option key={name} value={idx + 1}>
                 {name}
               </option>
@@ -87,7 +91,7 @@ export default function MonthPicker({ value, onChange, disableFuture = false }) 
           <select
             value={jumpYear}
             onChange={(e) => setJumpYear(Number(e.target.value))}
-            aria-label="Ano"
+            aria-label={t('rc.year')}
             className="rounded-[0.5625rem] border-0 bg-surface-raised px-3 text-label"
           >
             {yearOptions.map((y) => (
@@ -100,7 +104,7 @@ export default function MonthPicker({ value, onChange, disableFuture = false }) 
             type="submit"
             className="min-h-11 rounded-[0.5625rem] bg-accent-fill px-4 text-[0.9375rem] font-semibold text-white"
           >
-            Ir
+            {t('mp.go')}
           </button>
         </form>
       )}

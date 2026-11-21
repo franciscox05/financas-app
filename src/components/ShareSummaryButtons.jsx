@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { Copy, MessageCircle } from 'lucide-react'
 import { useMemo } from 'react'
 import { useToast } from '../context/toastContext'
@@ -24,9 +25,9 @@ export default function ShareSummaryButtons({ friend, balance, entries }) {
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(text)
-      toast.success('Resumo copiado.')
+      toast.success(t('rep.copied'))
     } catch {
-      toast.error('Não foi possível copiar. Tenta outra vez.')
+      toast.error(t('rep.copyFailed'))
     }
   }
 
@@ -38,10 +39,10 @@ export default function ShareSummaryButtons({ friend, balance, entries }) {
         rel="noopener"
         className={whatsappClass}
       >
-        <MessageCircle size={16} aria-hidden="true" /> Partilhar resumo
+        <MessageCircle size={16} aria-hidden="true" /> {t('share.summary')}
       </a>
       <button type="button" onClick={handleCopy} className={copyClass}>
-        <Copy size={16} aria-hidden="true" /> Copiar
+        <Copy size={16} aria-hidden="true" /> {t('share.copy')}
       </button>
     </div>
   )
