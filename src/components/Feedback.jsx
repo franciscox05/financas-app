@@ -61,7 +61,7 @@ export function PageSkeleton() {
 export function EmptyState({ title, description, actionLabel, onAction }) {
   return (
     <div className="rounded-group bg-fill px-5 py-9 text-center">
-      <Mascot size={72} motion="float" className="mx-auto mb-3" />
+      <Mascot size={88} motion="idle" className="mx-auto mb-3" />
       <p className="text-[1.0625rem] font-semibold tracking-tight text-label">{title}</p>
       {description && <p className="mx-auto mt-1 max-w-xs text-[0.8125rem] leading-snug text-label-2">{description}</p>}
       {actionLabel && onAction && (
