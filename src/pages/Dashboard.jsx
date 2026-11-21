@@ -16,6 +16,7 @@ import {
 } from '../lib/db'
 import Money from '../components/Money'
 import Card from '../components/Card'
+import InstallHint from '../components/InstallHint'
 import PageHeader from '../components/ui/PageHeader'
 import { eurSigned } from '../lib/format'
 import { monthTotals } from '../lib/monthTotals'
@@ -133,6 +134,8 @@ export default function Dashboard() {
       <PageHeader title="Registo" />
 
       {loadError && <ErrorNotice message={loadError} onRetry={loadAll} />}
+
+      <InstallHint />
 
       {monthSummary && (monthSummary.income > 0 || monthSummary.expense > 0) && (
         <button

@@ -9,6 +9,7 @@ import { getAvatarPath } from '../lib/profileDb'
 import { supabase } from '../lib/supabase'
 import { usePullToRefresh } from '../lib/usePullToRefresh'
 import BottomNav from './BottomNav'
+import ConnectionBanner from './ConnectionBanner'
 import ErrorBoundary from './ErrorBoundary'
 import NotificationToggle from './NotificationToggle'
 import PrivacyToggle from './PrivacyToggle'
@@ -198,6 +199,8 @@ export default function AppLayout() {
           <span className="sr-only">{refreshing ? 'A atualizar…' : ''}</span>
         </div>
       </div>
+
+      <ConnectionBanner />
 
       <main
         ref={contentRef}

@@ -83,4 +83,8 @@ export default {
   'cat.savings': 'Poupança',
   'cat.loans': 'Empréstimos',
   'cat.repayments': 'Devoluções',
+  'net.offline': 'Sem ligação à internet. O que vês pode estar desatualizado e não é possível gravar.',
+  'install.title': 'Instala a Stingy no iPhone',
+  'install.body': 'No Safari, toca em Partilhar e depois em "Adicionar ao ecrã principal". Abre em ecrã inteiro e recebe notificações.',
+  'install.close': 'Fechar dica',
 }
