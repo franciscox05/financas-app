@@ -23,6 +23,9 @@ export function monthTotals(txs, categories = []) {
   for (const tx of txs ?? []) {
     const cents = toCents(tx.amount)
     const isLending = lending.has(tx.category_id)
+    // Parte dos amigos numa divisão: já saiu do gasto (applyFriendShares) e conta
+    // como emprestada, porque o amigo ainda a deve (ou já a devolveu).
+    if (tx.friend_share) lentOut += toCents(tx.friend_share)
     if (tx.type === 'income') {
       if (isLending) lentBack += cents
       else income += cents
@@ -46,4 +49,22 @@ export function monthTotals(txs, categories = []) {
 
 export function isLendingCategory(categoryId, categories = []) {
   return categories.some((c) => c.id === categoryId && c.is_lending)
+}
+
+// Numa despesa dividida com amigos, só a tua parte é gasto teu: a parte do amigo
+// (movimento "paguei por ele" ligado à transação) sai do gasto e passa a contar
+// como emprestada. `shares` = Map(id da transação -> parte do amigo, em euros).
+// Não mexe em categorias de empréstimo/devolução (essas já ficam fora dos gastos).
+// Devolve cópias: o valor real da transação na conta nunca muda.
+export function applyFriendShares(txs, shares, categories = []) {
+  if (!shares || shares.size === 0) return txs ?? []
+  const lending = new Set(categories.filter((c) => c.is_lending).map((c) => c.id))
+  return (txs ?? []).map((tx) => {
+    const share = shares.get(tx.id)
+    if (!share || tx.type !== 'expense' || lending.has(tx.category_id)) return tx
+    const total = toCents(tx.amount)
+    const friend = Math.min(toCents(share), total)
+    if (friend <= 0) return tx
+    return { ...tx, amount: (total - friend) / 100, friend_share: friend / 100 }
+  })
 }

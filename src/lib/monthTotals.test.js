@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { monthTotals } from './monthTotals.js'
+import { applyFriendShares, monthTotals } from './monthTotals.js'
 
 const cats = [
   { id: 'inv', is_savings: true },
@@ -42,4 +42,35 @@ test('sem categorias marcadas nada muda (antes da migração)', () => {
 
 test('lista vazia', () => {
   assert.deepEqual(monthTotals([], cats), { income: 0, expense: 0, savings: 0, lentOut: 0, lentBack: 0, lentNet: 0 })
+})
+
+test('divisão com amigo: só a tua parte é gasto; a do amigo conta como emprestada', () => {
+  const txs = [{ id: 'u', type: 'expense', amount: 5, category_id: 'cas' }]
+  const t = monthTotals(applyFriendShares(txs, new Map([['u', 2.5]]), cats), cats)
+  assert.equal(t.expense, 2.5)
+  assert.equal(t.lentOut, 2.5)
+  assert.equal(txs[0].amount, 5) // original intacto
+})
+
+test('divisão: devolução do amigo (categoria devolução) não é ganho e fecha o empréstimo', () => {
+  const txs = [
+    { id: 'u', type: 'expense', amount: 5, category_id: 'cas' },
+    { id: 'r', type: 'income', amount: 2.5, category_id: 'dev' },
+  ]
+  const t = monthTotals(applyFriendShares(txs, new Map([['u', 2.5]]), cats), cats)
+  assert.equal(t.income, 0)
+  assert.equal(t.lentOut, 2.5)
+  assert.equal(t.lentBack, 2.5)
+  assert.equal(t.lentNet, 0)
+})
+
+test('parte do amigo nunca passa do valor da transação nem mexe em empréstimos', () => {
+  const txs = [
+    { id: 'a', type: 'expense', amount: 3, category_id: 'cas' },
+    { id: 'b', type: 'expense', amount: 30, category_id: 'emp' },
+  ]
+  const out = applyFriendShares(txs, new Map([['a', 9], ['b', 30]]), cats)
+  assert.equal(out[0].amount, 0)
+  assert.equal(out[1].amount, 30)
+  assert.equal(monthTotals(out, cats).lentOut, 33)
 })

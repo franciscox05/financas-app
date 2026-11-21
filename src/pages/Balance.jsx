@@ -27,7 +27,8 @@ import Money from '../components/Money'
 import { usePrivacy } from '../context/privacyContext'
 import HiddenChartNotice from '../components/HiddenChartNotice'
 import { eur, eurSigned } from '../lib/format'
-import { monthTotals } from '../lib/monthTotals'
+import { applyFriendShares, monthTotals } from '../lib/monthTotals'
+import { listFriendSharesByTransaction } from '../lib/friendsDb'
 import { categoryInsights } from '../lib/insights'
 
 // Cores pelos tokens de index.css (com par claro/escuro).
@@ -128,6 +129,9 @@ export default function Balance() {
           // Sem orçamentos (ou a tabela ainda não existir) o Balanço não pode falhar.
           listBudgets().catch(() => []),
         ])
+        // Divisões com amigos: só a tua parte conta como gasto (ver monthTotals.js).
+        // Se falhar, o Balanço continua com os valores inteiros.
+        const shares = await listFriendSharesByTransaction(txs.map((t) => t.id)).catch(() => new Map())
         if (cancelled) return
         setCategories(cats)
         setBudgets(buds)
@@ -138,7 +142,7 @@ export default function Balance() {
           const d = addMonths(rangeStart, i)
           byMonth.set(monthKey(d), { date: d, txs: [] })
         }
-        for (const tx of txs) {
+        for (const tx of applyFriendShares(txs, shares, cats)) {
           const d = new Date(`${tx.occurred_on}T00:00:00`)
           const bucket = byMonth.get(monthKey(d))
           if (!bucket) continue
@@ -301,19 +305,13 @@ export default function Balance() {
           </div>
         </div>
 
-        {(monthSummary || savingsAmount > 0 || lentOut > 0 || lentBack > 0) && (
+        {(monthSummary || savingsAmount > 0) && (
           <div className="mt-4 space-y-1 text-[0.8125rem] leading-snug text-label-2">
             {monthSummary && <p>{monthSummary}</p>}
             {savingsAmount > 0 && (
               <p>
                 Dessas, <Money value={savingsAmount} /> foram para poupança/investimento — não contam como
                 gasto do dia a dia.
-              </p>
-            )}
-            {(lentOut > 0 || lentBack > 0) && (
-              <p>
-                Empréstimos (fora dos ganhos e gastos): emprestaste <Money value={lentOut} /> e recebeste de volta{' '}
-                <Money value={lentBack} />.
               </p>
             )}
           </div>
@@ -361,6 +359,33 @@ export default function Balance() {
           <CategoryBars items={incomeBreakdown} color={INCOME_COLOR} onSelectCategory={setDrilldownCategory} />
         )}
       </section>
+
+      {(lentOut > 0 || lentBack > 0) && (
+        <Group
+          header="Empréstimos e devoluções"
+          list
+          footer="Ficam fora dos ganhos e gastos. Numa divisão com amigos, só a tua parte conta como gasto; a parte deles entra aqui como emprestada."
+        >
+          <li className="flex items-baseline justify-between gap-3 px-4 py-3 text-[0.9375rem]">
+            <span className="text-label-2">Emprestado</span>
+            <span className="amount font-medium text-label">
+              <Money value={lentOut} />
+            </span>
+          </li>
+          <li className="flex items-baseline justify-between gap-3 px-4 py-3 text-[0.9375rem]">
+            <span className="text-label-2">Recebido de volta</span>
+            <span className="amount font-medium text-label">
+              <Money value={lentBack} />
+            </span>
+          </li>
+          <li className="flex items-baseline justify-between gap-3 px-4 py-3 text-[0.9375rem]">
+            <span className="text-label-2">{lentOut >= lentBack ? 'Por receber este mês' : 'Recebido a mais este mês'}</span>
+            <span className="amount font-semibold text-label">
+              <Money value={Math.abs(lentOut - lentBack)} />
+            </span>
+          </li>
+        </Group>
+      )}
 
       <CategoryDrilldownModal
         category={drilldownCategory}

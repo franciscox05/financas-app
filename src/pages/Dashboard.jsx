@@ -20,7 +20,8 @@ import RecurringDueCard from '../components/RecurringDueCard'
 import InstallHint from '../components/InstallHint'
 import PageHeader from '../components/ui/PageHeader'
 import { eurSigned } from '../lib/format'
-import { monthTotals } from '../lib/monthTotals'
+import { applyFriendShares, monthTotals } from '../lib/monthTotals'
+import { listFriendSharesByTransaction } from '../lib/friendsDb'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -51,7 +52,8 @@ export default function Dashboard() {
       setCategories(cats)
       setTransactions(txs)
       // Empréstimos e devoluções ficam fora do saldo do mês (ver monthTotals).
-      setMonthSummary(monthTotals(monthTxs, cats))
+      const shares = await listFriendSharesByTransaction(monthTxs.map((t) => t.id)).catch(() => new Map())
+      setMonthSummary(monthTotals(applyFriendShares(monthTxs, shares, cats), cats))
     } catch (err) {
       setLoadError(err.message)
     } finally {
