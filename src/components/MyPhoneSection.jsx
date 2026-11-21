@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useEffect, useRef, useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { getMyPhone, saveMyPhone } from '../lib/friendsDb'
@@ -19,7 +20,7 @@ export default function MyPhoneSection() {
         if (mounted.current) setValue(phone ?? '')
       })
       .catch((err) => {
-        if (mounted.current) setError(err.message || 'Não foi possível carregar o número.')
+        if (mounted.current) setError(err.message || t('phone.loadFailed'))
       })
       .finally(() => {
         if (mounted.current) setLoaded(true)
@@ -37,10 +38,10 @@ export default function MyPhoneSection() {
     try {
       await saveMyPhone(value)
       if (mounted.current) {
-        toast.success(value.trim() === '' ? 'Número removido.' : 'Número guardado.')
+        toast.success(value.trim() === '' ? t('phone.removed') : t('phone.saved'))
       }
     } catch (err) {
-      if (mounted.current) setError(err.message || 'Não foi possível guardar o número. Tenta outra vez.')
+      if (mounted.current) setError(err.message || t('phone.saveFailed'))
     } finally {
       if (mounted.current) setBusy(false)
     }
@@ -50,10 +51,10 @@ export default function MyPhoneSection() {
     <div>
       <form onSubmit={handleSubmit} className="space-y-2">
         <label htmlFor="my-phone" className="block text-xs font-medium text-label-2">
-          O meu número de telemóvel (opcional)
+          {t('phone.mine')}
         </label>
         <p id="my-phone-hint" className="text-xs text-label-2">
-          É com este número que os teus amigos te encontram na app. Só tu o vês.
+          {t('phone.mineHelp')}
         </p>
         <div className="flex gap-2">
           <input
@@ -62,7 +63,7 @@ export default function MyPhoneSection() {
             type="tel"
             inputMode="tel"
             autoComplete="off"
-            placeholder="Ex: 912 345 678"
+            placeholder={t('fr.phonePlaceholder')}
             value={value}
             disabled={!loaded || busy}
             onChange={(e) => setValue(e.target.value)}
@@ -73,7 +74,7 @@ export default function MyPhoneSection() {
             disabled={busy || !loaded}
             className={`min-h-11 rounded-control bg-accent-fill px-4 text-sm font-medium text-white transition duration-150 ease-out active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 ${focusRing}`}
           >
-            {busy ? 'A guardar...' : 'Guardar'}
+            {busy ? t('common.saving') : t('common.save')}
           </button>
         </div>
         {error && (

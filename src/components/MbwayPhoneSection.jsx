@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useEffect, useRef, useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { getMyMbwayPhone, saveMbwayPhone } from '../lib/friendsDb'
@@ -19,7 +20,7 @@ export default function MbwayPhoneSection() {
         if (mounted.current) setValue(phone ?? '')
       })
       .catch((err) => {
-        if (mounted.current) setError(err.message || 'Não foi possível carregar o número.')
+        if (mounted.current) setError(err.message || t('phone.loadFailed'))
       })
       .finally(() => {
         if (mounted.current) setLoaded(true)
@@ -37,10 +38,10 @@ export default function MbwayPhoneSection() {
     try {
       await saveMbwayPhone(value)
       if (mounted.current) {
-        toast.success(value.trim() === '' ? 'Número MB Way removido.' : 'Número MB Way guardado.')
+        toast.success(value.trim() === '' ? t('mbway.removed') : t('mbway.saved'))
       }
     } catch (err) {
-      if (mounted.current) setError(err.message || 'Não foi possível guardar o número. Tenta outra vez.')
+      if (mounted.current) setError(err.message || t('phone.saveFailed'))
     } finally {
       if (mounted.current) setBusy(false)
     }
@@ -50,16 +51,16 @@ export default function MbwayPhoneSection() {
     <div className="border-t border-separator pt-4">
       <form onSubmit={handleSubmit} className="space-y-2">
         <label htmlFor="my-mbway" className="block text-xs font-medium text-label-2">
-          O meu número MB Way (opcional)
+          {t('mbway.mine')}
         </label>
-        <p className="text-xs text-label-2">Aparece nos lembretes que envias aos amigos.</p>
+        <p className="text-xs text-label-2">{t('mbway.help')}</p>
         <div className="flex gap-2">
           <input
             id="my-mbway"
             type="tel"
             inputMode="tel"
             autoComplete="off"
-            placeholder="Ex: 912 345 678"
+            placeholder={t('fr.phonePlaceholder')}
             value={value}
             disabled={!loaded || busy}
             onChange={(e) => setValue(e.target.value)}
@@ -70,7 +71,7 @@ export default function MbwayPhoneSection() {
             disabled={busy || !loaded}
             className={`min-h-11 rounded-control bg-accent-fill px-4 text-sm font-medium text-white transition duration-150 ease-out active:scale-[0.98] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 ${focusRing}`}
           >
-            {busy ? 'A guardar...' : 'Guardar'}
+            {busy ? t('common.saving') : t('common.save')}
           </button>
         </div>
         {error && (
