@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect } from 'react'
+import { MascotSplash } from './components/MascotTile'
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import AppLayout from './components/AppLayout'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -69,7 +70,7 @@ function App() {
       <ToastProvider>
       <BrowserRouter>
         <RecoveryRedirect />
-        <Suspense fallback={null}>
+        <Suspense fallback={<MascotSplash />}>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />

@@ -6,6 +6,7 @@ import { setFormat } from '../lib/format'
 import { getOnboardingState } from '../lib/profileDb'
 import { isAppLockEnabled, isUnlockedThisSession } from '../lib/appLock'
 import AppLockScreen from './AppLockScreen'
+import { MascotSplash } from './MascotTile'
 
 // Para utilizadores com sessão: carrega o perfil uma vez, aplica o idioma e a
 // moeda guardados e manda quem ainda não fez o onboarding para /bem-vindo.
@@ -39,7 +40,7 @@ export default function ProtectedRoute() {
     }
   }, [user])
 
-  if (loading) return null
+  if (loading) return <MascotSplash />
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />
   if (isAppLockEnabled(user.id) && !isUnlockedThisSession(user.id)) {
     return <AppLockScreen onUnlocked={() => setUnlockTick((n) => n + 1)} />

@@ -1,6 +1,6 @@
 import { ScanFace } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import stingyIcon from '../assets/stingy-icone.svg'
+import MascotTile from './MascotTile'
 import { useAuth } from '../context/AuthContext'
 import { useT } from '../i18n'
 import { unlockApp } from '../lib/appLock'
@@ -38,7 +38,7 @@ export default function AppLockScreen({ onUnlocked }) {
 
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-canvas px-6 text-center">
-      <img src={stingyIcon} alt="" aria-hidden="true" className="size-20 rounded-[1.375rem] shadow-[var(--shadow-raised)]" />
+      <MascotTile size={128} motion="enter" className="shadow-[var(--shadow-raised)]" />
       <div>
         <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight text-label">{t('lock.title')}</h1>
         <p className="mt-1 text-[0.9375rem] text-label-2">{t('lock.body')}</p>

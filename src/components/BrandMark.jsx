@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import stingyIcon from '../assets/stingy-icone.svg'
+import MascotTile from './MascotTile'
 
 // Evento global: disparado quando algo corre bem (aviso de sucesso). O ícone da
 // marca reage com um pequeno salto, para a app ter uma resposta "viva".
@@ -19,16 +19,8 @@ export default function BrandMark({ size = 24, text = 'Stingy', className = '' }
 
   return (
     <span className={`inline-flex min-w-0 items-center gap-2 ${className}`}>
-      <img
-        key={pops}
-        src={stingyIcon}
-        alt=""
-        aria-hidden="true"
-        width={size}
-        height={size}
-        style={{ borderRadius: size * 0.225 }}
-        className={`shrink-0 ${pops > 0 ? 'brand-pop' : ''}`}
-      />
+      {/* A chave muda a cada sucesso: o mascote volta a fazer a festa. */}
+      <MascotTile key={pops} size={size} motion={pops > 0 ? 'cheer' : 'idle'} />
       <span className="truncate text-[1.0625rem] font-bold tracking-tight text-label">{text}</span>
     </span>
   )
