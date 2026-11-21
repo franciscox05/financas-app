@@ -300,13 +300,16 @@ async function fetchAllPages(build) {
   }
 }
 
+// Em páginas (S2-2 da auditoria de 15/11): sem isto, a partir do 1001.º acerto de
+// saldo os mais antigos desapareciam em silêncio e o gráfico perdia a base.
 export async function listNetWorthSnapshots() {
-  const { data, error } = await supabase
-    .from('net_worth_snapshots')
-    .select('*, accounts(name)')
-    .order('snapshot_date', { ascending: false })
-  if (error) throw error
-  return data
+  return fetchAllPages(() =>
+    supabase
+      .from('net_worth_snapshots')
+      .select('*, accounts(name)')
+      .order('snapshot_date', { ascending: false })
+      .order('id'),
+  )
 }
 
 export async function createSnapshot({ accountId, value, snapshotDate }) {
@@ -482,16 +485,18 @@ export async function deleteCategoryRule(id) {
 // investimentos): continua a ser UMA transferência (as duas contas atualizam
 // sozinhas, sem duas entradas a desalinhar), mas `listTransactionsInRange`
 // inclui-a nos totais de Gasto como se fosse uma transação normal.
+// Em páginas (S2-2): os saldos das contas dependem de TODAS as transferências.
 export async function listTransfers() {
-  const { data, error } = await supabase
-    .from('transfers')
-    .select(
-      '*, from_account:accounts!from_account_id(name), to_account:accounts!to_account_id(name), categories(name)',
-    )
-    .order('occurred_on', { ascending: false })
-    .order('created_at', { ascending: false })
-  if (error) throw error
-  return data
+  return fetchAllPages(() =>
+    supabase
+      .from('transfers')
+      .select(
+        '*, from_account:accounts!from_account_id(name), to_account:accounts!to_account_id(name), categories(name)',
+      )
+      .order('occurred_on', { ascending: false })
+      .order('created_at', { ascending: false })
+      .order('id'),
+  )
 }
 
 export async function createTransfer({

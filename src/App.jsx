@@ -1,23 +1,53 @@
-import { useEffect } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import AppLayout from './components/AppLayout'
 import ProtectedRoute from './components/ProtectedRoute'
 import ToastProvider from './components/ToastProvider'
 import { AuthProvider } from './context/AuthContext'
-import AccountHistory from './pages/AccountHistory'
-import Balance from './pages/Balance'
 import Dashboard from './pages/Dashboard'
-import FriendLedger from './pages/FriendLedger'
-import Friends from './pages/Friends'
 import Login from './pages/Login'
-import Manage from './pages/Manage'
-import Onboarding from './pages/Onboarding'
-import NetWorth from './pages/NetWorth'
-import Profile from './pages/Profile'
-import ResetPassword from './pages/ResetPassword'
-import Signup from './pages/Signup'
-import ForgotPassword from './pages/ForgotPassword'
 import { isRecoveryLink } from './lib/supabase'
+
+// Carregamento por partes: o Registo (ecrã inicial) e o Login vão no arranque; o resto
+// (gráficos, importadores, etc.) só quando é preciso. Antes ia tudo num ficheiro de 1,6 MB.
+// Cada `import()` fica numa função para poder ser pedido antes da navegação (ver
+// `preloadPages`), e o `lazy` reutiliza o mesmo pedido.
+const pages = {
+  AccountHistory: () => import('./pages/AccountHistory'),
+  Balance: () => import('./pages/Balance'),
+  FriendLedger: () => import('./pages/FriendLedger'),
+  Friends: () => import('./pages/Friends'),
+  Manage: () => import('./pages/Manage'),
+  Onboarding: () => import('./pages/Onboarding'),
+  NetWorth: () => import('./pages/NetWorth'),
+  Profile: () => import('./pages/Profile'),
+  ResetPassword: () => import('./pages/ResetPassword'),
+  Signup: () => import('./pages/Signup'),
+  ForgotPassword: () => import('./pages/ForgotPassword'),
+}
+const AccountHistory = lazy(pages.AccountHistory)
+const Balance = lazy(pages.Balance)
+const FriendLedger = lazy(pages.FriendLedger)
+const Friends = lazy(pages.Friends)
+const Manage = lazy(pages.Manage)
+const Onboarding = lazy(pages.Onboarding)
+const NetWorth = lazy(pages.NetWorth)
+const Profile = lazy(pages.Profile)
+const ResetPassword = lazy(pages.ResetPassword)
+const Signup = lazy(pages.Signup)
+const ForgotPassword = lazy(pages.ForgotPassword)
+
+// Depois do arranque, pede os separadores principais em segundo plano, para que trocar de
+// separador continue instantâneo. Falhas aqui não importam: o `lazy` volta a pedir.
+function preloadPages() {
+  const run = () => {
+    for (const load of [pages.Balance, pages.NetWorth, pages.Friends, pages.Manage, pages.Profile]) {
+      load().catch(() => {})
+    }
+  }
+  if ('requestIdleCallback' in window) window.requestIdleCallback(run, { timeout: 3000 })
+  else setTimeout(run, 1500)
+}
 
 // Um link de recuperação que chegue a outra rota (ver isRecoveryLink) vai sempre parar à página
 // de nova password — com a sessão temporária aberta, senão entrava-se na app sem a mudar.
@@ -33,11 +63,13 @@ function RecoveryRedirect() {
 }
 
 function App() {
+  useEffect(preloadPages, [])
   return (
     <AuthProvider>
       <ToastProvider>
       <BrowserRouter>
         <RecoveryRedirect />
+        <Suspense fallback={null}>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
@@ -58,6 +90,7 @@ function App() {
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </BrowserRouter>
       </ToastProvider>
     </AuthProvider>
