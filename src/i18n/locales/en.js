@@ -153,4 +153,11 @@ export default {
   'rec.due.already': 'It had already been added this month.',
   'rec.due.error': 'Could not add: {message}',
   'rec.due.manage': 'Manage',
+  'data.title': 'Your data',
+  'data.body': 'Download everything you have in the app (accounts, entries, categories, friends, notes) as a JSON file.',
+  'data.button': 'Export all data',
+  'data.busy': 'Preparing the file…',
+  'data.done': 'Data exported ({n} records).',
+  'data.partial': 'Exported, but {n} table(s) could not be read. See "errors" in the file.',
+  'data.error': 'Could not export: {message}',
 }

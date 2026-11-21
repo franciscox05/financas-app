@@ -1,6 +1,7 @@
-import { ChevronLeft, Phone, Target, StickyNote } from 'lucide-react'
+import { ChevronLeft, Database, Phone, Target, StickyNote } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import Card from '../components/Card'
+import DataExportSection from '../components/DataExportSection'
 import GoalsSection from '../components/GoalsSection'
 import MbwayPhoneSection from '../components/MbwayPhoneSection'
 import MyPhoneSection from '../components/MyPhoneSection'
@@ -8,6 +9,7 @@ import NotesCalendar from '../components/NotesCalendar'
 import PersonalInfoSection from '../components/PersonalInfoSection'
 import SignOutButton from '../components/SignOutButton'
 import { focusRing } from '../components/ui/styles'
+import { useT } from '../i18n'
 
 // Mesmo contentor e mesma hierarquia de título em todos os blocos da página —
 // antes o Perfil usava cartões sem fundo e a Gestão usava rounded-2xl com
@@ -18,6 +20,7 @@ const cardTitleClass =
 // Módulo pessoal: dados do perfil, telefone/MB Way (usados pelos Amigos) e um
 // espaço livre para objetivos e notas, sem ligação a dinheiro.
 export default function Profile() {
+  const t = useT()
   return (
     <div className="space-y-8">
       <header>
@@ -51,6 +54,13 @@ export default function Profile() {
           <StickyNote size={14} aria-hidden="true" /> Notas
         </h2>
         <NotesCalendar />
+      </Card>
+
+      <Card as="section" className="space-y-3">
+        <h2 className={cardTitleClass}>
+          <Database size={14} aria-hidden="true" /> {t('data.title')}
+        </h2>
+        <DataExportSection />
       </Card>
 
       <SignOutButton />
