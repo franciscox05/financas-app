@@ -96,4 +96,6 @@ export default {
   'stmt.empty.body': 'Ainda não há registos nesta conta.',
   'stmt.currentBalance': 'saldo atual',
   'stmt.close': 'Fechar',
+  'day.today': 'Hoje',
+  'day.yesterday': 'Ontem',
 }

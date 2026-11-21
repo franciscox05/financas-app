@@ -3,9 +3,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { statementKey } from '../lib/accountBalance'
 import { listMovementsPage } from '../lib/db'
 import { getLedgerEntriesForTransactions } from '../lib/friendsDb'
-import { addMonths, monthLabel, monthStart, toIsoDate } from '../lib/dates'
+import { addMonths, monthLabel, monthStart, toIsoDate, today } from '../lib/dates'
 import { entryLabel } from '../lib/ledgerMath'
 import { parseSmartQuery } from '../lib/smartSearch'
+import { dayHeading, groupByDay } from '../lib/dayGroups'
 import { useAccountStatement } from '../lib/useAccountStatement'
 import { t } from '../i18n'
 import { EmptyState, ErrorNotice, ListSkeleton, Pager } from './Feedback'
@@ -13,7 +14,7 @@ import Money from './Money'
 import MonthPicker from './MonthPicker'
 import TransactionDetailModal from './TransactionDetailModal'
 import Segmented from './ui/Segmented'
-import { eur, ptDate } from '../lib/format'
+import { eur, getFormat } from '../lib/format'
 
 const PAGE_SIZE = 25
 
@@ -58,8 +59,7 @@ function TransferRow({ tx, onOpen, balanceBefore }) {
               {tx.note || tx.category_name || 'Investimento'}
             </p>
             <p className="flex items-center gap-1 truncate text-xs text-label-2">
-              {ptDate(tx.occurred_on)}
-              {tx.note && ` · ${tx.category_name ?? 'Sem categoria'}`} · {tx.account_name ?? 'Conta'}
+              {tx.note ? `${tx.category_name ?? 'Sem categoria'} · ` : ''}{tx.account_name ?? 'Conta'}
               <ArrowRightLeft size={11} aria-hidden="true" className="shrink-0" />
               {tx.counter_account_name ?? 'Conta'}
             </p>
@@ -82,7 +82,7 @@ function TransferRow({ tx, onOpen, balanceBefore }) {
             {tx.note || 'Transferência'}
           </p>
           <p className="truncate text-xs text-label-2">
-            {ptDate(tx.occurred_on)} · {tx.account_name ?? 'Conta'} → {tx.counter_account_name ?? 'Conta'}
+            {tx.account_name ?? 'Conta'} → {tx.counter_account_name ?? 'Conta'}
           </p>
         </div>
         <span className="shrink-0 text-right text-sm font-semibold text-accent">
@@ -103,7 +103,6 @@ function LedgerMovementRow({ tx, onOpen }) {
             {tx.note || entryLabel(tx.ledger_kind)}
           </p>
           <p className="flex items-center gap-1 text-xs text-label-2">
-            {ptDate(tx.occurred_on)}
             <Link2 size={11} aria-hidden="true" className="shrink-0" />
             {tx.friend_name}
             {LINKED_BADGE_TEXT[tx.ledger_status] ? ` · ${LINKED_BADGE_TEXT[tx.ledger_status]}` : ''}
@@ -126,8 +125,7 @@ function TransactionRow({ tx, linkedEntry, onOpen, balanceBefore }) {
             {tx.note || tx.category_name || 'Sem nota'}
           </p>
           <p className="truncate text-xs text-label-2">
-            {ptDate(tx.occurred_on)}
-            {tx.note && ` · ${tx.category_name ?? 'Sem categoria'}`} · {tx.account_name ?? 'Sem conta'}
+            {tx.note ? `${tx.category_name ?? 'Sem categoria'} · ` : ''}{tx.account_name ?? 'Sem conta'}
           </p>
           {linkedEntry && (
             <p className="mt-0.5 flex items-center gap-1 text-xs text-label-2">
@@ -274,6 +272,8 @@ export default function TransactionList({ categories, accounts, refreshToken, on
   }, [statementLines])
 
   const parsedSmart = useMemo(() => parseSmartQuery(filters.query), [filters.query])
+  const todayIso = today()
+  const dayLabels = { today: t('day.today'), yesterday: t('day.yesterday') }
 
   // Por omissão a lista fica presa ao mês selecionado (como o resto da app),
   // em vez de mostrar tudo desde sempre. Uma pesquisa com data explícita (ex.
@@ -425,12 +425,16 @@ export default function TransactionList({ categories, accounts, refreshToken, on
         />
       ) : (
         <>
-          <ul
-            className={`divide-y divide-separator transition-opacity duration-150 ${
-              loading ? 'opacity-60' : ''
-            }`}
-          >
-            {rows.map((tx) =>
+          {/* Agrupado por dia, como nas apps dos bancos: o dia vai no título do grupo e
+              sai do subtítulo de cada linha. */}
+          <div className={`space-y-3 transition-opacity duration-150 ${loading ? 'opacity-60' : ''}`}>
+            {groupByDay(rows).map((group) => (
+              <section key={group.date} aria-label={dayHeading(group.date, todayIso, dayLabels, getFormat().locale)}>
+                <h3 className="sticky top-[calc(max(1rem,env(safe-area-inset-top))+3.85rem)] z-[1] -mx-1 bg-surface px-1 py-1 text-[0.8125rem] font-semibold text-label-2">
+                  {dayHeading(group.date, todayIso, dayLabels, getFormat().locale)}
+                </h3>
+                <ul className="divide-y divide-separator">
+            {group.rows.map((tx) =>
               tx.source === 'transfer' ? (
                 <TransferRow
                   key={tx.id}
@@ -450,7 +454,10 @@ export default function TransactionList({ categories, accounts, refreshToken, on
                 />
               ),
             )}
-          </ul>
+                </ul>
+              </section>
+            ))}
+          </div>
           <Pager page={page} totalPages={Math.ceil(totalCount / PAGE_SIZE)} onChange={setPage} />
         </>
       )}

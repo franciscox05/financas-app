@@ -96,4 +96,6 @@ export default {
   'stmt.empty.body': 'There are no entries in this account yet.',
   'stmt.currentBalance': 'current balance',
   'stmt.close': 'Close',
+  'day.today': 'Today',
+  'day.yesterday': 'Yesterday',
 }
