@@ -10,6 +10,7 @@ import { getAvatarPath } from '../lib/profileDb'
 import { supabase } from '../lib/supabase'
 import { usePullToRefresh } from '../lib/usePullToRefresh'
 import BottomNav from './BottomNav'
+import BrandMark from './BrandMark'
 import ErrorBoundary from './ErrorBoundary'
 import NotificationToggle from './NotificationToggle'
 import PrivacyToggle from './PrivacyToggle'
@@ -172,14 +173,25 @@ export default function AppLayout() {
             )}
           </Link>
         </div>
-        <p
-          aria-hidden={!showBarTitle}
-          className={`truncate text-center text-[1.0625rem] font-semibold tracking-tight text-label transition-opacity duration-200 ease-apple motion-reduce:transition-none ${
-            showBarTitle ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
-          {barTitle}
-        </p>
+        {/* Ao centro: a marca enquanto o título grande do ecrã está à vista; ao fazer scroll
+            troca (com fade) pelo título pequeno, como no iOS. Ecrãs sem título grande mostram
+            sempre o título. */}
+        <div className="relative grid min-w-0 place-items-center">
+          <BrandMark
+            size={24}
+            className={`col-start-1 row-start-1 transition-opacity duration-200 ease-apple motion-reduce:transition-none ${
+              showBarTitle ? 'pointer-events-none opacity-0' : 'opacity-100'
+            }`}
+          />
+          <p
+            aria-hidden={!showBarTitle}
+            className={`col-start-1 row-start-1 truncate text-center text-[1.0625rem] font-semibold tracking-tight text-label transition-opacity duration-200 ease-apple motion-reduce:transition-none ${
+              showBarTitle ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            {barTitle}
+          </p>
+        </div>
         <div className="flex h-11 items-center justify-end">
           <PrivacyToggle />
           <NotificationToggle />

@@ -10,7 +10,7 @@ export default function AuthBrand({ title }) {
         className="size-16 rounded-[1.125rem] shadow-[var(--shadow-raised)]"
       />
       <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-label-3">Stingy</p>
+        <p className="text-[1.0625rem] font-bold tracking-tight text-accent">Stingy</p>
         <h1 className="mt-0.5 text-[1.75rem] leading-tight font-bold tracking-tight text-label">{title}</h1>
       </div>
     </div>
