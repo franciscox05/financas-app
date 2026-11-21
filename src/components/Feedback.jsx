@@ -1,6 +1,7 @@
 // Blocos de feedback partilhados: skeletons de carregamento, estados vazios com
 // call-to-action e aviso de erro. A animação respeita prefers-reduced-motion.
 import { X } from 'lucide-react'
+import Mascot from './Mascot'
 
 export function Skeleton({ className = '' }) {
   return (
@@ -60,6 +61,7 @@ export function PageSkeleton() {
 export function EmptyState({ title, description, actionLabel, onAction }) {
   return (
     <div className="rounded-group bg-fill px-5 py-9 text-center">
+      <Mascot size={72} motion="float" className="mx-auto mb-3" />
       <p className="text-[1.0625rem] font-semibold tracking-tight text-label">{title}</p>
       {description && <p className="mx-auto mt-1 max-w-xs text-[0.8125rem] leading-snug text-label-2">{description}</p>}
       {actionLabel && onAction && (
