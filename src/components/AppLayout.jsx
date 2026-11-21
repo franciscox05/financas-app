@@ -161,28 +161,36 @@ export default function AppLayout() {
           scrolled ? 'border-separator' : 'border-transparent'
         }`}
       >
-        <div className="flex h-11 items-center">
+        {/* Topo (2026-11-21): marca sempre à esquerda; ao centro só o título pequeno do ecrã,
+            que aparece com fade quando o título grande sai de vista (como no iOS); à direita as
+            ações num grupo e a foto de perfil no fim. */}
+        <Link to="/" aria-label="Stingy, início" className="pressable flex h-11 min-w-0 items-center justify-self-start rounded-full pl-2">
+          <BrandMark size={32} text="Stingy" />
+        </Link>
+        <p
+          aria-hidden={!showBarTitle}
+          className={`max-w-[10rem] truncate text-[1.0625rem] font-semibold tracking-tight text-label transition-opacity duration-200 ${
+            showBarTitle ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          {barTitle}
+        </p>
+        <div className="flex h-11 items-center justify-end gap-1">
+          <div className="flex items-center rounded-full bg-fill">
+            <PrivacyToggle />
+            <NotificationToggle />
+          </div>
           <Link
             to="/perfil"
             aria-label="Perfil"
             className="pressable flex size-11 shrink-0 items-center justify-center rounded-full text-label-2"
           >
             {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="size-8 rounded-full object-cover" />
+              <img src={avatarUrl} alt="" className="size-9 rounded-full object-cover ring-2 ring-fill" />
             ) : (
-              <UserCircle2 size={26} strokeWidth={1.6} aria-hidden="true" />
+              <UserCircle2 size={30} strokeWidth={1.6} aria-hidden="true" />
             )}
           </Link>
-        </div>
-        {/* Ao centro: a marca enquanto o título grande do ecrã está à vista; ao fazer scroll
-            troca (com fade) pelo título pequeno, como no iOS. Ecrãs sem título grande mostram
-            sempre o título. */}
-        <div className="relative grid min-w-0 place-items-center">
-          <BrandMark size={28} text={showBarTitle ? barTitle : 'Stingy'} />
-        </div>
-        <div className="flex h-11 items-center justify-end">
-          <PrivacyToggle />
-          <NotificationToggle />
         </div>
       </header>
 
