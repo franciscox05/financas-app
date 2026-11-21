@@ -172,4 +172,8 @@ export default {
   'lock.on': 'Bloqueio ligado.',
   'lock.off': 'Bloqueio desligado.',
   'lock.enableFailed': 'Não foi possível ligar o bloqueio.',
+  'net.offline': 'Sem ligação à internet. O que vês pode estar desatualizado e não é possível gravar.',
+  'install.title': 'Instala a Stingy no iPhone',
+  'install.body': 'No Safari, toca em Partilhar e depois em "Adicionar ao ecrã principal". Abre em ecrã inteiro e recebe notificações.',
+  'install.close': 'Fechar dica',
 }

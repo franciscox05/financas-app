@@ -172,4 +172,8 @@ export default {
   'lock.on': 'Lock turned on.',
   'lock.off': 'Lock turned off.',
   'lock.enableFailed': 'Could not turn on the lock.',
+  'net.offline': 'No internet connection. What you see may be out of date and saving is not possible.',
+  'install.title': 'Install Stingy on your iPhone',
+  'install.body': 'In Safari, tap Share and then "Add to Home Screen". It opens full screen and gets notifications.',
+  'install.close': 'Close tip',
 }
