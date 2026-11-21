@@ -552,6 +552,18 @@ export async function deleteTransfer(id) {
 // --- Orçamentos ---------------------------------------------------------------
 // Um limite mensal por categoria de despesa (único por utilizador e categoria,
 // ver migração 20261120000000). Cálculo do progresso em lib/budgets.js.
+// Datas (só a data) com algum registo desde `from`, para a sequência de dias
+// seguidos no Registo. Pedido leve: não traz valores nem notas.
+export async function listLoggingDates({ from }) {
+  const [{ data, error }, { data: trData, error: trError }] = await Promise.all([
+    supabase.from('transactions').select('occurred_on').gte('occurred_on', from),
+    supabase.from('transfers').select('occurred_on').gte('occurred_on', from),
+  ])
+  if (error) throw error
+  if (trError) throw trError
+  return [...data, ...trData].map((r) => r.occurred_on)
+}
+
 export async function listBudgets() {
   const { data, error } = await supabase.from('budgets').select('id, category_id, amount').order('created_at')
   if (error) throw error
