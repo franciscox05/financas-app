@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { createTransaction, getCurrentUserId } from './db'
+import { entryCounts } from './ledgerMath'
 import { validateName } from './names'
 import { listFriendAvatars, sendFriendRequestByPhone } from './linkedDb'
 import {
@@ -293,6 +294,26 @@ export async function getLedgerEntriesForTransactions(transactionIds) {
   const names = new Map(friends.map((f) => [f.id, f.name]))
 
   return new Map(data.map((d) => [d.transaction_id, { ...d, friendName: names.get(d.friend_id) ?? 'um amigo' }]))
+}
+
+// Parte dos amigos nas despesas divididas: soma, por transação, dos movimentos "paguei por
+// ele" ligados a ela que contam para o saldo. Map(id da transação -> euros).
+export async function listFriendSharesByTransaction(transactionIds) {
+  const ids = [...new Set(transactionIds.filter(Boolean))]
+  const shares = new Map()
+  for (let i = 0; i < ids.length; i += 100) {
+    const { data, error } = await supabase
+      .from('ledger_entries')
+      .select('transaction_id, amount, kind, status, user_id, created_by, cancel_requested_by')
+      .eq('kind', 'paid_for_them')
+      .in('transaction_id', ids.slice(i, i + 100))
+    if (error) throw error
+    for (const e of data) {
+      if (!entryCounts(e)) continue
+      shares.set(e.transaction_id, Math.round(((shares.get(e.transaction_id) ?? 0) + Number(e.amount)) * 100) / 100)
+    }
+  }
+  return shares
 }
 
 export async function getMyMbwayPhone() {
