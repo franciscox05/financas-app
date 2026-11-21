@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { ChevronLeft } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
@@ -63,13 +64,13 @@ export default function AccountHistory() {
       <div className="flex items-center gap-2">
         <Link
           to="/patrimonio"
-          aria-label="Voltar ao património"
+          aria-label={t('ah.back')}
           className="-ml-2 flex size-10 items-center justify-center rounded-control text-label-2 active:scale-95"
         >
           <ChevronLeft size={22} />
         </Link>
         <h2 className="min-w-0 truncate text-lg font-semibold tracking-tight text-label">
-          {account?.name ?? 'Conta'}
+          {account?.name ?? t('common.account')}
         </h2>
       </div>
 
@@ -77,7 +78,7 @@ export default function AccountHistory() {
 
       {snapshots.length > 0 && (
         <Card as="section" className="space-y-1">
-          <h3 className="text-sm font-semibold text-label-2">Atualizações de saldo</h3>
+          <h3 className="text-sm font-semibold text-label-2">{t('ah.snapshots')}</h3>
           <ul className="divide-y divide-separator">
             {snapshots.slice((snapPage - 1) * PAGE_SIZE, snapPage * PAGE_SIZE).map((s) => (
               <li key={s.id} className="flex items-center justify-between py-2 text-sm">
@@ -94,18 +95,18 @@ export default function AccountHistory() {
 
       {transfers.length > 0 && (
         <Card as="section" className="space-y-1">
-          <h3 className="text-sm font-semibold text-label-2">Transferências</h3>
+          <h3 className="text-sm font-semibold text-label-2">{t('ah.transfers')}</h3>
           <ul className="divide-y divide-separator">
-            {transfers.slice((transferPage - 1) * PAGE_SIZE, transferPage * PAGE_SIZE).map((t) => {
-              const isOutgoing = t.from_account_id === accountId
+            {transfers.slice((transferPage - 1) * PAGE_SIZE, transferPage * PAGE_SIZE).map((tr) => {
+              const isOutgoing = tr.from_account_id === accountId
               return (
-                <li key={t.id} className="flex items-center justify-between py-2 text-sm">
+                <li key={tr.id} className="flex items-center justify-between py-2 text-sm">
                   <span className="min-w-0 truncate text-label-2">
-                    {ptDate(t.occurred_on)} ·{' '}
-                    {isOutgoing ? `para ${t.to_account?.name ?? 'conta'}` : `de ${t.from_account?.name ?? 'conta'}`}
+                    {ptDate(tr.occurred_on)} ·{' '}
+                    {isOutgoing ? t('ah.to', { name: tr.to_account?.name ?? t('ah.accountLower') }) : t('ah.from', { name: tr.from_account?.name ?? t('ah.accountLower') })}
                   </span>
                   <span className={`shrink-0 font-semibold ${isOutgoing ? 'text-negative' : 'text-positive'}`}>
-                    <Money>{`${isOutgoing ? '-' : '+'}${eur(t.amount)}`}</Money>
+                    <Money>{`${isOutgoing ? '-' : '+'}${eur(tr.amount)}`}</Money>
                   </span>
                 </li>
               )
@@ -122,7 +123,7 @@ export default function AccountHistory() {
         {loading ? (
           <ListSkeleton />
         ) : rows.length === 0 ? (
-          <EmptyState title="Sem transações" description="Ainda não há registos nesta conta." />
+          <EmptyState title={t('ah.empty')} description={t('ah.emptyBody')} />
         ) : (
           <>
             <ul className="divide-y divide-separator">
@@ -130,11 +131,11 @@ export default function AccountHistory() {
                 <li key={tx.id} className="flex items-center justify-between gap-3 py-2">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-label">
-                      {tx.note || tx.categories?.name || 'Sem nota'}
+                      {tx.note || tx.categories?.name || t('common.noNote')}
                     </p>
                     <p className="truncate text-xs text-label-2">
                       {ptDate(tx.occurred_on)}
-                      {tx.note && ` · ${tx.categories?.name ?? 'Sem categoria'}`}
+                      {tx.note && ` · ${tx.categories?.name ?? t('common.noCategory')}`}
                     </p>
                   </div>
                   <span
