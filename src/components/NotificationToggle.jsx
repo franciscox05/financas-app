@@ -2,9 +2,10 @@ import { Bell, BellOff } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { getExistingSubscription, isPushSupported, subscribeToPush, unsubscribeFromPush } from '../lib/push'
+import { t } from '../i18n'
 
 const BLOCKED_MESSAGE =
-  'Notificações bloqueadas. Ativa-as em Definições → Notificações → Stingy.'
+  'notif.blockedHelp'
 
 export default function NotificationToggle() {
   const toast = useToast()
@@ -49,7 +50,7 @@ export default function NotificationToggle() {
     // falharia sempre em silêncio. Explica onde se desbloqueia.
     if (!subscribed && Notification.permission === 'denied') {
       setBlocked(true)
-      toast.info(BLOCKED_MESSAGE)
+      toast.info(t(BLOCKED_MESSAGE))
       return
     }
     setBusy(true)
@@ -57,16 +58,16 @@ export default function NotificationToggle() {
       if (subscribed) {
         await unsubscribeFromPush()
         setSubscribed(false)
-        toast.info('Notificações desativadas.')
+        toast.info(t('notif.off'))
       } else {
         await subscribeToPush()
         setSubscribed(true)
-        toast.success('Notificações ativadas.')
+        toast.success(t('notif.on'))
       }
     } catch (err) {
       if (Notification.permission === 'denied') {
         setBlocked(true)
-        toast.info(BLOCKED_MESSAGE)
+        toast.info(t(BLOCKED_MESSAGE))
       } else {
         toast.error(err.message)
       }
@@ -78,10 +79,10 @@ export default function NotificationToggle() {
   if (!supported) return null
 
   const title = blocked
-    ? 'Notificações bloqueadas'
+    ? t('notif.blocked')
     : subscribed
-      ? 'Desativar notificações'
-      : 'Ativar notificações (lembrete diário, resumo mensal, dívidas atrasadas)'
+      ? t('notif.disable')
+      : t('notif.enable')
 
   return (
     <button

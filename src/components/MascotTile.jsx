@@ -1,4 +1,5 @@
 import Mascot from './Mascot'
+import { t } from '../i18n'
 
 // Mascote sobre um azulejo azul-marinho (como o ícone da app): o guaxinim é
 // branco, por isso o azulejo mantém-no legível no tema claro e no escuro.
@@ -17,7 +18,7 @@ export default function MascotTile({ size = 96, motion = 'idle', className = '' 
 // Ecrã inteiro de carregamento: usado enquanto a página ou a sessão carregam.
 export function MascotSplash() {
   return (
-    <div role="status" aria-label="A carregar" className="grid min-h-dvh place-items-center bg-canvas">
+    <div role="status" aria-label={t('common.loading')} className="grid min-h-dvh place-items-center bg-canvas">
       <MascotTile size={112} motion="load" />
     </div>
   )

@@ -15,6 +15,7 @@ import ConnectionBanner from './ConnectionBanner'
 import ErrorBoundary from './ErrorBoundary'
 import NotificationToggle from './NotificationToggle'
 import PrivacyToggle from './PrivacyToggle'
+import { getLanguage, t, useT } from '../i18n'
 
 // A partir de quantos px de scroll aparece a linha por baixo do topo.
 const LARGE_TITLE_SCROLL = 44
@@ -22,6 +23,9 @@ const LARGE_TITLE_SCROLL = 44
 export default function AppLayout() {
   const { user } = useAuth()
   const location = useLocation()
+  // Subscreve o idioma: ao mudar, as barras redesenham-se e a página remonta
+  // (a chave do ErrorBoundary inclui o idioma), com os textos novos.
+  useT()
   const [scrolled, setScrolled] = useState(false)
 
   // Só guarda um booleano (passou ou não o limiar), por isso o scroll não
@@ -137,7 +141,7 @@ export default function AppLayout() {
       >
         {/* Topo (2026-11-21): marca à esquerda; à direita as ações num grupo e a foto de perfil
             no fim. Sem título do ecrã: o separador ativo da barra de baixo já diz onde se está. */}
-        <Link to="/" aria-label="Stingy, início" className="pressable flex h-11 min-w-0 items-center justify-self-start rounded-full pl-2">
+        <Link to="/" aria-label={t('nav.home')} className="pressable flex h-11 min-w-0 items-center justify-self-start rounded-full pl-2">
           <BrandMark size={32} text="Stingy" />
         </Link>
         <div className="flex h-11 items-center justify-end gap-1">
@@ -147,7 +151,7 @@ export default function AppLayout() {
           </div>
           <Link
             to="/perfil"
-            aria-label="Perfil"
+            aria-label={t('nav.profile')}
             className="pressable flex size-11 shrink-0 items-center justify-center rounded-full text-label-2"
           >
             {avatarUrl ? (
@@ -189,7 +193,7 @@ export default function AppLayout() {
         ref={contentRef}
         className="mx-auto max-w-md space-y-6 px-4 pt-2 pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
       >
-        <ErrorBoundary key={`${location.pathname}:${reloadKey}`}>
+        <ErrorBoundary key={`${location.pathname}:${reloadKey}:${getLanguage()}`}>
           {/* As páginas carregam por partes (App.jsx); enquanto o pedaço chega fica vazio por
               baixo das barras, que já estão desenhadas — normalmente é instantâneo porque
               App.jsx os pede todos em segundo plano logo a seguir ao arranque. */}

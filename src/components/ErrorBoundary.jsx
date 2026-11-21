@@ -2,6 +2,7 @@ import { AlertTriangle, RotateCw } from 'lucide-react'
 import { Component } from 'react'
 import MascotTile from './MascotTile'
 import { reportError } from '../lib/monitoring'
+import { t } from '../i18n'
 
 // Sem isto, um erro ao desenhar qualquer componente deixava o ecrã todo em branco (o React
 // desmonta a árvore inteira). Aqui só cai a parte envolvida e mostra-se como recuperar.
@@ -29,16 +30,16 @@ export default class ErrorBoundary extends Component {
         <MascotTile size={72} motion="oops" className="mx-auto" />
         <p className="flex items-center gap-2 font-semibold">
           <AlertTriangle size={16} aria-hidden="true" />
-          Algo correu mal nesta página.
+          {t('err.page.title')}
         </p>
-        <p>Os teus dados estão guardados. Recarrega para tentar outra vez.</p>
+        <p>{t('err.page.body')}</p>
         <button
           type="button"
           onClick={() => window.location.reload()}
           className="inline-flex items-center gap-1.5 rounded-control bg-negative px-3 py-2 font-medium text-white transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-negative"
         >
           <RotateCw size={14} aria-hidden="true" />
-          Recarregar
+          {t('err.page.reload')}
         </button>
       </div>
     )

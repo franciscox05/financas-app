@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { SlidersHorizontal, Tags, Wallet } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
@@ -114,7 +115,7 @@ export default function Manage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Gestão" subtitle="Contas, categorias e ferramentas avançadas" />
+      <PageHeader title={t('nav.manage')} subtitle={t('manage.subtitle')} />
 
       <div className={cardClass}>
         <EntityManager

@@ -22,6 +22,7 @@ import PageHeader from '../components/ui/PageHeader'
 import { eurSigned } from '../lib/format'
 import { applyFriendShares, monthTotals } from '../lib/monthTotals'
 import { listFriendSharesByTransaction } from '../lib/friendsDb'
+import { t } from '../i18n'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -98,7 +99,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <>
-        <PageHeader title="Registo" />
+        <PageHeader title={t('nav.register')} />
         <PageSkeleton />
       </>
     )
@@ -109,7 +110,7 @@ export default function Dashboard() {
   if (loadError && accounts.length === 0) {
     return (
       <>
-        <PageHeader title="Registo" />
+        <PageHeader title={t('nav.register')} />
         <ErrorNotice message={loadError} onRetry={loadAll} />
       </>
     )
@@ -118,7 +119,7 @@ export default function Dashboard() {
   if (accounts.length === 0 || categories.length === 0) {
     return (
       <>
-        <PageHeader title="Registo" />
+        <PageHeader title={t('nav.register')} />
         <EmptyState
           title="A tua conta ainda não tem contas ou categorias por defeito."
           description="Sai e volta a entrar para as criarmos. Se continuar, contacta o suporte."
@@ -134,7 +135,7 @@ export default function Dashboard() {
 
   return (
     <>
-      <PageHeader title="Registo" />
+      <PageHeader title={t('nav.register')} />
 
       {loadError && <ErrorNotice message={loadError} onRetry={loadAll} />}
 
