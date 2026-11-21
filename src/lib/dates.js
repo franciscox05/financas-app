@@ -1,3 +1,5 @@
+import { languageInfo } from '../i18n/index.js'
+
 export function monthStart(date) {
   return new Date(date.getFullYear(), date.getMonth(), 1)
 }
@@ -21,7 +23,7 @@ export function today() {
 }
 
 export function monthLabel(date) {
-  const label = date.toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' })
+  const label = date.toLocaleDateString(languageInfo().locale, { month: 'long', year: 'numeric' })
   return label.charAt(0).toUpperCase() + label.slice(1)
 }
 
@@ -34,5 +36,5 @@ export function endOfMonth(date) {
 }
 
 export function shortMonthLabel(date) {
-  return date.toLocaleDateString('pt-PT', { month: 'short' }).replace('.', '')
+  return date.toLocaleDateString(languageInfo().locale, { month: 'short' }).replace('.', '')
 }
