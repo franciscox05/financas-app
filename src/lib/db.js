@@ -277,6 +277,18 @@ export async function listAllTransactionsForExport() {
   )
 }
 
+// Todas as transações de uma conta, para o extrato com saldo por movimento
+// (`accountStatement` em accountBalance.js). Em páginas, como os saldos.
+export async function listAllAccountTransactions(accountId) {
+  return fetchAllPages(() =>
+    supabase
+      .from('transactions')
+      .select('id, amount, type, occurred_on, created_at, account_id, category_id, note, categories(name)')
+      .eq('account_id', accountId)
+      .order('id'),
+  )
+}
+
 export async function listAllTransactionsForBalance() {
   return fetchAllPages(() =>
     supabase.from('transactions').select('amount, type, occurred_on, account_id, created_at').order('id'),
