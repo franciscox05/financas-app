@@ -141,7 +141,7 @@ export default function Friends() {
   }
 
   const addButton = (
-    <IconButton label="Adicionar amigo" tone="accent" onClick={() => setShowForm(true)}>
+    <IconButton label={t('fr.add')} tone="accent" onClick={() => setShowForm(true)}>
       <Plus size={26} strokeWidth={2.1} aria-hidden="true" />
     </IconButton>
   )

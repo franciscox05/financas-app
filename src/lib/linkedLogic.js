@@ -22,16 +22,16 @@ export function entryStatusLabel(entry, viewerId) {
         : { text: t('lk.pendingConfirm'), tone: 'action' }
     case 'declined': {
       const note = String(entry.decline_note ?? '').trim()
-      return { text: note ? `Contestado: ${note}` : 'Contestado', tone: 'danger' }
+      return { text: note ? t('lk.disputedNote', { note }) : t('lk.disputed'), tone: 'danger' }
     }
     case 'cancel_requested':
       return { text: t('lk.cancelRequested'), tone: 'waiting' }
     case 'cancelled':
       // Anulação mútua de um movimento confirmado: cancel_requested_by fica preenchido.
-      if (entry.cancel_requested_by) return { text: 'Anulado', tone: 'muted' }
+      if (entry.cancel_requested_by) return { text: t('lk.annulled'), tone: 'muted' }
       return { text: entry.created_by === viewerId ? t('lk.cancelledByYou') : t('lk.cancelled'), tone: 'muted' }
     case 'archived':
-      return { text: 'Arquivado', tone: 'muted' }
+      return { text: t('lk.archived'), tone: 'muted' }
     default:
       return { text: '', tone: 'none' }
   }

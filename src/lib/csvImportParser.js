@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js'
 // Importador universal de extratos bancários: cada banco exporta o CSV com um
 // layout diferente (nomes de coluna, separador, formato de data, vírgula ou
 // ponto decimal, uma coluna de valor com sinal ou colunas Débito/Crédito
@@ -32,7 +33,7 @@ export function parseCsvFile(file) {
       complete: (result) => {
         const headers = result.meta.fields ?? []
         if (headers.length === 0 || result.data.length === 0) {
-          reject(new Error('Não consegui ler nenhuma linha deste ficheiro. Confirma que é um CSV exportado pelo banco.'))
+          reject(new Error(t('csv.unreadable')))
           return
         }
         resolve({ headers, data: result.data })

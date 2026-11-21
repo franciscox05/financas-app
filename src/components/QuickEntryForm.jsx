@@ -674,7 +674,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
               onChange={setFriendId}
               onFriendCreated={(f) => setFriends((prev) => [...prev, f].sort((a, b) => a.name.localeCompare(b.name, 'pt')))}
             />
-            {friendsFailed && <p className="mt-1 text-[0.8125rem] leading-snug text-negative">Não foi possível carregar os amigos.</p>}
+            {friendsFailed && <p className="mt-1 text-[0.8125rem] leading-snug text-negative">{t('qe.friendsFailed')}</p>}
             {repaymentFriend?.status === 'connected' && (
               <p className="mt-1 text-[0.8125rem] leading-snug text-label-2">{t('qe.linkedHelp')}</p>
             )}
@@ -728,7 +728,7 @@ export default function QuickEntryForm({ accounts, categories, transactions, onC
               </div>
             ))}
 
-            {friendsFailed && <p className="text-[0.8125rem] leading-snug text-negative">Não foi possível carregar os amigos.</p>}
+            {friendsFailed && <p className="text-[0.8125rem] leading-snug text-negative">{t('qe.friendsFailed')}</p>}
 
             <div className="flex flex-wrap gap-2 pt-1">
               <button

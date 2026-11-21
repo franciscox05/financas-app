@@ -916,4 +916,9 @@ export default {
   'pdf.expenseByCat': 'Despesas por Categoria',
   'pdf.incomeByCat': 'Receitas por Categoria',
   'pdf.byAccount': 'Origem por Conta',
+  'lk.disputed': 'Contestado',
+  'lk.disputedNote': 'Contestado: {note}',
+  'lk.annulled': 'Anulado',
+  'lk.archived': 'Arquivado',
+  'csv.unreadable': 'Não consegui ler nenhuma linha deste ficheiro. Confirma que é um CSV exportado pelo banco.',
 }

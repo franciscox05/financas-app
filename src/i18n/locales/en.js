@@ -916,4 +916,9 @@ export default {
   'pdf.expenseByCat': 'Expenses by Category',
   'pdf.incomeByCat': 'Income by Category',
   'pdf.byAccount': 'By Account',
+  'lk.disputed': 'Disputed',
+  'lk.disputedNote': 'Disputed: {note}',
+  'lk.annulled': 'Cancelled',
+  'lk.archived': 'Archived',
+  'csv.unreadable': 'I couldn\'t read any rows in this file. Check it\'s a CSV exported by your bank.',
 }

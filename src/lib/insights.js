@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js'
 // Insights do Balanço: categorias com gasto este mês >= 20 % acima da média
 // dos meses anteriores (até 3).
 //
@@ -12,7 +13,7 @@ export function categoryInsights(currentBreakdown, priorBuckets, lendingCategory
   for (const bucket of withData) {
     for (const tx of bucket.txs) {
       if (tx.type !== 'expense' || lendingCategoryIds.has(tx.category_id)) continue
-      const name = tx.categories?.name ?? 'Sem categoria'
+      const name = tx.categories?.name ?? t('common.noCategory')
       priorByCategory.set(name, (priorByCategory.get(name) ?? 0) + Number(tx.amount))
     }
   }
