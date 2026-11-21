@@ -1,8 +1,9 @@
 import { RefreshCw, UserCircle2 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { onAvatarChanged } from '../lib/avatarEvents'
+import { today } from '../lib/dates'
 import { clearAccountsAndCategoriesCache } from '../lib/db'
 import { refreshLiveData, subscribeLiveUpdates } from '../lib/liveUpdates'
 import { getAvatarPath } from '../lib/profileDb'
@@ -78,12 +79,22 @@ export default function AppLayout() {
   // plano) volta-se a ligar e recarrega-se o que se perdeu. `visibilitychange` sozinho não é
   // fiável numa PWA iOS suspensa há muito tempo — `pageshow` cobre a restauração do bfcache e
   // `focus` cobre voltar de outra app/aba sem um `visibilitychange` claro.
+  // S2-5 (auditoria de 15/11): a PWA fica viva dias em segundo plano e várias páginas calculam
+  // "hoje" uma vez ao montar (ex.: a data do Registo). Se o dia mudou desde a última vez,
+  // remonta-se a página como no puxar-para-atualizar, senão o primeiro registo da manhã
+  // saía com a data de ontem.
+  const dayRef = useRef(today())
   useEffect(() => {
     let off = subscribeLiveUpdates(user.id)
     function onResume() {
       off()
       off = subscribeLiveUpdates(user.id)
       refreshLiveData()
+      const now = today()
+      if (now !== dayRef.current) {
+        dayRef.current = now
+        setReloadKey((k) => k + 1)
+      }
     }
     function onVisible() {
       if (document.visibilityState !== 'visible') return
@@ -204,7 +215,12 @@ export default function AppLayout() {
         className="mx-auto max-w-md space-y-6 px-4 pt-2 pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
       >
         <ErrorBoundary key={`${location.pathname}:${reloadKey}`}>
-          <Outlet />
+          {/* As páginas carregam por partes (App.jsx); enquanto o pedaço chega fica vazio por
+              baixo das barras, que já estão desenhadas — normalmente é instantâneo porque
+              App.jsx os pede todos em segundo plano logo a seguir ao arranque. */}
+          <Suspense fallback={null}>
+            <Outlet />
+          </Suspense>
         </ErrorBoundary>
       </main>
 

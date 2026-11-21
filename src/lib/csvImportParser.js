@@ -61,18 +61,30 @@ function bestHeaderFor(headers, hints, taken) {
   return bestScore > 0 ? best : null
 }
 
-function parseAmountText(text) {
+// S2-6 (auditoria de 15/11): aceita espaços (normais ou não separáveis) como
+// separador de milhar e sinal no fim ("123,45-"). Quando só há UM tipo de
+// separador e todos os grupos depois dele têm exatamente 3 dígitos ("1.500",
+// "1,500", "1.234.567"), é milhar — antes "1.500" (formato PT sem cêntimos) era
+// lido como 1,50 €. Exceção: com parte inteira "0" ("0.500") é decimal.
+export function parseAmountText(text) {
   const cleaned = String(text ?? '')
-    .replace(/[€$]/g, '')
-    .trim()
+    .replace(/[€$£]/g, '')
+    .replace(/[\s  ]/g, '')
   if (!cleaned) return null
 
-  const negative = /^\(.*\)$/.test(cleaned) || cleaned.startsWith('-')
-  let digits = cleaned.replace(/^[(-]/, '').replace(/\)$/, '').trim()
+  const negative = /^\(.*\)$/.test(cleaned) || cleaned.startsWith('-') || cleaned.endsWith('-')
+  let digits = cleaned.replace(/^[(-]/, '').replace(/[)-]$/, '')
 
   const lastComma = digits.lastIndexOf(',')
   const lastDot = digits.lastIndexOf('.')
-  if (lastComma > lastDot) {
+  const singleSep = lastComma === -1 && lastDot !== -1 ? '.' : lastDot === -1 && lastComma !== -1 ? ',' : null
+  if (singleSep) {
+    const parts = digits.split(singleSep)
+    const thousands =
+      parts[0] !== '0' && parts[0].length <= 3 && parts.slice(1).every((p) => p.length === 3)
+    // Vários separadores iguais ("1.234.567") só podem ser milhares.
+    digits = thousands || parts.length > 2 ? parts.join('') : parts.join('.')
+  } else if (lastComma > lastDot) {
     // vírgula é o separador decimal (formato PT/EU): remove pontos de milhar
     digits = digits.replace(/\./g, '').replace(',', '.')
   } else if (lastDot > lastComma) {

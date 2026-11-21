@@ -2,7 +2,6 @@ import { Copy, FileDown } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useToast } from '../context/toastContext'
 import { monthlyReportText } from '../lib/monthlyReport'
-import { downloadMonthlyReportPdf } from '../lib/monthlyReportPdf'
 
 const base =
   'inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-control px-4 text-sm font-medium transition duration-150 ease-out active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2'
@@ -26,8 +25,10 @@ export default function MonthlyReportButtons({ report, monthKey }) {
     try {
       // jsPDF/autotable fazem trabalho síncrono pesado para um relatório longo;
       // um microtask evita que o clique pareça preso antes do browser pintar
-      // o estado "A gerar...".
-      await Promise.resolve()
+      // o estado "A gerar..." (o `await import` abaixo já cede a vez ao browser).
+      // O jsPDF (e o html2canvas que traz) só se descarrega aqui, no primeiro clique: são
+      // centenas de KB que antes iam no arranque da app para quase nunca serem usados.
+      const { downloadMonthlyReportPdf } = await import('../lib/monthlyReportPdf')
       downloadMonthlyReportPdf(report, monthKey)
       toast.success('Relatório PDF descarregado.')
     } catch (err) {

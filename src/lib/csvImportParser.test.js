@@ -1,6 +1,27 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { buildCsvRows, detectColumns } from './csvImportParser.js'
+import { buildCsvRows, detectColumns, parseAmountText } from './csvImportParser.js'
+
+test('S2-6: milhares sem cêntimos, espaços e sinal no fim', () => {
+  const casos = [
+    ['1.500', 1500],
+    ['1,500', 1500],
+    ['1.234.567', 1234567],
+    ['-1.500', -1500],
+    ['1 234,56', 1234.56],
+    ['1 234,56 €', 1234.56],
+    ['123,45-', -123.45],
+    ['0.500', 0.5],
+    ['12,5', 12.5],
+    ['12.50', 12.5],
+    ['1234,56', 1234.56],
+    ['1.234,56', 1234.56],
+    ['1,234.56', 1234.56],
+    ['(40,00)', -40],
+    ['abc', null],
+  ]
+  for (const [texto, esperado] of casos) assert.equal(parseAmountText(texto), esperado, texto)
+})
 
 const cols = { date: 'Data', amount: 'Valor', debit: null, credit: null, description: 'Descricao' }
 
