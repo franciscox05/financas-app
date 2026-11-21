@@ -1,6 +1,7 @@
 import { AlertTriangle, RotateCw } from 'lucide-react'
 import { Component } from 'react'
 import MascotTile from './MascotTile'
+import { reportError } from '../lib/monitoring'
 
 // Sem isto, um erro ao desenhar qualquer componente deixava o ecrã todo em branco (o React
 // desmonta a árvore inteira). Aqui só cai a parte envolvida e mostra-se como recuperar.
@@ -14,6 +15,7 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('Erro ao desenhar a página:', error, info?.componentStack)
+    reportError(error, { componentStack: info?.componentStack })
   }
 
   render() {
