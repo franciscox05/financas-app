@@ -1,21 +1,21 @@
-import { X } from 'lucide-react'
-import { useEffect, useId, useState } from 'react'
+import { ArrowRightLeft, RefreshCcw, X } from 'lucide-react'
+import { useId, useState } from 'react'
+import { useT } from '../i18n'
+import { eur, eurSigned, ptDate } from '../lib/format'
+import { useAccountStatement } from '../lib/useAccountStatement'
 import { EmptyState, ErrorNotice, ListSkeleton, Pager } from './Feedback'
 import Modal from './Modal'
 import Money from './Money'
-import { listNetWorthSnapshots, listTransactionsPage, listTransfers } from '../lib/db'
-import { eur, ptDate } from '../lib/format'
 import { focusRing } from './ui/styles'
 
-// Menor que a página cheia (20, em AccountHistory.jsx): isto é um modal
-// compacto sobreposto ao Património, não uma página dedicada só à conta.
-const PAGE_SIZE = 10
+// Linhas por página do extrato (paginado no cliente: o extrato precisa de todos
+// os movimentos da conta para saber o saldo em cada um).
+const PAGE_SIZE = 20
 
-// Detalhe de uma conta em modal, por cima do Património — antes era uma
-// navegação para uma página nova (AccountHistory.jsx, que se mantém como
-// rota própria, só deixou de ser o caminho usado a partir do Património).
-// Fechar (X ou tocar fora, ambos já tratados pelo Modal partilhado) volta
-// imediatamente ao ecrã por trás, sem recarregar a rota.
+// Detalhe de uma conta em modal, por cima do Património. Mostra o extrato como
+// nos bancos: transações, transferências e acertos de saldo numa só lista, do
+// mais recente para o mais antigo, cada um com o saldo da conta antes dele
+// (cálculo em `accountStatement`, com a mesma regra de `balanceAt()`).
 export default function AccountDetailModal({ account, balance, onClose }) {
   const titleId = useId()
   return (
@@ -27,71 +27,84 @@ export default function AccountDetailModal({ account, balance, onClose }) {
   )
 }
 
-// Só monta quando há conta escolhida — os efeitos abaixo podem assumir
-// sempre `account.id` definido, sem precisar de guardas de "ainda fechado".
+function lineTitle(line, account, t) {
+  if (line.kind === 'snapshot') return t('stmt.snapshot')
+  const item = line.item
+  if (line.kind === 'transfer') {
+    if (item.note) return item.note
+    const outgoing = item.from_account_id === account.id
+    return outgoing
+      ? t('stmt.transferTo', { name: item.to_account?.name ?? t('stmt.account') })
+      : t('stmt.transferFrom', { name: item.from_account?.name ?? t('stmt.account') })
+  }
+  return item.note || item.categories?.name || t('stmt.noNote')
+}
+
+function lineSubtitle(line, t) {
+  const parts = [ptDate(line.date)]
+  if (line.kind === 'transaction' && line.item.note && line.item.categories?.name) parts.push(line.item.categories.name)
+  if (line.kind === 'transfer' && line.item.categories?.name) parts.push(line.item.categories.name)
+  if (line.future) parts.push(t('stmt.scheduled'))
+  return parts.join(' · ')
+}
+
+function StatementRow({ line, account, t }) {
+  const isSnapshot = line.kind === 'snapshot'
+  const tone = isSnapshot ? 'text-label' : line.delta >= 0 ? 'text-positive' : 'text-negative'
+  return (
+    <li className={`flex items-start justify-between gap-3 py-2.5 ${line.future ? 'opacity-60' : ''}`}>
+      <div className="flex min-w-0 items-start gap-2">
+        {isSnapshot && <RefreshCcw size={14} aria-hidden="true" className="mt-0.5 shrink-0 text-accent" />}
+        {line.kind === 'transfer' && <ArrowRightLeft size={14} aria-hidden="true" className="mt-0.5 shrink-0 text-accent" />}
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-label">{lineTitle(line, account, t)}</p>
+          <p className="truncate text-xs text-label-2">
+            {lineSubtitle(line, t)}
+            {isSnapshot && (
+              <>
+                {' · '}
+                <Money>{t('stmt.snapshotDiff', { value: eurSigned(line.delta) })}</Money>
+              </>
+            )}
+          </p>
+        </div>
+      </div>
+      <div className="shrink-0 text-right">
+        <p className={`amount text-sm font-semibold ${tone}`}>
+          {isSnapshot ? <Money value={line.balanceAfter} /> : <Money>{eurSigned(line.delta)}</Money>}
+        </p>
+        <p className="amount text-xs text-label-3">
+          <Money>{t('stmt.before', { value: eur(line.balanceBefore) })}</Money>
+        </p>
+      </div>
+    </li>
+  )
+}
+
+// Só monta quando há conta escolhida — o extrato pode assumir `account.id`.
 function AccountDetailBody({ account, balance, titleId, onClose }) {
-  const [snapshots, setSnapshots] = useState([])
-  const [transfers, setTransfers] = useState([])
-  const [rows, setRows] = useState([])
-  const [totalCount, setTotalCount] = useState(0)
+  const t = useT()
+  const { lines, error } = useAccountStatement(account.id)
   const [page, setPage] = useState(1)
-  const [snapPage, setSnapPage] = useState(1)
-  const [transferPage, setTransferPage] = useState(1)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    let cancelled = false
-    Promise.all([listNetWorthSnapshots(), listTransfers()])
-      .then(([snaps, trs]) => {
-        if (cancelled) return
-        setSnapshots(snaps.filter((s) => s.account_id === account.id))
-        setTransfers(trs.filter((t) => t.from_account_id === account.id || t.to_account_id === account.id))
-      })
-      .catch((err) => !cancelled && setError(err.message))
-    return () => {
-      cancelled = true
-    }
-  }, [account.id])
-
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    listTransactionsPage({ accountId: account.id, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE })
-      .then(({ rows: pageRows, totalCount: total }) => {
-        if (cancelled) return
-        setRows(pageRows)
-        setTotalCount(total ?? pageRows.length)
-        setError('')
-      })
-      .catch((err) => !cancelled && setError(err.message))
-      .finally(() => !cancelled && setLoading(false))
-    return () => {
-      cancelled = true
-    }
-  }, [account.id, page])
-
-  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil((lines?.length ?? 0) / PAGE_SIZE))
+  const pageLines = lines?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) ?? []
 
   return (
     <div className="space-y-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2
-            id={titleId}
-            className="truncate pt-1 text-[0.9375rem] font-semibold text-label-2"
-          >
+          <h2 id={titleId} className="truncate pt-1 text-[0.9375rem] font-semibold text-label-2">
             {account.name}
           </h2>
           <p className="amount display mt-0.5 text-[2.125rem] leading-tight font-bold tracking-tight text-label">
             <Money value={balance} />
           </p>
-          <p className="text-xs text-label-3">saldo atual</p>
+          <p className="text-xs text-label-3">{t('stmt.currentBalance')}</p>
         </div>
         <button
           type="button"
           onClick={onClose}
-          aria-label="Fechar"
+          aria-label={t('stmt.close')}
           className={`pressable -mt-1.5 -mr-2 flex size-11 shrink-0 items-center justify-center rounded-full bg-fill text-label-2 ${focusRing}`}
         >
           <X size={20} strokeWidth={2.4} aria-hidden="true" />
@@ -100,76 +113,20 @@ function AccountDetailBody({ account, balance, titleId, onClose }) {
 
       {error && <ErrorNotice message={error} />}
 
-      {snapshots.length > 0 && (
-        <div className="space-y-1">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-label-3">Atualizações de saldo</h3>
-          <ul className="divide-y divide-separator">
-            {snapshots.slice((snapPage - 1) * PAGE_SIZE, snapPage * PAGE_SIZE).map((s) => (
-              <li key={s.id} className="flex items-center justify-between py-2 text-sm">
-                <span className="text-label-2">{ptDate(s.snapshot_date)}</span>
-                <span className="font-semibold text-label">
-                  <Money value={Number(s.value)} />
-                </span>
-              </li>
-            ))}
-          </ul>
-          <Pager page={snapPage} totalPages={Math.ceil(snapshots.length / PAGE_SIZE)} onChange={setSnapPage} />
-        </div>
-      )}
-
-      {transfers.length > 0 && (
-        <div className="space-y-1">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-label-3">Transferências</h3>
-          <ul className="divide-y divide-separator">
-            {transfers.slice((transferPage - 1) * PAGE_SIZE, transferPage * PAGE_SIZE).map((t) => {
-              const isOutgoing = t.from_account_id === account.id
-              return (
-                <li key={t.id} className="flex items-center justify-between py-2 text-sm">
-                  <span className="min-w-0 truncate text-label-2">
-                    {ptDate(t.occurred_on)} ·{' '}
-                    {isOutgoing ? `para ${t.to_account?.name ?? 'conta'}` : `de ${t.from_account?.name ?? 'conta'}`}
-                  </span>
-                  <span className={`shrink-0 font-semibold ${isOutgoing ? 'text-negative' : 'text-positive'}`}>
-                    <Money>{`${isOutgoing ? '-' : '+'}${eur(t.amount)}`}</Money>
-                  </span>
-                </li>
-              )
-            })}
-          </ul>
-          <Pager page={transferPage} totalPages={Math.ceil(transfers.length / PAGE_SIZE)} onChange={setTransferPage} />
-        </div>
-      )}
-
       <div className="space-y-1">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-label-3">
-          Transações{totalCount ? ` (${totalCount})` : ''}
+          {t('stmt.title')}
+          {lines?.length ? ` (${lines.length})` : ''}
         </h3>
-        {loading ? (
+        {lines === null && !error ? (
           <ListSkeleton />
-        ) : rows.length === 0 ? (
-          <EmptyState title="Sem transações" description="Ainda não há registos nesta conta." />
+        ) : lines && lines.length === 0 ? (
+          <EmptyState title={t('stmt.empty.title')} description={t('stmt.empty.body')} />
         ) : (
           <>
             <ul className="divide-y divide-separator">
-              {rows.map((tx) => (
-                <li key={tx.id} className="flex items-center justify-between gap-3 py-2">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-label">
-                      {tx.note || tx.categories?.name || 'Sem nota'}
-                    </p>
-                    <p className="truncate text-xs text-label-2">
-                      {ptDate(tx.occurred_on)}
-                      {tx.note && ` · ${tx.categories?.name ?? 'Sem categoria'}`}
-                    </p>
-                  </div>
-                  <span
-                    className={`shrink-0 text-sm font-semibold ${
-                      tx.type === 'income' ? 'text-positive' : 'text-negative'
-                    }`}
-                  >
-                    <Money>{`${tx.type === 'income' ? '+' : '-'}${eur(tx.amount)}`}</Money>
-                  </span>
-                </li>
+              {pageLines.map((line) => (
+                <StatementRow key={`${line.kind}:${line.item.id}`} line={line} account={account} t={t} />
               ))}
             </ul>
             <Pager page={page} totalPages={totalPages} onChange={setPage} />
