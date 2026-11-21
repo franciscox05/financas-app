@@ -1,5 +1,6 @@
-import { ChevronLeft, Database, Phone, Target, StickyNote } from 'lucide-react'
+import { ChevronLeft, Database, Phone, ShieldCheck, Target, StickyNote } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import AppLockSection from '../components/AppLockSection'
 import Card from '../components/Card'
 import DataExportSection from '../components/DataExportSection'
 import GoalsSection from '../components/GoalsSection'
@@ -54,6 +55,13 @@ export default function Profile() {
           <StickyNote size={14} aria-hidden="true" /> Notas
         </h2>
         <NotesCalendar />
+      </Card>
+
+      <Card as="section" className="space-y-3">
+        <h2 className={cardTitleClass}>
+          <ShieldCheck size={14} aria-hidden="true" /> {t('lock.section')}
+        </h2>
+        <AppLockSection />
       </Card>
 
       <Card as="section" className="space-y-3">
