@@ -28,6 +28,7 @@ import { usePrivacy } from '../context/privacyContext'
 import HiddenChartNotice from '../components/HiddenChartNotice'
 import { eur, eurSigned } from '../lib/format'
 import { monthTotals } from '../lib/monthTotals'
+import { categoryInsights } from '../lib/insights'
 
 // Cores pelos tokens de index.css (com par claro/escuro).
 const INCOME_COLOR = 'var(--positive)'
@@ -187,32 +188,12 @@ export default function Balance() {
   const lentOut = selectedBucket?.lentOut ?? 0
   const lentBack = selectedBucket?.lentBack ?? 0
 
-  // Insight: categorias com gasto este mês >=20% acima da média dos 3 meses anteriores.
+  // Insight: categorias com gasto este mês >=20% acima da média dos meses anteriores
+  // (até 3, só os que têm movimentos — ver lib/insights.js).
   const insights = useMemo(() => {
     const idx = sixMonthData.findIndex((b) => monthKey(b.date) === monthKey(selectedMonth))
     if (idx < 1) return []
-    const priorBuckets = sixMonthData.slice(Math.max(0, idx - 3), idx)
-    if (priorBuckets.length === 0) return []
-
-    const priorByCategory = new Map()
-    for (const bucket of priorBuckets) {
-      for (const tx of bucket.txs) {
-        if (tx.type !== 'expense' || lendingCategoryIds.has(tx.category_id)) continue
-        const name = tx.categories?.name ?? 'Sem categoria'
-        priorByCategory.set(name, (priorByCategory.get(name) ?? 0) + Number(tx.amount))
-      }
-    }
-
-    const results = []
-    for (const c of categoryBreakdown) {
-      const priorAvg = (priorByCategory.get(c.name) ?? 0) / priorBuckets.length
-      if (priorAvg < 1) continue // evita percentagens absurdas sobre base ~0
-      const diffPct = ((c.amount - priorAvg) / priorAvg) * 100
-      if (diffPct >= 20) {
-        results.push({ name: c.name, diffPct: Math.round(diffPct) })
-      }
-    }
-    return results.sort((a, b) => b.diffPct - a.diffPct).slice(0, 3)
+    return categoryInsights(categoryBreakdown, sixMonthData.slice(Math.max(0, idx - 3), idx), lendingCategoryIds)
   }, [sixMonthData, selectedMonth, categoryBreakdown, lendingCategoryIds])
 
   const monthSummary = useMemo(() => {
