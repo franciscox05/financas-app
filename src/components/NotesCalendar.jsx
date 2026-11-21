@@ -1,3 +1,4 @@
+import { languageInfo, t } from '../i18n'
 import { Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useToast } from '../context/toastContext'
@@ -10,7 +11,13 @@ import Modal from './Modal'
 import MonthPicker from './MonthPicker'
 import { focusRing, inputClass } from './ui/styles'
 
-const WEEKDAY_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+// Dias da semana (segunda primeiro) no idioma ativo; 1/1/2024 foi uma segunda-feira.
+function weekdayLabels() {
+  return Array.from({ length: 7 }, (_, i) => {
+    const s = new Date(2024, 0, 1 + i).toLocaleDateString(languageInfo().locale, { weekday: 'short' }).replace('.', '')
+    return s.charAt(0).toUpperCase() + s.slice(1, 3)
+  })
+}
 
 // Uma nota existente, com edição em linha (mesmo padrão já usado no nome de
 // um amigo/perfil) e apagar.
@@ -30,9 +37,9 @@ function NoteRow({ note, onSaved, onDeleteRequest }) {
       const updated = await updateNote(note.id, draft)
       onSaved(updated)
       setEditing(false)
-      toast.success('Nota atualizada.')
+      toast.success(t('notes.updated'))
     } catch (err) {
-      setError(err.message || 'Não foi possível guardar. Tenta outra vez.')
+      setError(err.message || t('sheet.saveRetry'))
     } finally {
       setBusy(false)
     }
@@ -60,7 +67,7 @@ function NoteRow({ note, onSaved, onDeleteRequest }) {
             disabled={busy || !draft.trim()}
             className={`min-h-9 rounded-control bg-accent-fill px-3 text-sm font-medium text-white disabled:opacity-50 ${focusRing}`}
           >
-            {busy ? 'A guardar...' : 'Guardar'}
+            {busy ? t('common.saving') : t('common.save')}
           </button>
           <button
             type="button"
@@ -71,7 +78,7 @@ function NoteRow({ note, onSaved, onDeleteRequest }) {
             }}
             className={`min-h-9 rounded-control border border-separator px-3 text-sm ${focusRing}`}
           >
-            Cancelar
+            {t('common.cancel')}
           </button>
         </div>
       </form>
@@ -85,7 +92,7 @@ function NoteRow({ note, onSaved, onDeleteRequest }) {
         <button
           type="button"
           onClick={() => setEditing(true)}
-          aria-label="Editar nota"
+          aria-label={t('notes.edit')}
           className={`flex size-9 items-center justify-center rounded-control text-label-3 transition-colors hover:text-label ${focusRing}`}
         >
           <Pencil size={14} aria-hidden="true" />
@@ -93,7 +100,7 @@ function NoteRow({ note, onSaved, onDeleteRequest }) {
         <button
           type="button"
           onClick={() => onDeleteRequest(note)}
-          aria-label="Apagar nota"
+          aria-label={t('notes.delete')}
           className={`flex size-9 items-center justify-center rounded-control text-label-3 transition-colors hover:text-negative ${focusRing}`}
         >
           <Trash2 size={14} aria-hidden="true" />
@@ -141,7 +148,7 @@ export default function NotesCalendar() {
         if (mounted.current) setNotes(data)
       })
       .catch((err) => {
-        if (mounted.current) setError(err.message || 'Não foi possível carregar as notas.')
+        if (mounted.current) setError(err.message || t('notes.loadFailed'))
       })
       .finally(() => {
         if (mounted.current) setLoading(false)
@@ -193,9 +200,9 @@ export default function NotesCalendar() {
       if (!mounted.current) return
       setNotes((prev) => [created, ...prev])
       setNewBody('')
-      toast.success('Nota guardada.')
+      toast.success(t('notes.saved'))
     } catch (err) {
-      setAddError(err.message || 'Não foi possível guardar. Tenta outra vez.')
+      setAddError(err.message || t('sheet.saveRetry'))
     } finally {
       if (mounted.current) setAdding(false)
     }
@@ -211,9 +218,9 @@ export default function NotesCalendar() {
     try {
       await deleteNote(note.id)
       setNotes((prev) => prev.filter((n) => n.id !== note.id))
-      toast.success('Nota apagada.')
+      toast.success(t('notes.deleted'))
     } catch (err) {
-      toast.error(err.message || 'Não foi possível apagar. Tenta outra vez.')
+      toast.error(err.message || t('common.deleteRetry'))
     }
   }
 
@@ -230,7 +237,7 @@ export default function NotesCalendar() {
       <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
 
       <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-label-3">
-        {WEEKDAY_LABELS.map((label) => (
+        {weekdayLabels().map((label) => (
           <div key={label}>{label}</div>
         ))}
       </div>
@@ -245,7 +252,7 @@ export default function NotesCalendar() {
               type="button"
               onClick={() => openDay(day)}
               aria-current={isToday ? 'date' : undefined}
-              aria-label={hasNotes ? `Dia ${day}, com notas` : `Dia ${day}`}
+              aria-label={hasNotes ? t('notes.dayWith', { day }) : t('notes.day', { day })}
               className={`relative flex flex-col items-center justify-center gap-1 rounded-control py-2 text-xs transition-colors ${
                 isToday ? 'ring-2 ring-accent ring-inset' : ''
               } ${
@@ -264,16 +271,16 @@ export default function NotesCalendar() {
         })}
       </div>
 
-      {notes.length === 0 && <EmptyState title="Ainda sem notas" description="Toca num dia para escrever a primeira." />}
+      {notes.length === 0 && <EmptyState title={t('notes.empty')} description={t('notes.emptyBody')} />}
 
       <Modal open={selectedDay !== null} onClose={() => setSelectedDay(null)} labelledBy="notes-day-title">
         <h2 id="notes-day-title" className="mb-3 text-base font-semibold tracking-tight text-label">
           {selectedIso && shortDate(selectedIso, { withYear: true })}
-          {isSelectedToday && <span className="ml-2 text-xs font-normal text-label-3">hoje</span>}
+          {isSelectedToday && <span className="ml-2 text-xs font-normal text-label-3">{t('notes.today')}</span>}
         </h2>
 
         {dayNotes.length === 0 ? (
-          <p className="py-1 text-sm text-label-3">Sem notas neste dia.</p>
+          <p className="py-1 text-sm text-label-3">{t('notes.noneThisDay')}</p>
         ) : (
           <ul className="space-y-2">
             {dayNotes.map((note) => (
@@ -284,12 +291,12 @@ export default function NotesCalendar() {
 
         <form onSubmit={handleAdd} className="mt-3 space-y-2 rounded-control border border-separator p-3">
         <label htmlFor="new-note-body" className="sr-only">
-          Nova nota
+          {t('notes.new')}
         </label>
         <textarea
           id="new-note-body"
           rows={3}
-          placeholder={isSelectedToday ? 'Escreve uma nota...' : 'Escreve uma nota para este dia...'}
+          placeholder={isSelectedToday ? t('notes.phToday') : t('notes.phDay')}
           value={newBody}
           disabled={adding}
           onChange={(e) => setNewBody(e.target.value)}
@@ -305,15 +312,15 @@ export default function NotesCalendar() {
           disabled={adding || !newBody.trim()}
           className={`min-h-11 w-full rounded-control bg-accent-fill text-sm font-medium text-white disabled:opacity-50 ${focusRing}`}
         >
-          {adding ? 'A guardar...' : 'Guardar nota'}
+          {adding ? t('common.saving') : t('notes.save')}
         </button>
         </form>
       </Modal>
 
       <ConfirmDialog
         open={deleteTarget !== null}
-        title="Apagar nota?"
-        confirmLabel="Apagar nota"
+        title={t('notes.deleteQ')}
+        confirmLabel={t('notes.delete')}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
       />

@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import Money from './Money'
@@ -5,8 +6,8 @@ import { signedCents } from '../lib/ledgerMath'
 import { focusRing } from './ui/styles'
 
 const KIND_TITLES = {
-  repaid_to_me: 'Devolução recebida',
-  repaid_to_them: 'Devolução feita',
+  repaid_to_me: 'ledger.repaidToMe',
+  repaid_to_them: 'ledger.repaidToThem',
 }
 
 // Faixa "A confirmar" dos Amigos: movimentos que esperam uma resposta minha.
@@ -22,10 +23,10 @@ export default function PendingEntriesStrip({ entries, friends }) {
       </h3>
       <ul className="divide-y divide-separator rounded-control border border-separator px-4">
         {entries.map((entry) => {
-          const name = names.get(entry.friend_id) ?? 'Um amigo'
-          const title = entry.note || KIND_TITLES[entry.kind] || 'Gasto'
+          const name = names.get(entry.friend_id) ?? t('strip.friend')
+          const title = entry.note || (KIND_TITLES[entry.kind] ? t(KIND_TITLES[entry.kind]) : t('kind.expense'))
           const cents = Math.abs(signedCents(entry.kind, entry.amount))
-          const action = entry.status === 'cancel_requested' ? 'Quer anular este movimento' : 'Para confirmar'
+          const action = entry.status === 'cancel_requested' ? t('strip.wantsCancel') : t('strip.toConfirm')
           return (
             <li key={entry.id}>
               <Link
