@@ -555,3 +555,90 @@ export async function deleteBudget(categoryId) {
   const { error } = await supabase.from('budgets').delete().eq('category_id', categoryId)
   if (error) throw error
 }
+
+// --- Recorrentes ----------------------------------------------------------------
+// Modelos de movimento mensal (migração 20261120000000). Regras em lib/recurring.js.
+const RECURRING_SELECT =
+  'id, type, amount, account_id, category_id, note, day_of_month, active, last_generated_month, accounts(name), categories(name)'
+
+export async function listRecurring() {
+  const { data, error } = await supabase
+    .from('recurring_transactions')
+    .select(RECURRING_SELECT)
+    .order('day_of_month')
+    .order('created_at')
+  if (error) throw error
+  return data
+}
+
+export async function createRecurring({ type, amount, accountId, categoryId, note, dayOfMonth }) {
+  const userId = await getCurrentUserId()
+  const { data, error } = await supabase
+    .from('recurring_transactions')
+    .insert({
+      user_id: userId,
+      type,
+      amount,
+      account_id: accountId,
+      category_id: categoryId,
+      note: note || null,
+      day_of_month: dayOfMonth,
+    })
+    .select(RECURRING_SELECT)
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function updateRecurring(id, { type, amount, accountId, categoryId, note, dayOfMonth, active }) {
+  const patch = {}
+  if (type !== undefined) patch.type = type
+  if (amount !== undefined) patch.amount = amount
+  if (accountId !== undefined) patch.account_id = accountId
+  if (categoryId !== undefined) patch.category_id = categoryId
+  if (note !== undefined) patch.note = note || null
+  if (dayOfMonth !== undefined) patch.day_of_month = dayOfMonth
+  if (active !== undefined) patch.active = active
+  const { data, error } = await supabase
+    .from('recurring_transactions')
+    .update(patch)
+    .eq('id', id)
+    .select(RECURRING_SELECT)
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteRecurring(id) {
+  const { error } = await supabase.from('recurring_transactions').delete().eq('id', id)
+  if (error) throw error
+}
+
+// Lança o recorrente no mês `monthIso` (dia 1) com a data `occurredOn`.
+// Primeiro "reserva" o mês (só atualiza se `last_generated_month` ainda for o
+// valor que a app conhece), e só depois cria a transação: assim dois toques, ou
+// dois dispositivos, nunca o lançam duas vezes. Se a transação falhar, a reserva
+// é desfeita.
+export async function launchRecurring(rec, monthIso, occurredOn) {
+  const previous = rec.last_generated_month ?? null
+  let claim = supabase.from('recurring_transactions').update({ last_generated_month: monthIso }).eq('id', rec.id)
+  claim = previous === null ? claim.is('last_generated_month', null) : claim.eq('last_generated_month', previous)
+  const { data: claimed, error: claimError } = await claim.select('id')
+  if (claimError) throw claimError
+  if (!claimed || claimed.length === 0) return { alreadyLaunched: true }
+
+  try {
+    const tx = await createTransaction({
+      amount: Number(rec.amount),
+      type: rec.type,
+      accountId: rec.account_id,
+      categoryId: rec.category_id,
+      occurredOn,
+      note: rec.note,
+    })
+    return { alreadyLaunched: false, transaction: tx }
+  } catch (err) {
+    await supabase.from('recurring_transactions').update({ last_generated_month: previous }).eq('id', rec.id)
+    throw err
+  }
+}

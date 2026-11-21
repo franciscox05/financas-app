@@ -16,6 +16,7 @@ import {
 } from '../lib/db'
 import Money from '../components/Money'
 import Card from '../components/Card'
+import RecurringDueCard from '../components/RecurringDueCard'
 import PageHeader from '../components/ui/PageHeader'
 import { eurSigned } from '../lib/format'
 import { monthTotals } from '../lib/monthTotals'
@@ -149,6 +150,13 @@ export default function Dashboard() {
           <ChevronRight size={20} strokeWidth={2.25} aria-hidden="true" className="shrink-0 text-label-3" />
         </button>
       )}
+
+      <RecurringDueCard
+        onLaunched={() => {
+          setRefreshToken((prev) => prev + 1)
+          loadAll()
+        }}
+      />
 
       <QuickEntryForm
         accounts={accounts}
