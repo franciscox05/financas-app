@@ -260,7 +260,13 @@ export default function PendingEntryActions({ entry, friend, viewerId, onChanged
     return (
       <div className="space-y-2">
         {errorLine}
-        <button type="button" disabled={busy} onClick={() => setConfirmCancel(true)} className={secondaryButton}>
+        {/* Ação rara: fica discreta (link pequeno) para não dominar cada linha do histórico. */}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => setConfirmCancel(true)}
+          className="-ml-1 min-h-11 px-1 text-[0.8125rem] font-medium text-label-3 underline-offset-2 hover:text-label-2 hover:underline disabled:opacity-50"
+        >
           Pedir anulação
         </button>
         <ConfirmDialog

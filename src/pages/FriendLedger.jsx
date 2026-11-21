@@ -60,7 +60,7 @@ export default function FriendLedger() {
   const [savingName, setSavingName] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [confirmFriendDelete, setConfirmFriendDelete] = useState(false)
-  const [showLifetime, setShowLifetime] = useState(false)
+  const [showLifetime, setShowLifetime] = useState(true)
 
   // Só a carga mais recente (e só enquanto o ecrã existe) escreve no estado.
   const loadSeq = useRef(0)
@@ -350,40 +350,46 @@ export default function FriendLedger() {
           open={showLifetime}
           onToggle={() => setShowLifetime((v) => !v)}
         >
-          <dl className="space-y-2 text-[0.9375rem]">
+          <div className="space-y-4 text-[0.9375rem]">
             {lifetime.lent > 0 && (
-              <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-label-2">Já lhe emprestaste no total</dt>
-                <dd className="amount font-medium text-label">
-                  <Money value={lifetime.lent} />
-                </dd>
-              </div>
-            )}
-            {lifetime.repaidToMe > 0 && (
-              <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-label-2">Já te devolveu</dt>
-                <dd className="amount font-medium text-label">
-                  <Money value={lifetime.repaidToMe} />
-                </dd>
-              </div>
+              <dl className="space-y-2">
+                <dt className="text-[0.8125rem] font-semibold tracking-wide text-label-2 uppercase">
+                  O que lhe emprestaste
+                </dt>
+                <div className="flex items-baseline justify-between gap-3">
+                  <dd className="text-label-2">Emprestaste no total</dd>
+                  <dd className="amount font-medium text-label">
+                    <Money value={lifetime.lent} />
+                  </dd>
+                </div>
+                <div className="flex items-baseline justify-between gap-3">
+                  <dd className="text-label-2">Já te devolveu</dd>
+                  <dd className="amount font-medium text-label">
+                    <Money value={lifetime.repaidToMe} />
+                  </dd>
+                </div>
+              </dl>
             )}
             {lifetime.borrowed > 0 && (
-              <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-label-2">Já te emprestou no total</dt>
-                <dd className="amount font-medium text-label">
-                  <Money value={lifetime.borrowed} />
-                </dd>
-              </div>
+              <dl className="space-y-2">
+                <dt className="text-[0.8125rem] font-semibold tracking-wide text-label-2 uppercase">
+                  O que ele te emprestou
+                </dt>
+                <div className="flex items-baseline justify-between gap-3">
+                  <dd className="text-label-2">Emprestou-te no total</dd>
+                  <dd className="amount font-medium text-label">
+                    <Money value={lifetime.borrowed} />
+                  </dd>
+                </div>
+                <div className="flex items-baseline justify-between gap-3">
+                  <dd className="text-label-2">Já lhe devolveste</dd>
+                  <dd className="amount font-medium text-label">
+                    <Money value={lifetime.repaidToThem} />
+                  </dd>
+                </div>
+              </dl>
             )}
-            {lifetime.repaidToThem > 0 && (
-              <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-label-2">Já lhe devolveste</dt>
-                <dd className="amount font-medium text-label">
-                  <Money value={lifetime.repaidToThem} />
-                </dd>
-              </div>
-            )}
-          </dl>
+          </div>
         </CollapsibleSection>
       )}
 
