@@ -49,9 +49,21 @@ export function ListSkeleton({ rows = 5 }) {
   )
 }
 
+// Mascote sobre um azulejo azul-marinho (como o ícone da app): fica legível no tema claro e escuro.
+function MascotTile({ motion }) {
+  return (
+    <div className="mx-auto mb-3 grid size-24 place-items-center rounded-3xl bg-[#0e1d3d]">
+      <Mascot size={76} motion={motion} />
+    </div>
+  )
+}
+
 export function PageSkeleton() {
   return (
     <div className="space-y-6">
+      <div role="status" aria-label="A carregar" className="pt-2">
+        <MascotTile motion="load" />
+      </div>
       <FormSkeleton />
       <ListSkeleton />
     </div>
@@ -61,7 +73,7 @@ export function PageSkeleton() {
 export function EmptyState({ title, description, actionLabel, onAction }) {
   return (
     <div className="rounded-group bg-fill px-5 py-9 text-center">
-      <Mascot size={88} motion="idle" className="mx-auto mb-3" />
+      <MascotTile motion="idle" />
       <p className="text-[1.0625rem] font-semibold tracking-tight text-label">{title}</p>
       {description && <p className="mx-auto mt-1 max-w-xs text-[0.8125rem] leading-snug text-label-2">{description}</p>}
       {actionLabel && onAction && (

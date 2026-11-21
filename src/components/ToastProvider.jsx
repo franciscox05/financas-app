@@ -1,4 +1,5 @@
 import { CELEBRATE_EVENT } from './BrandMark'
+import Mascot from './Mascot'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ToastContext } from '../context/toastContext'
 
@@ -16,6 +17,8 @@ const DOT_CLASS = {
   info: 'bg-blue-500',
 }
 
+const MASCOT_MOTION = { success: 'cheer', error: 'oops' }
+
 function ToastItem({ toast, onDismiss }) {
   const duration = toast.action ? ACTION_DURATION_MS : DURATION_MS[toast.kind]
 
@@ -30,7 +33,12 @@ function ToastItem({ toast, onDismiss }) {
     <li
       className={`${toast.leaving ? 'toast-out' : 'toast-in'} pointer-events-auto flex items-center gap-2.5 rounded-2xl bg-neutral-900/95 px-3.5 py-2.5 text-[13px] leading-snug text-neutral-50 shadow-lg ring-1 ring-black/10 backdrop-blur dark:bg-neutral-800/95 dark:ring-white/10`}
     >
-      <span aria-hidden="true" className={`size-1.5 shrink-0 rounded-full ${DOT_CLASS[toast.kind]}`} />
+      {MASCOT_MOTION[toast.kind] ? (
+        // O mascote reage ao resultado: festa nos sucessos, abana a cabeça nos erros.
+        <Mascot size={34} motion={MASCOT_MOTION[toast.kind]} className="-my-1 -ml-1 shrink-0" />
+      ) : (
+        <span aria-hidden="true" className={`size-1.5 shrink-0 rounded-full ${DOT_CLASS[toast.kind]}`} />
+      )}
       <span className="min-w-0 flex-1">{toast.message}</span>
       {toast.action && (
         <button

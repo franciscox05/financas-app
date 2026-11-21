@@ -7,11 +7,13 @@ import { StrictMode, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import '../index.css'
 import CollapsibleSection from '../components/CollapsibleSection'
-import { EmptyState, ErrorNotice, Pager } from '../components/Feedback'
+import { EmptyState, ErrorNotice, Pager, PageSkeleton } from '../components/Feedback'
 import Money from '../components/Money'
 import MonthCalendar from '../components/MonthCalendar'
 import MonthPicker from '../components/MonthPicker'
 import PrivacyProvider from '../components/PrivacyProvider'
+import ToastProvider from '../components/ToastProvider'
+import { useToast } from '../context/toastContext'
 import Group, { Row } from '../components/ui/Group'
 import IconButton from '../components/ui/IconButton'
 import PageHeader from '../components/ui/PageHeader'
@@ -25,6 +27,7 @@ const TXS = [
 ]
 
 function Gallery() {
+  const toast = useToast()
   const [type, setType] = useState('expense')
   const [month, setMonth] = useState(new Date(2026, 10, 1))
   const [open, setOpen] = useState(false)
@@ -109,6 +112,11 @@ function Gallery() {
         <ErrorNotice message="Aviso de erro de exemplo." onRetry={() => {}} />
         <EmptyState title="Estado vazio" description="Descrição do estado vazio." actionLabel="Ação" onAction={() => {}} />
         <Pager page={page} totalPages={3} onChange={setPage} />
+        <div className="flex gap-2">
+          <button type="button" className={secondaryButton} onClick={() => toast.success('Guardado.')}>Aviso de sucesso</button>
+          <button type="button" className={secondaryButton} onClick={() => toast.error('Não foi possível guardar.')}>Aviso de erro</button>
+        </div>
+        <PageSkeleton />
       </main>
     </div>
   )
@@ -117,7 +125,9 @@ function Gallery() {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <PrivacyProvider>
-      <Gallery />
+      <ToastProvider>
+        <Gallery />
+      </ToastProvider>
     </PrivacyProvider>
   </StrictMode>,
 )
