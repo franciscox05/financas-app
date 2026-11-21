@@ -24,9 +24,9 @@ const inputClass =
   'min-h-11 w-full rounded-control border-0 bg-fill px-3.5 text-[1.0625rem] text-label placeholder:text-label-3 focus:ring-2 focus:ring-accent'
 
 const STATE_STYLES = {
-  owes_me: { text: 'text-positive', label: 'Deve-te' },
-  i_owe: { text: 'text-negative', label: 'Deves-lhe' },
-  even: { text: 'text-label-2', label: 'Quites' },
+  owes_me: { text: 'text-positive', labelKey: 'fr.owesYou' },
+  i_owe: { text: 'text-negative', labelKey: 'fr.youOwe' },
+  even: { text: 'text-label-2', labelKey: 'fr.even' },
 }
 
 export default function Friends() {
@@ -96,7 +96,7 @@ export default function Friends() {
     e.preventDefault()
     if (submitting) return
     if (!name.trim()) {
-      setFormError('Indica o nome do amigo.')
+      setFormError(t('fr.err.name'))
       return
     }
     const sendRequest = requestLink && phone.trim() !== ''
@@ -107,7 +107,7 @@ export default function Friends() {
       resetForm()
       await load()
       if (mounted.current) {
-        toast.success(sendRequest ? 'Amigo adicionado e pedido enviado.' : 'Amigo adicionado.')
+        toast.success(sendRequest ? t('fr.addedRequest') : t('fr.added'))
       }
     } catch (err) {
       if (!mounted.current) return
@@ -175,9 +175,9 @@ export default function Friends() {
       <PendingEntriesStrip entries={pendingEntries} friends={friends} />
 
       {sorted.length > 0 && (
-        <section aria-label="Resumo" className="grid grid-cols-2 gap-3">
+        <section aria-label={t('fr.summary')} className="grid grid-cols-2 gap-3">
           <div className="min-w-0 rounded-group bg-surface p-4">
-            <p className="text-[0.8125rem] text-label-2">A receber</p>
+            <p className="text-[0.8125rem] text-label-2">{t('fr.receivable')}</p>
             <p
               className={`amount display mt-1 truncate text-[1.625rem] leading-tight font-bold tracking-tight ${
                 positions.receivable > 0 ? 'text-positive' : 'text-label-3'
@@ -187,7 +187,7 @@ export default function Friends() {
             </p>
           </div>
           <div className="min-w-0 rounded-group bg-surface p-4">
-            <p className="text-[0.8125rem] text-label-2">A pagar</p>
+            <p className="text-[0.8125rem] text-label-2">{t('fr.payable')}</p>
             <p
               className={`amount display mt-1 truncate text-[1.625rem] leading-tight font-bold tracking-tight ${
                 positions.payable > 0 ? 'text-negative' : 'text-label-3'
@@ -201,9 +201,9 @@ export default function Friends() {
 
       {sorted.length === 0 ? (
         <EmptyState
-          title="Ainda não tens amigos aqui"
-          description="Adiciona um amigo para registares o que pagaste e o que te pagaram."
-          actionLabel="Adicionar amigo"
+          title={t('fr.empty')}
+          description={t('fr.emptyBody')}
+          actionLabel={t('fr.add')}
           onAction={() => setShowForm(true)}
         />
       ) : (
@@ -222,8 +222,8 @@ export default function Friends() {
                 leading={<FriendAvatar name={friend.name} avatarPath={friend.avatarPath} />}
                 title={friend.name}
                 subtitle={link !== 'Local' ? link : undefined}
-                value={state === 'even' ? 'Quites' : <Money value={amount} />}
-                valueNote={state !== 'even' ? style.label : undefined}
+                value={state === 'even' ? t('fr.even') : <Money value={amount} />}
+                valueNote={state !== 'even' ? t(style.labelKey) : undefined}
                 valueClassName={`${style.text} ${state === 'even' ? '' : 'font-semibold'}`}
                 chevron
               />
@@ -236,21 +236,21 @@ export default function Friends() {
         <form onSubmit={handleCreate} className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <h2 id={formTitleId} className="text-[1.375rem] font-bold tracking-tight text-label">
-              Novo amigo
+              {t('fr.new')}
             </h2>
-            <IconButton label="Fechar" onClick={closeForm} className="-mr-2">
+            <IconButton label={t('common.close')} onClick={closeForm} className="-mr-2">
               <X size={22} aria-hidden="true" />
             </IconButton>
           </div>
 
           <div>
             <label htmlFor="friend-name" className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">
-              Nome
+              {t('fr.name')}
             </label>
             <input
               id="friend-name"
               type="text"
-              placeholder="Ex: João"
+              placeholder={t('fr.namePlaceholder')}
               autoComplete="off"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -259,13 +259,13 @@ export default function Friends() {
           </div>
           <div>
             <label htmlFor="friend-phone" className="mb-1.5 block text-[0.8125rem] font-medium text-label-2">
-              Telemóvel (opcional)
+              {t('fr.phone')}
             </label>
             <input
               id="friend-phone"
               type="tel"
               inputMode="tel"
-              placeholder="Ex: 912 345 678"
+              placeholder={t('fr.phonePlaceholder')}
               autoComplete="off"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -284,10 +284,10 @@ export default function Friends() {
                   className="size-5 min-h-0! shrink-0 accent-[var(--accent)]"
                   aria-describedby="friend-request-link-hint"
                 />
-                Pedir para ligar contas
+                {t('fr.linkRequest')}
               </label>
               <p id="friend-request-link-hint" className="text-[0.8125rem] leading-snug text-label-2">
-                Só funciona se a pessoa tiver a app e este número no perfil. Para contactos sem app, desmarca.
+                {t('fr.linkHelp')}
               </p>
             </div>
           )}
@@ -303,7 +303,7 @@ export default function Friends() {
             disabled={submitting}
             className="min-h-12 w-full rounded-control bg-accent-fill text-[1.0625rem] font-semibold text-white transition-opacity duration-150 active:opacity-70 disabled:opacity-50"
           >
-            {submitting ? 'A guardar...' : 'Guardar amigo'}
+            {submitting ? t('common.saving') : t('fr.save')}
           </button>
         </form>
       </Modal>
