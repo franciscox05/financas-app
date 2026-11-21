@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { ListFilter, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import CollapsibleSection from './CollapsibleSection'
@@ -25,7 +26,7 @@ export default function CategoryRulesSection({ categories }) {
     try {
       setRules(await listCategoryRules())
     } catch (err) {
-      toast.error(`Não foi possível carregar as regras: ${err.message}`)
+      toast.error(t('rules.loadFailed', { msg: err.message }))
     } finally {
       setLoading(false)
     }
@@ -39,11 +40,11 @@ export default function CategoryRulesSection({ categories }) {
   async function handleCreate(e) {
     e.preventDefault()
     if (!keyword.trim()) {
-      setError('Escreve uma palavra-chave.')
+      setError(t('rules.err.keyword'))
       return
     }
     if (!categoryId) {
-      setError('Escolhe uma categoria.')
+      setError(t('rules.err.category'))
       return
     }
     setSubmitting(true)
@@ -53,7 +54,7 @@ export default function CategoryRulesSection({ categories }) {
       setKeyword('')
       setShowForm(false)
       await load()
-      toast.success('Regra criada.')
+      toast.success(t('rules.created'))
     } catch (err) {
       setError(err.message)
     } finally {
@@ -66,40 +67,40 @@ export default function CategoryRulesSection({ categories }) {
       await deleteCategoryRule(rule.id)
       setConfirmingDeleteId(null)
       await load()
-      toast.success('Regra apagada.', {
+      toast.success(t('rules.deleted'), {
         action: {
-          label: 'Desfazer',
+          label: t('common.undo'),
           onClick: async () => {
             try {
               await createCategoryRule({ keyword: rule.keyword, categoryId: rule.category_id })
               await load()
-              toast.success('Regra restaurada.')
+              toast.success(t('rules.restored'))
             } catch (err) {
-              toast.error(`Não foi possível desfazer: ${err.message}`)
+              toast.error(t('common.undoFailed', { msg: err.message }))
             }
           },
         },
       })
     } catch (err) {
-      toast.error(`Não foi possível apagar: ${err.message}`)
+      toast.error(t('common.deleteFailed', { msg: err.message }))
     }
   }
 
   return (
     <CollapsibleSection
-      title="Regras de categorização"
+      title={t('rules.title')}
       icon={ListFilter}
-      description='Associa uma palavra a uma categoria (ex. "gas" → Transporte). Aplica-se a qualquer nota que contenha essa palavra — "gasolina", "gasóleo" ou "gasolina bmw" caem todas na mesma categoria, mesmo escritas de forma diferente mês a mês. Usado automaticamente ao importar histórico — não recategoriza transações já existentes nem as registadas manualmente (usa "Corrigir categorias em massa" para essas).'
+      description={t('rules.desc')}
       open={showSection}
       onToggle={() => setShowSection((v) => !v)}
     >
           {loading ? (
-            <p className="text-sm text-label-2">A carregar...</p>
+            <p className="text-sm text-label-2">{t('common.loadingDots')}</p>
           ) : rules.length === 0 && !showForm ? (
             <EmptyState
-              title="Ainda sem regras"
-              description='Cria a primeira, ex. "gas" → Transporte.'
-              actionLabel="+ Nova regra"
+              title={t('rules.empty')}
+              description={t('rules.emptyBody')}
+              actionLabel={t('rules.newPlus')}
               onAction={() => setShowForm(true)}
             />
           ) : (
@@ -115,19 +116,19 @@ export default function CategoryRulesSection({ categories }) {
                         onClick={() => handleDelete(r)}
                         className="rounded bg-negative px-2 py-1 text-xs font-medium text-white"
                       >
-                        Confirmar
+                        {t('rules.confirm')}
                       </button>
                       <button
                         onClick={() => setConfirmingDeleteId(null)}
                         className="rounded border border-separator px-2 py-1 text-xs"
                       >
-                        Cancelar
+                        {t('common.cancel')}
                       </button>
                     </span>
                   ) : (
                     <button
                       onClick={() => setConfirmingDeleteId(r.id)}
-                      aria-label={`Apagar regra ${r.keyword}`}
+                      aria-label={t('rules.deleteRule', { keyword: r.keyword })}
                       className="rounded p-1 text-label-3 hover:text-negative"
                     >
                       <Trash2 size={16} />
@@ -143,7 +144,7 @@ export default function CategoryRulesSection({ categories }) {
               onClick={() => setShowForm(true)}
               className="flex items-center gap-0.5 text-xs text-label-2 underline-offset-2 hover:underline"
             >
-              <Plus size={13} /> Nova regra
+              <Plus size={13} /> {t('rules.new')}
             </button>
           )}
 
@@ -151,7 +152,7 @@ export default function CategoryRulesSection({ categories }) {
             <form onSubmit={handleCreate} className="space-y-2 rounded-control border border-separator p-3">
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-label-2">Palavra-chave</label>
+                  <label className="mb-1 block text-xs font-medium text-label-2">{t('rules.keyword')}</label>
                   <input
                     type="text"
                     placeholder='Ex: "gas"'
@@ -161,7 +162,7 @@ export default function CategoryRulesSection({ categories }) {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-label-2">Categoria</label>
+                  <label className="mb-1 block text-xs font-medium text-label-2">{t('common.category')}</label>
                   <select
                     value={categoryId}
                     onChange={(e) => setCategoryId(e.target.value)}
@@ -169,7 +170,7 @@ export default function CategoryRulesSection({ categories }) {
                   >
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.name} ({c.type === 'income' ? 'Ganho' : 'Gasto'})
+                        {c.name} ({c.type === 'income' ? t('kind.income') : t('kind.expense')})
                       </option>
                     ))}
                   </select>
@@ -182,14 +183,14 @@ export default function CategoryRulesSection({ categories }) {
                   disabled={submitting}
                   className="flex-1 min-h-11 rounded-control bg-accent-fill px-4 text-[0.9375rem] font-semibold text-white disabled:opacity-50"
                 >
-                  {submitting ? 'A guardar...' : 'Guardar regra'}
+                  {submitting ? t('common.saving') : t('rules.save')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
                   className="min-h-11 rounded-control bg-fill px-4 text-[0.9375rem] font-semibold text-label"
                 >
-                  Cancelar
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>

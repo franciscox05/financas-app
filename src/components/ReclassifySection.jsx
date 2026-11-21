@@ -1,3 +1,4 @@
+import { languageInfo, t } from '../i18n'
 import { Save, Wand2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import CollapsibleSection from './CollapsibleSection'
@@ -7,10 +8,13 @@ import { listTransactionsInRange, updateTransactionsBulk } from '../lib/db'
 import { addMonths, toIsoDate } from '../lib/dates'
 import { eur } from '../lib/format'
 
-const MONTH_NAMES = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-]
+// Nomes dos meses no idioma ativo (ex.: "Janeiro" / "January").
+function monthNames() {
+  return Array.from({ length: 12 }, (_, i) => {
+    const s = new Date(2000, i, 1).toLocaleDateString(languageInfo().locale, { month: 'long' })
+    return s.charAt(0).toUpperCase() + s.slice(1)
+  })
+}
 
 // Agrupa transações já guardadas pela mesma nota exata (e tipo), para
 // corrigir a categoria/conta de muitas de uma vez — útil depois de uma
@@ -42,7 +46,7 @@ export default function ReclassifySection({ accounts, categories }) {
       })
 
       if (transactions.length === 0) {
-        setError('Não há transações guardadas nesse mês.')
+        setError(t('rc.noTx'))
         setGroups(null)
         return
       }
@@ -54,7 +58,7 @@ export default function ReclassifySection({ accounts, categories }) {
           byGroup.set(key, {
             key,
             type: tx.type,
-            note: tx.note || '(sem nota)',
+            note: tx.note || t('rc.noNote'),
             ids: [],
             total: 0,
             categoryId: tx.category_id,
@@ -88,10 +92,10 @@ export default function ReclassifySection({ accounts, categories }) {
           updateTransactionsBulk(g.ids, { category_id: g.categoryId, account_id: g.accountId }),
         ),
       )
-      toast.success('Categorias/contas atualizadas.')
+      toast.success(t('rc.updated'))
       setGroups(null)
     } catch (err) {
-      toast.error(`Não foi possível guardar: ${err.message}`)
+      toast.error(t('common.saveFailed', { msg: err.message }))
     } finally {
       setSaving(false)
     }
@@ -99,21 +103,21 @@ export default function ReclassifySection({ accounts, categories }) {
 
   return (
     <CollapsibleSection
-      title="Corrigir categorias em massa"
+      title={t('rc.title')}
       icon={Wand2}
-      description="Escolhe um mês já registado (ex. depois de uma importação) para rever e corrigir a categoria/conta de várias transações com a mesma nota de uma só vez."
+      description={t('rc.desc')}
       open={showSection}
       onToggle={() => setShowSection((v) => !v)}
     >
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="mb-1 block text-xs font-medium text-label-2">Mês</label>
+          <label className="mb-1 block text-xs font-medium text-label-2">{t('rc.month')}</label>
           <select
             value={month}
             onChange={(e) => setMonth(Number(e.target.value))}
             className="w-full rounded-control border-0 bg-fill px-3 text-label focus:ring-2 focus:ring-accent"
           >
-            {MONTH_NAMES.map((name, idx) => (
+            {monthNames().map((name, idx) => (
               <option key={name} value={idx + 1}>
                 {name}
               </option>
@@ -121,7 +125,7 @@ export default function ReclassifySection({ accounts, categories }) {
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-label-2">Ano</label>
+          <label className="mb-1 block text-xs font-medium text-label-2">{t('rc.year')}</label>
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
@@ -144,15 +148,14 @@ export default function ReclassifySection({ accounts, categories }) {
               disabled={loading}
               className="w-full min-h-11 rounded-control bg-accent-fill px-4 text-[0.9375rem] font-semibold text-white disabled:opacity-50"
             >
-              {loading ? 'A carregar...' : 'Carregar transações deste mês'}
+              {loading ? t('common.loadingDots') : t('rc.load')}
             </button>
           )}
 
           {groups && (
             <div className="space-y-3">
               <p className="text-xs text-label-2">
-                {groups.reduce((s, g) => s + g.ids.length, 0)} transações, em {groups.length} notas
-                distintas.
+                {t('rc.summary', { n: groups.reduce((s, g) => s + g.ids.length, 0), groups: groups.length })}
               </p>
 
               <ul className="space-y-2">
@@ -211,14 +214,14 @@ export default function ReclassifySection({ accounts, categories }) {
                   className="flex flex-1 items-center justify-center gap-1.5 min-h-11 rounded-control bg-accent-fill px-4 text-[0.9375rem] font-semibold text-white disabled:opacity-50"
                 >
                   <Save size={15} />
-                  {saving ? 'A guardar...' : 'Guardar alterações'}
+                  {saving ? t('common.saving') : t('rc.save')}
                 </button>
                 <button
                   onClick={() => setGroups(null)}
                   disabled={saving}
                   className="min-h-11 rounded-control bg-fill px-4 text-[0.9375rem] font-semibold text-label"
                 >
-                  Cancelar
+                  {t('common.cancel')}
                 </button>
               </div>
             </div>
