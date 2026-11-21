@@ -4,6 +4,9 @@ import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 import App from './App.jsx'
 import PrivacyProvider from './components/PrivacyProvider.jsx'
+import { initMonitoring } from './lib/monitoring.js'
+
+initMonitoring()
 
 // Sem isto, o vite-plugin-pwa só injeta um registo minimo que nunca verifica
 // se ha uma versao nova — por isso a app instalada (sobretudo no iOS) ficava
