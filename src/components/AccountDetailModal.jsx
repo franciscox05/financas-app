@@ -73,9 +73,11 @@ function StatementRow({ line, account, t }) {
         <p className={`amount text-sm font-semibold ${tone}`}>
           {isSnapshot ? <Money value={line.balanceAfter} /> : <Money>{eurSigned(line.delta)}</Money>}
         </p>
-        <p className="amount text-xs text-label-3">
-          <Money>{t('stmt.before', { value: eur(line.balanceBefore) })}</Money>
-        </p>
+        {!isSnapshot && (
+          <p className="amount text-xs text-label-3">
+            <Money>{t('stmt.after', { value: eur(line.balanceAfter) })}</Money>
+          </p>
+        )}
       </div>
     </li>
   )
