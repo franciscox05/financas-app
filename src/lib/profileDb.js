@@ -140,6 +140,14 @@ export async function getOnboardingState() {
   return { onboarded: !data || Boolean(data.onboarded_at), locale: data?.locale ?? null, currency: data?.currency ?? null }
 }
 
+// Guarda o idioma e a moeda no perfil (o ProtectedRoute volta a aplicá-los ao
+// entrar). Upsert: funciona mesmo que a linha de perfil ainda não exista.
+export async function saveLocalePreferences({ locale, currency }) {
+  const userId = await getCurrentUserId()
+  const { error } = await supabase.from('profiles').upsert({ id: userId, locale, currency })
+  if (error) throw error
+}
+
 // Cria contas e categorias escolhidas e marca o onboarding como feito (função SQL transacional).
 export async function completeOnboarding(payload) {
   const { error } = await supabase.rpc('complete_onboarding', { p_payload: payload })
