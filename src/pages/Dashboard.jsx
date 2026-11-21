@@ -10,7 +10,9 @@ import { addMonths, monthStart, today, toIsoDate } from '../lib/dates'
 import {
   listAccounts,
   listAllTransactionsForExport,
+  listBudgets,
   listCategories,
+  listLoggingDates,
   listTransactions,
   listTransactionsInRange,
 } from '../lib/db'
@@ -18,6 +20,8 @@ import Money from '../components/Money'
 import Card from '../components/Card'
 import RecurringDueCard from '../components/RecurringDueCard'
 import InstallHint from '../components/InstallHint'
+import { FirstSteps, StreakCard } from '../components/HabitCard'
+import { loggingStreak } from '../lib/streak'
 import PageHeader from '../components/ui/PageHeader'
 import { eurSigned } from '../lib/format'
 import { applyFriendShares, monthTotals } from '../lib/monthTotals'
@@ -30,6 +34,8 @@ export default function Dashboard() {
   const [categories, setCategories] = useState([])
   const [transactions, setTransactions] = useState([])
   const [monthSummary, setMonthSummary] = useState(null)
+  const [streak, setStreak] = useState(null)
+  const [hasBudget, setHasBudget] = useState(true)
   const [refreshToken, setRefreshToken] = useState(0)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -55,6 +61,15 @@ export default function Dashboard() {
       // Empréstimos e devoluções ficam fora do saldo do mês (ver monthTotals).
       const shares = await listFriendSharesByTransaction(monthTxs.map((t) => t.id)).catch(() => new Map())
       setMonthSummary(monthTotals(applyFriendShares(monthTxs, shares, cats), cats))
+      // Hábito: sequência de dias seguidos (últimos 400 dias) e se já há orçamento.
+      // Falhas aqui não estragam o ecrã: os cartões simplesmente não aparecem.
+      const since = toIsoDate(new Date(Date.now() - 400 * 24 * 60 * 60 * 1000))
+      const [dates, budgets] = await Promise.all([
+        listLoggingDates({ from: since }).catch(() => null),
+        listBudgets().catch(() => null),
+      ])
+      setStreak(dates ? loggingStreak(dates, today()) : null)
+      setHasBudget(budgets ? budgets.length > 0 : true)
     } catch (err) {
       setLoadError(err.message)
     } finally {
@@ -140,6 +155,10 @@ export default function Dashboard() {
       {loadError && <ErrorNotice message={loadError} onRetry={loadAll} />}
 
       <InstallHint />
+
+      <FirstSteps hasTransactions={transactions.length > 0} hasBudget={hasBudget} onAddFirst={focusQuickEntry} />
+
+      <StreakCard streak={streak} />
 
       {monthSummary && (monthSummary.income > 0 || monthSummary.expense > 0) && (
         <button
