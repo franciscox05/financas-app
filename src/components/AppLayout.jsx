@@ -135,13 +135,13 @@ export default function AppLayout() {
           ao centro (aparece quando o título grande sai de vista) e as ações
           com alvos de 44 px. A linha de baixo só se vê depois de haver scroll. */}
       <header
-        className={`material-bar sticky top-0 z-20 flex items-center justify-between gap-2 border-b-[0.5px] px-2 pt-[calc(max(1rem,env(safe-area-inset-top))+1.1rem)] transition-[border-color] duration-200 ${
+        className={`material-bar sticky top-0 z-20 flex items-center justify-between gap-2 border-b-[0.5px] px-4 pb-1 pt-[calc(max(1rem,env(safe-area-inset-top))+1.1rem)] transition-[border-color] duration-200 ${
           scrolled ? 'border-separator' : 'border-transparent'
         }`}
       >
         {/* Topo (2026-11-21): marca à esquerda; à direita as ações num grupo e a foto de perfil
             no fim. Sem título do ecrã: o separador ativo da barra de baixo já diz onde se está. */}
-        <Link to="/" aria-label={t('nav.home')} className="pressable flex h-11 min-w-0 items-center justify-self-start rounded-full pl-2">
+        <Link to="/" aria-label={t('nav.home')} className="pressable flex h-11 min-w-0 items-center justify-self-start rounded-full">
           <BrandMark size={32} text="Stingy" />
         </Link>
         <div className="flex h-11 items-center justify-end gap-1">
@@ -191,7 +191,7 @@ export default function AppLayout() {
 
       <main
         ref={contentRef}
-        className="mx-auto max-w-md space-y-6 px-4 pt-2 pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
+        className="mx-auto max-w-md space-y-6 px-4 pt-5 pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
       >
         <ErrorBoundary key={`${location.pathname}:${reloadKey}:${getLanguage()}`}>
           {/* As páginas carregam por partes (App.jsx); enquanto o pedaço chega fica vazio por
