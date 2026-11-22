@@ -7,6 +7,7 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import { EmptyState, ErrorNotice, PageSkeleton } from '../components/Feedback'
 import FriendAvatar from '../components/FriendAvatar'
 import FriendRequestPanel from '../components/FriendRequestPanel'
+import InviteButton from '../components/InviteButton'
 import LedgerEntryRow from '../components/LedgerEntryRow'
 import Money from '../components/Money'
 import NewExpenseSheet from '../components/NewExpenseSheet'
@@ -303,6 +304,8 @@ export default function FriendLedger() {
       )}
 
       <FriendRequestPanel friend={friend} onChanged={() => load({ silent: true })} />
+
+      {friend.status !== 'connected' && <InviteButton friend={friend} />}
 
       {showOpeningOffer && (
         <OpeningBalanceOffer friend={friend} balance={privateBalance} onShared={() => load({ silent: true })} />
