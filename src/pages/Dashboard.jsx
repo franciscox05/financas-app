@@ -6,7 +6,7 @@ import QuickEntryForm from '../components/QuickEntryForm'
 import TransactionList from '../components/TransactionList'
 import { useToast } from '../context/toastContext'
 import { downloadCsv, toCsv } from '../lib/csv'
-import { addMonths, monthStart, today, toIsoDate } from '../lib/dates'
+import { addMonths, monthLabel, monthStart, today, toIsoDate } from '../lib/dates'
 import {
   listAccounts,
   listAllTransactionsForExport,
@@ -19,7 +19,11 @@ import Money from '../components/Money'
 import Card from '../components/Card'
 import RecurringDueCard from '../components/RecurringDueCard'
 import InstallHint from '../components/InstallHint'
+import BudgetAlerts from '../components/BudgetAlerts'
 import FirstSteps from '../components/FirstSteps'
+import MonthRecapCard from '../components/MonthRecapCard'
+import { budgetProgress } from '../lib/budgets'
+import { RECAP_DAYS, shouldShowRecap, topExpenseCategory } from '../lib/monthRecap'
 import PageHeader from '../components/ui/PageHeader'
 import { eurSigned } from '../lib/format'
 import { applyFriendShares, monthTotals } from '../lib/monthTotals'
@@ -33,6 +37,8 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState([])
   const [monthSummary, setMonthSummary] = useState(null)
   const [hasBudget, setHasBudget] = useState(true)
+  const [budgetRows, setBudgetRows] = useState([])
+  const [recap, setRecap] = useState(null)
   const [refreshToken, setRefreshToken] = useState(0)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -61,6 +67,34 @@ export default function Dashboard() {
       // Primeiros passos: só precisa de saber se já há orçamento (falha = não mostra o passo).
       const budgets = await listBudgets().catch(() => null)
       setHasBudget(budgets ? budgets.length > 0 : true)
+      setBudgetRows(budgets ? budgetProgress(budgets, monthTxs, cats) : [])
+
+      // Resumo do mês passado: só nos primeiros dias do mês. Falhar não estraga o Registo.
+      try {
+        const now = new Date()
+        if (now.getDate() <= RECAP_DAYS) {
+          const prevStart = addMonths(monthStart(now), -1)
+          const prevTxs = await listTransactionsInRange({ from: toIsoDate(prevStart), to: currentMonthIso })
+          const prevShares = await listFriendSharesByTransaction(prevTxs.map((t) => t.id)).catch(() => new Map())
+          const prevAdjusted = applyFriendShares(prevTxs, prevShares, cats)
+          const totals = monthTotals(prevAdjusted, cats)
+          setRecap(
+            shouldShowRecap({ day: now.getDate(), income: totals.income, expense: totals.expense })
+              ? {
+                  monthKey: toIsoDate(prevStart).slice(0, 7),
+                  monthLabel: monthLabel(prevStart),
+                  income: totals.income,
+                  expense: totals.expense,
+                  top: topExpenseCategory(prevAdjusted, cats),
+                }
+              : null,
+          )
+        } else {
+          setRecap(null)
+        }
+      } catch {
+        setRecap(null)
+      }
     } catch (err) {
       setLoadError(err.message)
     } finally {
@@ -147,7 +181,11 @@ export default function Dashboard() {
 
       <InstallHint />
 
+      {recap && <MonthRecapCard recap={recap} />}
+
       <FirstSteps hasTransactions={transactions.length > 0} hasBudget={hasBudget} onAddFirst={focusQuickEntry} />
+
+      <BudgetAlerts rows={budgetRows} />
 
       {monthSummary && (monthSummary.income > 0 || monthSummary.expense > 0) && (
         <button
