@@ -19,10 +19,8 @@ import Money from '../components/Money'
 import Card from '../components/Card'
 import RecurringDueCard from '../components/RecurringDueCard'
 import InstallHint from '../components/InstallHint'
-import BudgetAlerts from '../components/BudgetAlerts'
 import FirstSteps from '../components/FirstSteps'
 import MonthRecapCard from '../components/MonthRecapCard'
-import { budgetProgress } from '../lib/budgets'
 import { RECAP_DAYS, shouldShowRecap, topExpenseCategory } from '../lib/monthRecap'
 import PageHeader from '../components/ui/PageHeader'
 import { eurSigned } from '../lib/format'
@@ -37,7 +35,6 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState([])
   const [monthSummary, setMonthSummary] = useState(null)
   const [hasBudget, setHasBudget] = useState(true)
-  const [budgetRows, setBudgetRows] = useState([])
   const [recap, setRecap] = useState(null)
   const [refreshToken, setRefreshToken] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -67,7 +64,6 @@ export default function Dashboard() {
       // Primeiros passos: só precisa de saber se já há orçamento (falha = não mostra o passo).
       const budgets = await listBudgets().catch(() => null)
       setHasBudget(budgets ? budgets.length > 0 : true)
-      setBudgetRows(budgets ? budgetProgress(budgets, monthTxs, cats) : [])
 
       // Resumo do mês passado: só nos primeiros dias do mês. Falhar não estraga o Registo.
       try {
@@ -184,8 +180,6 @@ export default function Dashboard() {
       {recap && <MonthRecapCard recap={recap} />}
 
       <FirstSteps hasTransactions={transactions.length > 0} hasBudget={hasBudget} onAddFirst={focusQuickEntry} />
-
-      <BudgetAlerts rows={budgetRows} />
 
       {monthSummary && (monthSummary.income > 0 || monthSummary.expense > 0) && (
         <button

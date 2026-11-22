@@ -12,7 +12,6 @@ import {
 } from 'recharts'
 import { useNavigate } from 'react-router-dom'
 import MonthCalendar from '../components/MonthCalendar'
-import BudgetsCard from '../components/BudgetsCard'
 import CategoryDrilldownModal from '../components/CategoryDrilldownModal'
 import MonthPicker from '../components/MonthPicker'
 import MonthlyReportButtons from '../components/MonthlyReportButtons'
@@ -20,8 +19,7 @@ import Group from '../components/ui/Group'
 import PageHeader from '../components/ui/PageHeader'
 import Segmented from '../components/ui/Segmented'
 import { EmptyState, ErrorNotice, ListSkeleton, Skeleton } from '../components/Feedback'
-import { listBudgets, listCategories, listTransactionsInRange } from '../lib/db'
-import { budgetProgress } from '../lib/budgets'
+import { listCategories, listTransactionsInRange } from '../lib/db'
 import { addMonths, monthKey, monthLabel, monthStart, shortMonthLabel, toIsoDate } from '../lib/dates'
 import Money from '../components/Money'
 import { usePrivacy } from '../context/privacyContext'
@@ -105,7 +103,6 @@ export default function Balance() {
   const [selectedMonth, setSelectedMonth] = useState(() => monthStart(new Date()))
   const [sixMonthData, setSixMonthData] = useState([])
   const [categories, setCategories] = useState([])
-  const [budgets, setBudgets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [breakdownTab, setBreakdownTab] = useState('expense')
@@ -124,18 +121,15 @@ export default function Balance() {
       try {
         const rangeStart = addMonths(selectedMonth, -5)
         const rangeEnd = addMonths(selectedMonth, 1)
-        const [txs, cats, buds] = await Promise.all([
+        const [txs, cats] = await Promise.all([
           listTransactionsInRange({ from: toIsoDate(rangeStart), to: toIsoDate(rangeEnd) }),
           listCategories(),
-          // Sem orçamentos (ou a tabela ainda não existir) o Balanço não pode falhar.
-          listBudgets().catch(() => []),
         ])
         // Divisões com amigos: só a tua parte conta como gasto (ver monthTotals.js).
         // Se falhar, o Balanço continua com os valores inteiros.
         const shares = await listFriendSharesByTransaction(txs.map((t) => t.id)).catch(() => new Map())
         if (cancelled) return
         setCategories(cats)
-        setBudgets(buds)
 
         // Agrupa por mês para o gráfico de evolução (6 meses terminados no selecionado).
         const byMonth = new Map()
@@ -184,10 +178,6 @@ export default function Balance() {
     [selectedBucket, lendingCategoryIds],
   )
 
-  const budgetRows = useMemo(
-    () => budgetProgress(budgets, selectedBucket?.txs ?? [], categories),
-    [budgets, selectedBucket, categories],
-  )
 
   const savingsAmount = selectedBucket?.savings ?? 0
   const lentOut = selectedBucket?.lentOut ?? 0
@@ -316,8 +306,6 @@ export default function Balance() {
           </div>
         )}
       </section>
-
-      <BudgetsCard rows={budgetRows} />
 
       <MonthCalendar monthDate={selectedMonth} transactions={selectedBucket?.txs ?? []} />
 
