@@ -936,4 +936,10 @@ export default {
   'invite.button': 'Convidar para a Stingy',
   'invite.hint': '{name} ainda não está ligado. Convida-o para verem os mesmos movimentos.',
   'invite.text': 'Olá {name}! Estou a usar a Stingy para acertar contas e gastos. Experimenta, é grátis: {url}',
+  'reminder.title': 'Lembrete diário',
+  'reminder.label': 'Hora do lembrete',
+  'reminder.help': 'À hora escolhida (hora de Lisboa), avisamos-te se ainda não registaste nada nesse dia.',
+  'reminder.needsNotif': 'Ativa as notificações no sino do topo para receber o lembrete.',
+  'reminder.saved': 'Hora do lembrete guardada.',
+  'reminder.saveFailed': 'Não foi possível guardar a hora. Tenta outra vez.',
 }

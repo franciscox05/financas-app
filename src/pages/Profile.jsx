@@ -1,4 +1,4 @@
-import { ChevronLeft, Database, Languages, Phone, ShieldCheck, Target, StickyNote } from 'lucide-react'
+import { Bell, ChevronLeft, Database, Languages, Phone, ShieldCheck, Target, StickyNote } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import AppLockSection from '../components/AppLockSection'
 import Card from '../components/Card'
@@ -8,6 +8,7 @@ import MbwayPhoneSection from '../components/MbwayPhoneSection'
 import MyPhoneSection from '../components/MyPhoneSection'
 import NotesCalendar from '../components/NotesCalendar'
 import PersonalInfoSection from '../components/PersonalInfoSection'
+import ReminderSection from '../components/ReminderSection'
 import LanguageSection from '../components/LanguageSection'
 import SignOutButton from '../components/SignOutButton'
 import { focusRing } from '../components/ui/styles'
@@ -63,6 +64,13 @@ export default function Profile() {
           <Languages size={14} aria-hidden="true" /> {t('lang.title')}
         </h2>
         <LanguageSection />
+      </Card>
+
+      <Card as="section" className="space-y-3">
+        <h2 className={cardTitleClass}>
+          <Bell size={14} aria-hidden="true" /> {t('reminder.title')}
+        </h2>
+        <ReminderSection />
       </Card>
 
       <Card as="section" className="space-y-3">

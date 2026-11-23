@@ -936,4 +936,10 @@ export default {
   'invite.button': 'Invite to Stingy',
   'invite.hint': '{name} isn\'t linked yet. Invite them so you both see the same entries.',
   'invite.text': 'Hi {name}! I\'m using Stingy to keep track of shared costs and who owes what. Give it a try, it\'s free: {url}',
+  'reminder.title': 'Daily reminder',
+  'reminder.label': 'Reminder time',
+  'reminder.help': "At the time you pick (Lisbon time), we nudge you if you haven't logged anything that day.",
+  'reminder.needsNotif': 'Turn on notifications with the bell at the top to get the reminder.',
+  'reminder.saved': 'Reminder time saved.',
+  'reminder.saveFailed': "Couldn't save the time. Try again.",
 }

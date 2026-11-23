@@ -148,6 +148,21 @@ export async function saveLocalePreferences({ locale, currency }) {
   if (error) throw error
 }
 
+// Hora (0-23, Lisboa) a que o utilizador quer o lembrete diário. 23 por omissão.
+// Se a coluna ainda não existir (migração por aplicar) devolve null e a UI esconde-se.
+export async function getReminderHour() {
+  const userId = await getCurrentUserId()
+  const { data, error } = await supabase.from('profiles').select('reminder_hour').eq('id', userId).maybeSingle()
+  if (error) return null
+  return data?.reminder_hour ?? 23
+}
+
+export async function saveReminderHour(hour) {
+  const userId = await getCurrentUserId()
+  const { error } = await supabase.from('profiles').upsert({ id: userId, reminder_hour: hour })
+  if (error) throw error
+}
+
 // Cria contas e categorias escolhidas e marca o onboarding como feito (função SQL transacional).
 export async function completeOnboarding(payload) {
   const { error } = await supabase.rpc('complete_onboarding', { p_payload: payload })
